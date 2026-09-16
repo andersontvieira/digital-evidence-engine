@@ -10,9 +10,9 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 1 — Evidence Foundation: SHA-256 streaming, SQLite, extração ZIP segura,
-proveniência, manifesto e verificação. Não há parsers de Instagram, Meta, Google,
-Apple ou WhatsApp, timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
+Milestone 2A: Evidence Foundation mais framework de parsing e três artefatos
+Instagram/Meta. Não há parsers de Google, Apple ou WhatsApp, normalização de eventos,
+timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
 
 ## Arquitetura e preservação
 
@@ -24,8 +24,8 @@ ocorrências distintas. Hashes catalogados nunca são substituídos silenciosame
 O pacote src/evidence_engine separa CLI, ingestão genérica, modelos, persistência
 e manifestos. SourceRecord aponta para EvidenceFile ou ArchiveMember, ligado ao
 ZIP original, ao SHA-256 e à execução que produziu o registro. OBSERVED, DERIVED,
-REPORTED e HYPOTHESIS permanecem conceitos separados. Nenhum conteúdo de evento
-ou interpretação é inventado nesta milestone. Horários operacionais são UTC;
+REPORTED e HYPOTHESIS permanecem conceitos separados. ParsedRecord armazena os
+valores extraídos, sem interpretação ou entidades Event. Horários operacionais são UTC;
 timestamps de filesystem não são tratados como criação de conteúdo.
 
 O aplicativo não usa rede, telemetria, upload ou APIs externas. Consulte
@@ -115,6 +115,79 @@ Verify e a leitura do manifesto abrem SQLite em mode=ro e query_only. Banco ause
 não é criado; journal que exige recovery gera erro, sem recuperação automática.
 Catálogos configurados externamente em WAL são recusados para evitar criação de
 arquivos compartilhados. A baseline usa DELETE journal mode.
+
+## Parsing Instagram/Meta
+
+**PARSE ≠ NORMALIZE ≠ CORRELATE.** O parser consulta somente fontes já catalogadas,
+confere SHA-256 e preserva valores de cada registro. Campos desconhecidos são
+mantidos no payload daquele registro com warning; não há reparo de texto, inferência
+de destinatário, nome comercial de aparelho ou associação de IP/device entre fontes.
+
+```sh
+dee parse --help
+dee parse instagram --case-root /case
+```
+
+Catálogos novos usam schema v2. Um catálogo v1 existente é recusado pelos comandos
+até migração explícita. Faça backup consistente do catálogo antes de migrar:
+
+```sh
+dee evidence migrate --case-root /case
+```
+
+A migração transacional adiciona somente parser_runs e parsed_records e atualiza
+user_version; conserva IDs, hashes e tabelas da Foundation. Não cria caso ausente,
+não migra versões desconhecidas e não é acionada automaticamente pelo parsing.
+O schema do manifesto de evidências permanece v1, independente do schema SQLite.
+
+Contratos suportados por parsers versão 1.0.0:
+
+| Artefato/path | Estrutura mínima | Parser |
+| --- | --- | --- |
+| profile_activity.json, inclusive sob prefixo de export | objeto com profile_account_insights: lista de registros | meta.profile_activity |
+| recently_deleted_content.json, inclusive sob prefixo de export | objeto com recently_deleted_media: lista de registros | meta.recently_deleted_content |
+| messages/inbox/**/message_<número>.json | objeto com messages: lista e title textual ou participants: lista | meta.instagram_messages |
+
+São contratos explícitos testados com fixtures sintéticos, não uma promessa de
+compatibilidade com todas as variantes históricas da Meta. Nome correto com outra
+estrutura gera UNSUPPORTED e warning auditável; não produz observações. Cada item
+deve ser objeto com pelo menos um campo do artefato; item inválido aborta a fonte.
+As tabelas de campos e validações ficam em ingest/instagram/parsers.py.
+
+Cada observação aponta a SourceRecord e a um locator como
+$/profile_account_insights/12 ou $/messages/17. A conversa é um registro separado
+em $, contendo metadata sem repetir a lista de mensagens. Metadata de conversa
+presente em arquivos diferentes continua sendo observação de cada fonte.
+
+timestamp_raw guarda o valor JSON original, sem conversão UTC ou timezone inferido.
+Vários timestamps candidatos ficam preservados no payload com warning, sem escolher
+um deles. Timestamps internos de media ficam no respectivo objeto do payload.
+IP recebe apenas classificação sintática; inválidos permanecem raw com warning.
+Código de modelo explicitamente presente no user agent recebe anotação com o locator
+de origem; não é convertido em nome comercial nem propagado para outro registro.
+
+Repetir parsing intacto adiciona zero registros. A identidade é fonte de inventário
++ parser_id + parser_version + locator. Duas exportações iguais continuam separadas;
+versões distintas do parser também. Falha desfaz todos os ParsedRecords e SourceRecords
+de parsing daquela fonte, registra ParserRun FAILED e permite continuar as demais.
+Tentativas falhas/unsupported permanecem auditáveis; sucesso anterior é reutilizado
+somente após nova conferência do conteúdo. Não há reparse sofisticado nem reparo.
+Falha no commit final tem resultado conferido no catálogo: se houve rollback,
+registrar COMMIT_FAILED quando o armazenamento permitir; se já houve persistência,
+preservar o resultado e retornar erro operacional para revisão manual.
+
+A saída JSON da CLI contém apenas contagens, incluindo records_parsed (novos) e
+records_existing (já processados). Exit 0 inclui warnings/unsupported; exit 1 indica
+falhas em fontes, com resultados válidos de outras fontes preservados; exit 2 indica
+erro operacional global/configuração/schema. Consulte warnings_json/error_code em
+parser_runs para diagnósticos, sem payloads no console.
+
+Limites fixos: 32 MiB por fonte JSON, profundidade 64 e 100000 registros por fonte,
+incluindo a conversa. O JSON é carregado em memória dentro desse limite. UTF-8 e BOM
+UTF-8 são aceitos; chaves duplicadas, números não finitos e JSON inválido são recusados.
+Paths de seleção também precisam ser relativos e canônicos, sem segmentos . ou ..,
+backslashes ou prefixos de drive. Catálogos existentes passam por pré-verificação
+read-only antes de abertura gravável normal, impedindo recovery de v1 antes da recusa.
 
 ## Política de ZIP
 
@@ -242,8 +315,9 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | Milestone | Escopo |
 | --- | --- |
 | 0 | Bootstrap e arquitetura — concluído |
-| 1 | Evidence Foundation — esta entrega |
-| 2 | Parsers Instagram / Meta, Google Takeout e Apple |
+| 1 | Evidence Foundation — concluída |
+| 2A | Framework + três artefatos Instagram/Meta — esta entrega |
+| 2 futura | Ampliação de formatos, Google Takeout e Apple |
 | 3 | Normalização de events, devices, networks e messages |
 | 4 | Search e timeline |
 | 5 | Media hashing: SHA-256 e perceptual hashing |

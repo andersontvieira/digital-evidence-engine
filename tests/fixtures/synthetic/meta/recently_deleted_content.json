@@ -1,0 +1,14 @@
+{
+  "recently_deleted_media": [
+    {
+      "timestamp": 1700000001,
+      "published": true,
+      "caption": "Legenda sintética — ação 🧪",
+      "device_id": "SYNTHETIC-DEVICE-001",
+      "media_id": "SYNTHETIC-MEDIA-001",
+      "media_type": "synthetic image type",
+      "media": [{"uri": "https://example.invalid/synthetic-media", "creation_timestamp": 1700000000}]
+    },
+    {"published": false, "device_id": "SYNTHETIC-DEVICE-002", "uri": "synthetic/media.bin"}
+  ]
+}

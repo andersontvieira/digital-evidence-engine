@@ -1,0 +1,27 @@
+{
+  "profile_account_insights": [
+    {
+      "timestamp": 1700000000,
+      "action": "synthetic_profile_change",
+      "ip": "198.51.100.10",
+      "port": 443,
+      "application": "synthetic application",
+      "service": "synthetic service",
+      "user_agent": "SYNTHETIC-AGENT (iPhone15,2)",
+      "device_id": "SYNTHETIC-DEVICE-001",
+      "profile_field": "synthetic_field",
+      "previous_value": "synthetic previous",
+      "new_value": "synthetic new",
+      "location": "synthetic platform location"
+    },
+    {
+      "string_map_data": {
+        "Time": {"value": "synthetic time without timezone"},
+        "IP Address": {"value": "synthetic-invalid-ip"},
+        "User Agent": {"value": "SYNTHETIC-AGENT (iPhone15,2)"},
+        "Device ID": {"value": "SYNTHETIC-DEVICE-002"}
+      }
+    },
+    {"device_id": "SYNTHETIC-DEVICE-003"}
+  ]
+}

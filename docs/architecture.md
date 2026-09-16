@@ -1,8 +1,8 @@
 # Arquitetura
 
-## Milestone 1
+## Milestone 2A
 
-Motor local sem rede, sem parsers de plataformas e sem certificação pericial.
+Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta.
 Typer coordena a CLI; SQLAlchemy 2.x persiste SQLite; Pydantic 2.x valida limites
 de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 
@@ -15,18 +15,22 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | ingest/generic/archives.py | Inventário validado e extração ZIP |
 | ingest/generic/service.py | Coordenação transacional e proveniência |
 | ingest/generic/verification.py | Comparação de originais com baseline |
-| models/entities.py | As cinco entidades do catálogo |
-| storage/database.py | SQLite, foreign keys e schema v1 |
+| ingest/parsing/framework.py | Contratos puros, JSON estrito e locators reversíveis |
+| ingest/parsing/service.py | Fontes catalogadas, hashes, idempotência e atomicidade por fonte |
+| ingest/instagram/parsers.py | Somente profile activity, recently deleted e mensagens |
+| cli/parse.py | Contagens de parsing sem payloads no console |
+| models/entities.py | Foundation, ParserRun e ParsedRecord |
+| storage/database.py | SQLite, foreign keys, schema v2 e migração explícita v1 -> v2 |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
-Adaptadores de plataformas, correlation, search e media continuam reservados.
+Outros adaptadores de plataformas, correlation, search e media continuam reservados.
 Normalização, timezone de eventos e relatórios de dossier são futuros.
 
 ## Fluxo e transações
 
 1. Validar raiz externa ao projeto/Git e originals existente; recusar links,
    junctions, hard links e áreas sobrepostas; criar somente áreas graváveis ausentes.
-2. Abrir database/evidence.db; inicializar schema vazio com user_version=1
+2. Abrir database/evidence.db; inicializar schema vazio com user_version=2
    ou exigir schema reconhecido. Ativar foreign_keys em toda conexão.
 3. Persistir IngestionRun RUNNING com UUID, versão, início UTC e limites usados.
 4. Adquirir BEGIN IMMEDIATE; descobrir arquivos ordenados e verificar a baseline.
@@ -89,10 +93,46 @@ conteúdo. EvidenceFile tem unicidade (case_id, relative_path); ArchiveMember,
 (evidence_file_id, member_path). SourceRecord exige exatamente uma origem.
 Entidades produzidas apontam para IngestionRun. FKs não usam cascade destrutivo.
 
-A baseline v1 é criada transacionalmente em storage/database.py. Como não havia
-banco na Milestone 0, não há migração de dados anterior. Versões desconhecidas e
-bancos não versionados com tabelas são recusados. Evoluções seguintes exigem
-migration explícita testada; Alembic não é necessário nesta baseline.
+Novos bancos recebem v2. Catálogos v1 exigem dee evidence migrate, que adiciona
+as duas tabelas de parsing e seus índices em transação antes de atualizar user_version.
+Tabelas e registros da Foundation permanecem intactos. Versões desconhecidas e
+bancos não versionados com tabelas são recusados. Não há Alembic nem migração silenciosa.
+Antes de abrir um catálogo não vazio para escrita normal, validar schema em modo
+read-only, para não recuperar journal de um banco v1 que deveria ser recusado.
+
+## Parsing sem normalização
+
+EvidenceFile ou ArchiveMember -> SourceRecord -> ParsedRecord. A descoberta consulta
+somente os SourceRecords de inventário da Foundation. Fontes diretas são resolvidas
+pela descoberta segura de originals; extrações usam paths relativos validados sob
+working. A fonte é conferida contra tamanho/SHA-256 catalogados. Containers são
+verificados por streaming uma vez por execução; cada membro candidato é verificado.
+
+ParserContext fornece o path relativo/interno. Parser exige parser_id/version,
+matches_path, supports e parse; ParserResult contém observações e diagnósticos.
+Nome/path e estrutura são exigidos juntos. Sem loader de plugins ou novas dependências.
+O serviço verifica se cada locator resolve no JSON e se o payload é subconjunto fiel
+do objeto indicado. Locators repetidos abortam a fonte.
+
+BEGIN IMMEDIATE serializa execução por fonte/parser. Um savepoint reúne todos os
+SourceRecords de parsing e ParsedRecords; qualquer falha elimina esse conjunto,
+mantendo um ParserRun FAILED com código técnico. Outras fontes podem continuar.
+Sucesso e registros são comprometidos juntos. Interrupção antes do commit não deixa
+sucesso parcial; falha global de persistência pode impedir registrar o erro.
+Em exceção no commit final, fechar a sessão e consultar o resultado persistido:
+ausência da tentativa permite registrar COMMIT_FAILED; tentativa já persistida é
+preservada e exige revisão manual, sem reclassificar sucesso durável como FAILED.
+
+Índice único parcial admite apenas um ParserRun COMPLETED por fonte de inventário,
+parser_id e versão; ParsedRecord é único por run/locator. Tentativas falhas são
+preservadas, versões novas coexistem e exports distintos nunca são fundidos.
+Não há fingerprint adicional: identidade técnica mais hash de origem já delimitam
+a observação. Fingerprint de conteúdo não deve virar deduplicação de eventos.
+
+JSON tem teto de 32 MiB, profundidade 64 e 100000 registros; não há streaming de JSON
+nem quota global de memória. Valores textuais não recebem reparo de mojibake. Raw
+timestamp é preservado sem normalização. IP syntax/model code extraído do user agent
+são anotações locais com origem; não alimentam correlação ou interpretação.
 
 ## Manifesto, verificação e logs
 
@@ -119,5 +159,5 @@ baseline validada. Downloads servem às ferramentas, não à execução do motor
 Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
-manifesto e ZIPs adversariais. ADRs 0007–0010 documentam as decisões novas; os seis
+manifesto, ZIPs adversariais e parsing. ADRs 0007–0011 documentam as decisões novas; os seis
 princípios originais continuam válidos.

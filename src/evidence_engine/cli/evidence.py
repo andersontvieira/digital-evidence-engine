@@ -12,9 +12,11 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.config import ZipLimits
 from evidence_engine.errors import EvidenceError
+from evidence_engine.ingest.generic.paths import CasePaths
 from evidence_engine.ingest.generic.service import ingest as ingest_case
 from evidence_engine.ingest.generic.verification import verify as verify_case
 from evidence_engine.reports.manifest import write_manifest
+from evidence_engine.storage.database import SCHEMA_VERSION, open_database
 
 app = typer.Typer(help="Catalog and verify local originals.", no_args_is_help=True)
 CaseRoot = Annotated[
@@ -61,6 +63,18 @@ def manifest(case_root: CaseRoot) -> None:
     try:
         # Binary output preserves UTF-8 and LF on Windows and redirected stdout.
         typer.echo(write_manifest(case_root).encode("utf-8"), nl=False)
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+
+
+@app.command("migrate")
+def migrate(case_root: CaseRoot) -> None:
+    """Explicitly upgrade an existing v1 catalog to v2 without changing evidence."""
+    try:
+        paths = CasePaths.load(case_root)
+        engine = open_database(paths.db_file, migrate=True)
+        engine.dispose()
+        typer.echo(json.dumps({"schema_version": SCHEMA_VERSION}))
     except (EvidenceError, OSError, SQLAlchemyError) as error:
         fail(error)
 

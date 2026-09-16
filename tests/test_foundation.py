@@ -20,7 +20,7 @@ from evidence_engine.models.entities import (
     SourceRecord,
 )
 from evidence_engine.reports.manifest import manifest_json, write_manifest
-from evidence_engine.storage.database import open_database
+from evidence_engine.storage.database import SCHEMA_VERSION, open_database
 
 
 def test_new_idempotent_and_additional_file(case_root: Path) -> None:
@@ -156,7 +156,7 @@ def test_foreign_keys_and_source_exclusivity(case_root: Path) -> None:
     engine = open_database(case_root / "database/evidence.db")
     with engine.connect() as connection:
         assert connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
-        assert connection.exec_driver_sql("PRAGMA user_version").scalar_one() == 1
+        assert connection.exec_driver_sql("PRAGMA user_version").scalar_one() == SCHEMA_VERSION
     with Session(engine) as session:
         session.add(
             SourceRecord(

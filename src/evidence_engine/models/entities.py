@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -106,3 +106,58 @@ class SourceRecord(Base):
     location: Mapped[str]
     parser_id: Mapped[str]
     parser_version: Mapped[str]
+
+
+class ParserRun(Base):
+    """One source/parser attempt; failed attempts retain only technical diagnostics."""
+
+    __tablename__ = "parser_runs"
+    __table_args__ = (
+        CheckConstraint("status IN ('RUNNING', 'COMPLETED', 'FAILED', 'UNSUPPORTED')"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    source_record_id: Mapped[str] = mapped_column(ForeignKey("source_records.id"))
+    parser_id: Mapped[str]
+    parser_version: Mapped[str]
+    status: Mapped[str]
+    records_parsed: Mapped[int] = mapped_column(default=0)
+    warnings_json: Mapped[str] = mapped_column(default="[]")
+    error_code: Mapped[str | None]
+    created_at: Mapped[str] = mapped_column(default=utc_now)
+    finished_at: Mapped[str | None]
+
+
+Index(
+    "uq_completed_source_parser",
+    ParserRun.source_record_id,
+    ParserRun.parser_id,
+    ParserRun.parser_version,
+    unique=True,
+    sqlite_where=ParserRun.status == "COMPLETED",
+)
+
+
+class ParsedRecord(Base):
+    """An observation at a precise source locator, never a normalized event."""
+
+    __tablename__ = "parsed_records"
+    __table_args__ = (
+        UniqueConstraint("parser_run_id", "source_locator"),
+        CheckConstraint("record_index IS NULL OR record_index >= 0"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    source_record_id: Mapped[str] = mapped_column(ForeignKey("source_records.id"), unique=True)
+    parser_run_id: Mapped[str] = mapped_column(ForeignKey("parser_runs.id"))
+    parser_id: Mapped[str]
+    parser_version: Mapped[str]
+    record_type: Mapped[str]
+    source_locator: Mapped[str]
+    record_index: Mapped[int | None]
+    # JSON scalar encoded as text, preserving string vs number vs boolean.
+    timestamp_raw: Mapped[str | None]
+    payload_json: Mapped[str]
+    annotations_json: Mapped[str] = mapped_column(default="[]")
+    created_at: Mapped[str] = mapped_column(default=utc_now)

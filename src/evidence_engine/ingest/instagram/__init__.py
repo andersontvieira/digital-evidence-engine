@@ -1,1 +1,1 @@
-"""Reserved for synthetic-tested Instagram / Meta parsers."""
+"""Conservative extraction of three cataloged Instagram/Meta JSON artifacts."""

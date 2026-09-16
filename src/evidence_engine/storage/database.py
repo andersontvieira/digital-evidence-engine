@@ -1,4 +1,4 @@
-"""SQLite baseline migration v1; unknown/unversioned schemas fail closed."""
+"""SQLite schemas and an explicit, additive v1 -> v2 migration."""
 
 import sqlite3
 from pathlib import Path
@@ -8,17 +8,25 @@ from sqlalchemy import URL, Engine, create_engine, event, inspect
 
 from evidence_engine.errors import EvidenceError
 from evidence_engine.ingest.generic.paths import check_path
-from evidence_engine.models.entities import Base
+from evidence_engine.models.entities import Base, ParsedRecord, ParserRun
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+V1_TABLES = set(Base.metadata.tables) - {ParserRun.__tablename__, ParsedRecord.__tablename__}
 
 
-def open_database(path: Path, *, initialize: bool = False, read_only: bool = False) -> Engine:
-    if initialize and read_only:
+def open_database(
+    path: Path, *, initialize: bool = False, read_only: bool = False, migrate: bool = False
+) -> Engine:
+    if (initialize or migrate) and read_only:
         raise ValueError("Cannot initialize a read-only catalog")
     check_path(path)
     if not initialize and not path.is_file():
         raise EvidenceError("Catalog does not exist; run evidence ingest first")
+    if not read_only and not migrate and path.is_file() and path.stat().st_size:
+        # Reject old/unsupported catalogs before a writable connection could
+        # recover a hot journal. Only explicit migration may open v1 for writing.
+        preflight = open_database(path, read_only=True)
+        preflight.dispose()
     if read_only:
         # WAL readers may create/write shared-memory files even in mode=ro.
         # M1 uses DELETE journaling; refuse external WAL configuration unchanged.
@@ -41,12 +49,20 @@ def open_database(path: Path, *, initialize: bool = False, read_only: bool = Fal
 
     try:
         with engine.connect() as connection:
-            connection.exec_driver_sql("BEGIN IMMEDIATE" if initialize else "BEGIN")
+            connection.exec_driver_sql("BEGIN IMMEDIATE" if initialize or migrate else "BEGIN")
             version = connection.exec_driver_sql("PRAGMA user_version").scalar_one()
             tables = set(inspect(connection).get_table_names())
             if version == 0 and not tables and initialize:
                 Base.metadata.create_all(connection)
                 connection.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif version == 1 and tables == V1_TABLES and migrate:
+                Base.metadata.tables[ParserRun.__tablename__].create(connection)
+                Base.metadata.tables[ParsedRecord.__tablename__].create(connection)
+                connection.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif version == 1 and tables == V1_TABLES:
+                raise EvidenceError(
+                    "Catalog schema v1 requires explicit migration: run evidence migrate"
+                )
             elif version != SCHEMA_VERSION or tables != set(Base.metadata.tables):
                 raise EvidenceError("Unsupported catalog schema; explicit migration required")
             connection.commit()

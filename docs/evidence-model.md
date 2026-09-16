@@ -1,6 +1,6 @@
 # Modelo de evidências
 
-## Schema implementado (v1)
+## Schema implementado (v2)
 
 | Entidade | Campos principais e papel |
 | --- | --- |
@@ -9,6 +9,8 @@
 | ArchiveMember | UUID, evidence_file_id, ingestion_run_id, member_path, filename, extension, size_bytes, compressed_size, crc32, sha256, working_relative_path |
 | SourceRecord | UUID, ingestion_run_id, exatamente um evidence_file_id ou archive_member_id, location, parser_id, parser_version |
 | IngestionRun | UUID, case_id, started_at, finished_at opcional, engine_version, status, files_seen, files_added, errors JSON, zip_limits JSON |
+| ParserRun | UUID, source_record_id de inventário, parser_id/version, status, records_parsed, warnings_json, error_code, created_at, finished_at |
+| ParsedRecord | UUID, case_id, source_record_id preciso, parser_run_id, parser_id/version, record_type, source_locator, record_index nullable, timestamp_raw nullable, payload_json, annotations_json, created_at |
 
 Um banco por caso, em database/evidence.db. UUIDv4 dispensa sequências locais.
 Case.case_root registra localização inicial, sem ser usado para resolver originais
@@ -36,6 +38,36 @@ Identificam arquivos completos, **não fingem registros de uma plataforma** e n�
 carregam payload. Futuros parsers inserirão SourceRecords com localização real
 (linha, JSON pointer etc.), identificador e versão próprios.
 NormalizedRecord ainda não existe; futuramente apontará para todos os suportes.
+
+Na Milestone 2A, ParsedRecord aponta para um SourceRecord de parsing com locator
+preciso e parser_id/version. Este referencia a mesma EvidenceFile ou ArchiveMember;
+não há sistema paralelo de origem. SourceRecord.ingestion_run_id conserva a ingestão
+produtora da fonte; a execução de parsing é identificada por ParsedRecord.parser_run_id.
+ParserRun.source_record_id referencia o inventário original, inclusive em erro ou
+fonte não suportada. Nenhum Event, Person, Device ou NetworkEvent foi criado.
+
+Locators usam $ para raiz e tokens JSON Pointer separados por /, com ~0 para tilde
+e ~1 para barra. Exemplo: $/messages/17. Não dependem de nome de pasta nem de horário.
+Metadata de conversa usa $ e exclui messages; cada mensagem possui seu próprio
+payload. Payload mantém apenas o objeto/subconjunto extraído daquele registro,
+com valores JSON preservados. Campos extras recebem warning; não são descartados.
+
+timestamp_raw é TEXT contendo escalar JSON (número ou string), ou NULL. Isso conserva
+tipo/valor, sem afirmar unidade/timezone. A representação lexical dos bytes originais
+permanece na evidência; o parser não preserva espaços/escapes do JSON serializado.
+Múltiplos candidatos a timestamp permanecem no payload sem escolha silenciosa.
+annotations_json contém somente classificação sintática de IP e códigos explícitos
+extraídos de user agent com locator; nenhum nome comercial ou vínculo entre fontes.
+
+Identidade técnica: fonte de inventário + parser_id + parser_version + locator.
+Índice único parcial protege o sucesso por fonte/parser/versão; unique(run, locator)
+protege os registros. Não foi adicionado record_fingerprint: não é necessário à
+idempotência e não deve eliminar observações iguais de exports distintos.
+
+ParserRun FAILED/UNSUPPORTED preserva códigos técnicos/warnings e não possui novos
+ParsedRecords válidos. Repetição de uma falha gera tentativa auditável; repetição
+de sucesso intacto reutiliza observações. Nova versão pode produzir novo conjunto.
+Migração v1 -> v2 é aditiva, explícita e transacional via dee evidence migrate.
 
 ## Identidade, idempotência e falhas
 

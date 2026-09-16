@@ -1,0 +1,10 @@
+{
+  "title": "synthetic structured conversation",
+  "participants": [{"name": "SYNTHETIC-SENDER"}, {"name": "SYNTHETIC-PARTICIPANT"}],
+  "thread_path": "messages/inbox/synthetic_thread",
+  "messages": [
+    {"sender_name": "SYNTHETIC-SENDER", "timestamp_ms": 1700000000123, "content": "Você enviou um anexo."},
+    {"sender_name": "SYNTHETIC-PARTICIPANT", "timestamp_ms": 1700000001123, "content": "Olá 🧪 — ação", "photos": [{"uri": "synthetic/photo.jpg"}], "share": {"link": "https://example.invalid/synthetic-share"}, "reactions": [{"reaction": "🧪", "actor": "SYNTHETIC-SENDER"}]},
+    {"content": "synthetic mojibake: OlÃ¡"}
+  ]
+}

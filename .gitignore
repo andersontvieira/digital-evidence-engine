@@ -104,3 +104,4 @@ Thumbs.db
 
 # Local snapshot left by the interrupted audit; preserve it outside Git.
 /tone1-audit-wip.patch
+/tone2a-wip.patch

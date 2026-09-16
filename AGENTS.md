@@ -28,9 +28,11 @@
 
 ## Escopo atual
 
-Milestone 1: catálogo SQLite, SHA-256, ZIP seguro de primeiro nível, proveniência,
-manifesto e verificação via `dee evidence`. Parsers de plataformas e normalização
-continuam fora do escopo. Consulte README.md e docs/architecture.md.
+Milestone 2A: preservar a Evidence Foundation e adicionar somente framework de
+parsing e profile_activity, recently_deleted_content e mensagens Instagram/Meta.
+Parser extrai valores explícitos, sem normalizar, correlacionar ou inferir fatos.
+Google, Apple, WhatsApp, timeline e search continuam fora do escopo.
+Consulte README.md e docs/architecture.md. Schema v1 exige migração explícita para v2.
 
 Use `uv sync --locked --extra dev --python 3.12` com uv 0.8.22. Não atualize o
 lockfile incidentalmente. Hashes catalogados não podem ser substituídos para
