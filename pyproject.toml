@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Local engine for organizing and tracing digital evidence."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["typer>=0.12,<1"]
+dependencies = ["typer>=0.12,<1", "sqlalchemy>=2.0,<3", "pydantic>=2.10,<3"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",

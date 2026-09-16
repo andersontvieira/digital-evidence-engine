@@ -1,1 +1,1 @@
-"""Reserved for domain records and explicit provenance contracts."""
+"""Catalog entities and explicit provenance contracts."""

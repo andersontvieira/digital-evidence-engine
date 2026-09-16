@@ -13,6 +13,8 @@ services:
     security_opt:
       - no-new-privileges:true
     working_dir: /app
+    environment:
+      CASE_ROOT: /case
     command: ["dee", "--help"]
     volumes:
       - type: bind

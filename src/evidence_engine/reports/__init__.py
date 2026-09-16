@@ -1,1 +1,1 @@
-"""Reserved for local reports with traceable source references."""
+"""Local deterministic catalog manifests; dossier reports remain future work."""

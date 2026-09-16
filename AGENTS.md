@@ -28,6 +28,11 @@
 
 ## Escopo atual
 
-Milestone 0: pacote, CLI (`dee --help`, `dee version`), testes, documentação e
-ambiente de desenvolvimento. Os pacotes reservados não contêm parsers, schema,
-ingestão nem processamento de casos. Consulte README.md e docs/architecture.md.
+Milestone 1: catálogo SQLite, SHA-256, ZIP seguro de primeiro nível, proveniência,
+manifesto e verificação via `dee evidence`. Parsers de plataformas e normalização
+continuam fora do escopo. Consulte README.md e docs/architecture.md.
+
+Use `uv sync --locked --extra dev --python 3.12` com uv 0.8.22. Não atualize o
+lockfile incidentalmente. Hashes catalogados não podem ser substituídos para
+acomodar originais alterados. Falhas de ingestão devem preservar a baseline e
+registrar a execução com rollback dos novos registros.

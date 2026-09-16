@@ -1,107 +1,175 @@
 # digital-evidence-engine
 
-Motor técnico local para organização, preservação, catalogação, indexação,
-normalização, correlação, pesquisa, timeline e rastreabilidade de evidências digitais.
+Motor técnico local para preservação, catalogação e rastreabilidade de evidências
+digitais, preparado para futura indexação, normalização, pesquisa e correlação.
 
-**Não é software pericial certificado.** Não certifica autenticidade, autoria ou
-admissibilidade de evidências. Um hash identifica conteúdo; não comprova essas propriedades.
+**Não é software pericial certificado.** Hashes verificam consistência de conteúdo;
+não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade.
 
 **Real case evidence must never be committed to this repository.**
 
 ## Estado atual
 
-Milestone 0: pacote Python importável, CLI mínima, testes e fundação arquitetural.
-Somente `dee --help` e `dee version` estão disponíveis. Não há processamento de
-evidências, parsers, schema de banco, ingestão, busca, dashboard ou integrações externas.
+Milestone 1 — Evidence Foundation: SHA-256 streaming, SQLite, extração ZIP segura,
+proveniência, manifesto e verificação. Não há parsers de Instagram, Meta, Google,
+Apple ou WhatsApp, timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
 
 ## Arquitetura e preservação
 
-O pacote usa `src/evidence_engine`: `cli` expõe comandos; `ingest` receberá fontes;
-`models` definirá contratos; `storage` persistirá registros; `correlation`, `search`,
-`media` e `reports` terão responsabilidades separadas. Nesta etapa, esses últimos
-pacotes apenas reservam os limites de responsabilidade.
+Originais nunca são criados, editados, renomeados, apagados nem recebem mudanças de
+permissões pelo motor. Casos ficam fora do repositório. Links, junctions, hard links
+e áreas sobrepostas são recusados. Mesmo conteúdo em paths diferentes preserva
+ocorrências distintas. Hashes catalogados nunca são substituídos silenciosamente.
 
-- Originais são imutáveis e acessados somente para leitura em `/case/originals`.
-- `/case/working`, `/case/database` e `/case/output` recebem derivados e resultados.
-- Todos os diretórios de caso devem ficar fora deste repositório.
-- Registros futuros preservarão a cadeia até a origem e o SHA-256 do original.
-- Deduplicação conservará todas as fontes; observação e interpretação serão separadas.
-- UTC será canônico para correlação, preservando timestamp e timezone originais.
-  Informação ausente ou ambígua permanece explícita.
-- O motor opera localmente, sem telemetria, upload, APIs externas ou cloud storage.
+O pacote src/evidence_engine separa CLI, ingestão genérica, modelos, persistência
+e manifestos. SourceRecord aponta para EvidenceFile ou ArchiveMember, ligado ao
+ZIP original, ao SHA-256 e à execução que produziu o registro. OBSERVED, DERIVED,
+REPORTED e HYPOTHESIS permanecem conceitos separados. Nenhum conteúdo de evento
+ou interpretação é inventado nesta milestone. Horários operacionais são UTC;
+timestamps de filesystem não são tratados como criação de conteúdo.
 
-Detalhes em [architecture.md](docs/architecture.md),
-[evidence-model.md](docs/evidence-model.md) e [ADRs](docs/adr/).
+O aplicativo não usa rede, telemetria, upload ou APIs externas. Consulte
+[arquitetura](docs/architecture.md), [modelo](docs/evidence-model.md),
+[ADRs](docs/adr/) e [regras de trabalho](AGENTS.md).
 
-Stack planejada: Python 3.12+, SQLite/SQLAlchemy 2.x, Pydantic 2.x, Typer,
-python-dateutil e `zoneinfo`. Somente Typer é dependência de execução nesta milestone.
-SQLAlchemy, Pydantic e python-dateutil entram quando persistência, contratos e
-normalização forem implementados. Pillow, imagehash, BeautifulSoup/lxml ficam para
-as etapas de mídia e parsing. Nenhuma dependência sem uso é instalada antecipadamente.
+## Instalação reproduzível
 
-## Instalação local
+Requer Python 3.12+; a baseline validada é Python 3.12. Dependências de execução:
+Typer, SQLAlchemy 2.x e Pydantic 2.x. pytest, Ruff e mypy são de desenvolvimento.
+uv.lock fixa versões transitivas e hashes, incluindo marcadores Windows/Linux.
+uv 0.8.22 sincroniza o ambiente; setuptools e o layout src são mantidos.
 
-Requer Python 3.12+; no Windows 11, use o terminal PowerShell do VS Code:
+PowerShell no Windows 11:
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+py -3.12 -m pip install --user uv==0.8.22
+py -3.12 -m uv sync --locked --extra dev --python 3.12
 .\.venv\Scripts\dee.exe --help
 .\.venv\Scripts\dee.exe version
 ```
 
-Selecione `.venv/Scripts/python.exe` como interpretador no VS Code. Usar os caminhos
-completos dispensa mudar a política de execução do PowerShell. No Linux/macOS:
+Selecione .venv/Scripts/python.exe no VS Code. No Linux/macOS, com uv 0.8.22
+instalado, use `uv sync --locked --extra dev --python 3.12` e ative
+`source .venv/bin/activate`. Os comandos abaixo pressupõem o ambiente ativado.
+Sem ativação no Windows, use `.\.venv\Scripts\dee.exe`.
 
-```sh
-python3.12 -m venv .venv
-. .venv/bin/activate
-python -m pip install -e '.[dev]'
-dee --help
-dee version
+Downloads acontecem somente na instalação/build. Para atualizar dependências
+deliberadamente, altere pyproject.toml, execute `uv lock --python 3.12`, revise
+uv.lock e repita as verificações. Não use --upgrade incidentalmente.
+Pillow, imagehash, BeautifulSoup/lxml e python-dateutil seguem adiados até uso concreto.
+
+## Caso e CLI
+
+A raiz deve existir e conter originals/. Ingest cria as outras três áreas se
+ausentes, nunca originals/. Todos os diretórios ficam fora do projeto.
+
+```text
+/case/
+├── originals/   # somente leitura
+├── working/     # extrações
+├── database/    # evidence.db
+└── output/      # manifest.json
 ```
 
-Também é possível executar `python -m evidence_engine --help` no ambiente instalado.
-Instalação e build podem baixar ferramentas; a execução da CLI não usa rede.
+```sh
+dee --help
+dee version
+dee evidence --help
+dee evidence ingest --case-root /case
+dee evidence manifest --case-root /case
+dee evidence verify --case-root /case
+```
+
+CASE_ROOT no ambiente fornece o default; --case-root tem precedência.
+A CLI nativa não carrega .env automaticamente. Compose lê .env para os volumes e
+define CASE_ROOT=/case dentro do container.
+
+Ingest enumera originais em ordem estável, calcula hashes, verifica a baseline,
+extrai ZIPs novos e persiste em transação. Cada execução tem UUID e status.
+Repetir sem mudanças adiciona somente IngestionRun. Arquivo novo gera ocorrência;
+original modificado ou ausente causa erro e rollback de todas as novas evidências
+dessa execução. Use verify para obter os paths afetados.
+Reingestão também confere tamanho e hash das extrações catalogadas: ausência ou
+alteração provoca erro explícito, sem rematerialização automática.
+
+Manifest grava atomicamente output/manifest.json e emite o mesmo JSON em stdout.
+Inclui schema_version, engine_version, generated_at, case e files, com membros
+dos ZIPs ordenados. Não inclui paths absolutos. **generated_at é o instante de
+atualização do catálogo**, não o horário de cada exportação. Mesmo catálogo e
+versão do motor geram bytes idênticos, inclusive após reingestão sem mudanças.
+Aquisições independentes têm UUIDs/horários próprios e não geram manifestos iguais.
+
+Verify recalcula hashes contra o SQLite, sem reparo ou alteração de baseline:
+
+| Estado | Significado |
+| --- | --- |
+| OK | Hash coincide |
+| MISSING | Original catalogado ausente |
+| MODIFIED | Hash diverge |
+| UNTRACKED | Arquivo presente ainda não catalogado |
+
+Exit codes: 0 para sucesso (inclusive UNTRACKED isolado), 1 para MISSING/MODIFIED,
+2 para erro técnico/configuração ou ingestão recusada. Verify usa o banco, não
+importa manifestos externos e não verifica derivados em working.
+Verify e a leitura do manifesto abrem SQLite em mode=ro e query_only. Banco ausente
+não é criado; journal que exige recovery gera erro, sem recuperação automática.
+Catálogos configurados externamente em WAL são recusados para evitar criação de
+arquivos compartilhados. A baseline usa DELETE journal mode.
+
+## Política de ZIP
+
+Somente o primeiro nível é extraído. ZIP aninhado é membro opaco. Reconhecimento
+usa a estrutura ZIP, não só a extensão; .zip inválido provoca erro explícito.
+
+Limites por ZIP, configuráveis no comando ingest:
+
+| Opção | Default |
+| --- | --- |
+| --max-file-bytes | 536870912 (512 MiB) |
+| --max-total-bytes | 2147483648 (2 GiB) |
+| --max-members | 10000, incluindo diretórios |
+| --max-ratio | 200 |
+
+Exemplo: `dee evidence ingest --case-root /case --max-members 500 --max-ratio 100`.
+
+O inventário inteiro é validado antes da escrita. Recusamos traversal, paths
+absolutos/Windows, backslashes, links e arquivos especiais, duplicatas e colisões
+de maiúsculas, nomes não portáveis, Unicode inválido/não NFC, criptografia e métodos
+diferentes de STORE/DEFLATE. Nomes não são corrigidos silenciosamente. Limites de
+bytes também valem durante leitura; CRC e tamanho são conferidos. Sem extractall.
+A descompressão mede todo o intervalo comprimido, independentemente do tamanho
+declarado, para impedir truncamento com CRC falsificado. Colisões incluem diretórios
+implícitos. Metadados ZIP têm limite fixo de 32 MiB por leitura; a contagem real da
+central directory é limitada antes da criação dos objetos de membros.
+
+Extrações usam diretório exclusivo por execução e nomes numerados .bin.
+member_path/filename originais ficam no banco: nenhum nome do ZIP vira destino.
+Diretórios vazios são validados mas não recebem ArchiveMember. Falhas normais
+removem somente staging próprio e fazem rollback; originais permanecem intactos.
 
 ## Docker Desktop
 
-Use containers Linux. Para testar somente o bootstrap, nenhum caso é necessário:
+Use containers Linux. A imagem base está fixada por digest e instala o lockfile.
 
 ```powershell
 docker build -t digital-evidence-engine:dev .
 docker run --rm --network none digital-evidence-engine:dev dee --help
-docker run --rm --network none digital-evidence-engine:dev dee version
-```
-
-Para desenvolvimento com Compose, copie `.env.example` para `.env` e substitua os
-quatro caminhos por diretórios vazios de desenvolvimento **existentes e externos ao
-repositório**, usando caminhos absolutos com `/` no Windows. Não use evidências reais
-para validar esta milestone. Os quatro diretórios devem ser distintos e não sobrepostos:
-nenhum volume gravável pode apontar para originais ou para um ancestral deles.
-
-```powershell
 Copy-Item .env.example .env
-# Edite .env e prepare os quatro diretórios externos antes de prosseguir.
+# Configure quatro diretórios externos existentes em .env.
 docker compose config --quiet
 docker compose build
-docker compose run --rm dee dee --help
-docker compose run --rm dee dee version
-docker compose run --rm dee python -m pytest -p no:cacheprovider
-docker compose run --rm dee ruff check --no-cache .
-docker compose run --rm dee mypy --cache-dir=/tmp/dee-mypy src
+docker compose run --rm dee dee evidence ingest
+docker compose run --rm dee dee evidence manifest
+docker compose run --rm dee dee evidence verify
 ```
 
-O container executa como `dee`, sem rede, com o código e `/case/originals` montados
-somente para leitura. Os demais volumes de caso são graváveis. Caminhos ausentes
-geram erro em vez de criar diretórios silenciosamente. No Linux, ajuste `DEE_UID` e
-`DEE_GID` ao usuário local; garanta permissões nos diretórios graváveis. Nunca altere
-permissões dos originais para contornar erros. Alterações de dependências ou metadata
-do pacote exigem novo build; mudanças em `src` são refletidas pelo bind mount.
+Container não-root, sem rede; código e originals são montados somente para leitura.
+Compose não cria paths ausentes silenciosamente. Use paths absolutos com / no
+Windows. No Linux ajuste DEE_UID/DEE_GID e permissões das áreas graváveis, sem
+alterar originais. Áreas não podem sobrepor originais nem seus ancestrais, inclusive
+na topologia de mounts do host. Mudanças de dependências/metadata exigem rebuild.
 
-## Qualidade
-
-Com o ambiente virtual ativado:
+## Testes e qualidade
 
 ```sh
 python -m pytest
@@ -110,23 +178,71 @@ ruff format --check .
 mypy src
 ```
 
-No PowerShell sem ativação, use `.\.venv\Scripts\python.exe -m pytest`,
-`.\.venv\Scripts\ruff.exe check .` e `.\.venv\Scripts\mypy.exe src`.
-Testes exercitam import, versão instalada, entry point, CLI, configuração e decisões
-essenciais. Fixtures só podem ser inteiramente sintéticos em `tests/fixtures/`.
+Ou no container:
 
-O `.gitignore` bloqueia diretórios de caso, bancos, arquivos compactados, formatos
-comuns de exportação/mídia e segredos; fixtures sintéticos têm exceção explícita.
-Isso não identifica conteúdo sensível automaticamente: revise `git diff` e
-`git status`, inclusive arquivos não rastreados. Nunca force a inclusão de evidências.
-O `.dockerignore` limita o contexto de build a código e metadata necessários.
+```sh
+docker compose run --rm dee python -m pytest -p no:cacheprovider
+docker compose run --rm dee ruff check --no-cache .
+docker compose run --rm dee ruff format --check --no-cache .
+docker compose run --rm dee mypy --cache-dir=/tmp/dee-mypy src
+```
+
+Fixtures são gerados em diretórios temporários com nomes synthetic-* e conteúdo
+artificial. A suíte cobre imutabilidade, hashes, proveniência, rollback, CLI e
+ZIPs adversariais. Nenhum export real é necessário.
+
+Crie um caso sintético fora do repositório com Python 3.12:
+
+```python
+from pathlib import Path
+import tempfile
+import zipfile
+
+root = Path(tempfile.mkdtemp(prefix="synthetic-dee-"))
+(root / "originals").mkdir()
+(root / "originals/synthetic-document.txt").write_bytes(b"synthetic document")
+with zipfile.ZipFile(root / "originals/synthetic-export.zip", "w") as archive:
+    archive.writestr("synthetic-folder/synthetic-member.txt", b"synthetic member")
+print(root)
+```
+
+Use o caminho impresso nos três comandos CLI. Repetir ingest retorna files_added=0.
+Alterar **apenas esse arquivo sintético** depois da ingestão produz MODIFIED;
+removê-lo produz MISSING; criar outro produz UNTRACKED.
+
+## Limitações
+
+- Sem ZIP recursivo, criptografado ou compressão além de STORE/DEFLATE.
+- Limites são por ZIP, sem quota de disco global ou timeout. O teto de 32 MiB dos
+  metadados e o limite de entradas não constituem quota total de memória/CPU.
+- MIME é application/zip quando identificado; demais formatos ficam ausentes.
+- Checagens de links/metadados não substituem isolamento contra processos hostis
+  alterando simultaneamente arquivos, paths ou mounts. Originais devem estar estáveis.
+- Leituras podem atualizar atime conforme o filesystem. Use mount read-only/noatime
+  para preservar metadados do host; o motor não chama operações de alteração desses
+  metadados nos originais.
+- Filesystem e SQLite não compartilham transação: crash pode deixar run RUNNING e
+  staging órfão. Arquivos são sincronizados antes do commit; diretórios também são
+  sincronizados no runtime POSIX. Isso não garante atomicidade em falha de energia
+  nem durabilidade de diretórios no Windows nativo. Commit de resultado incerto
+  preserva staging e exige inspeção manual; não há limpeza de runs anteriores.
+- Verify cobre originais; reingestão detecta extrações removidas/alteradas e falha,
+  sem restaurá-las. A conferência adiciona uma leitura dos derivados por ingestão.
+- case_root no banco é a localização inicial operacional. Paths relativos permitem
+  mover as quatro áreas do caso; manifestos não exportam esse path absoluto.
+- Alterações não são aceitas como novas versões automaticamente; use aquisição
+  separada até existir uma política explícita de revisão.
+
+.gitignore e .dockerignore complementam a revisão de diff/status; não detectam
+conteúdo sensível automaticamente nem protegem inclusões forçadas.
+As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversarial-integrity-boundaries.md).
 
 ## Roadmap
 
 | Milestone | Escopo |
 | --- | --- |
-| 0 | Bootstrap e arquitetura (esta entrega) |
-| 1 | Evidence Foundation: manifesto, SHA-256, EvidenceFile, SourceRecord, extração segura e SQLite |
+| 0 | Bootstrap e arquitetura — concluído |
+| 1 | Evidence Foundation — esta entrega |
 | 2 | Parsers Instagram / Meta, Google Takeout e Apple |
 | 3 | Normalização de events, devices, networks e messages |
 | 4 | Search e timeline |
@@ -134,5 +250,3 @@ O `.dockerignore` limita o contexto de build a código e metadata necessários.
 | 6 | Correlation engine |
 | 7 | WhatsApp |
 | 8 | Reports e dossier exports |
-
-Regras de contribuição e de agentes estão em [AGENTS.md](AGENTS.md).

@@ -1,8 +1,9 @@
-"""Minimal public command-line interface."""
+"""Public command-line interface for the local evidence foundation."""
 
 import typer
 
 from evidence_engine import __version__
+from evidence_engine.cli.evidence import app as evidence_app
 
 app = typer.Typer(
     help="Local engine for organizing and tracing digital evidence.",
@@ -10,11 +11,12 @@ app = typer.Typer(
     add_completion=False,
     pretty_exceptions_enable=False,
 )
+app.add_typer(evidence_app, name="evidence")
 
 
 @app.callback()
 def main() -> None:
-    """Digital Evidence Engine — architecture foundation."""
+    """Digital Evidence Engine — evidence foundation."""
 
 
 @app.command()

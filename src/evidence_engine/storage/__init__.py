@@ -1,1 +1,1 @@
-"""Reserved for SQLite persistence through SQLAlchemy 2.x."""
+"""SQLite persistence through SQLAlchemy 2.x and a versioned baseline schema."""

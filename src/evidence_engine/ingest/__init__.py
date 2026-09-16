@@ -1,1 +1,1 @@
-"""Reserved for source ingestion; no parsers are implemented."""
+"""Generic evidence ingestion; platform parsers remain unimplemented."""

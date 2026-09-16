@@ -101,3 +101,6 @@ coverage.xml
 Thumbs.db
 *.swp
 .local-tools/
+
+# Local snapshot left by the interrupted audit; preserve it outside Git.
+/tone1-audit-wip.patch

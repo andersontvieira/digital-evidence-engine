@@ -1,1 +1,1 @@
-"""Reserved for manifests, hashing and safe extraction."""
+"""Streaming hashing, safe ZIP extraction, catalog ingestion and verification."""
