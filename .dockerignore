@@ -1,0 +1,11 @@
+# Allowlist: case material and local secrets never enter the build context.
+**
+!Dockerfile
+!pyproject.toml
+!README.md
+!src/
+!src/**/
+!src/**/*.py
+!src/**/py.typed
+src/**/__pycache__/
+src/**/*.egg-info/

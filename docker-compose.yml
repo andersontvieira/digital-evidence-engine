@@ -1,0 +1,42 @@
+services:
+  dee:
+    build:
+      context: .
+      target: development
+      args:
+        DEE_UID: ${DEE_UID:-1000}
+        DEE_GID: ${DEE_GID:-1000}
+    init: true
+    network_mode: none
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    working_dir: /app
+    command: ["dee", "--help"]
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+        read_only: true
+      - type: bind
+        source: ${DEE_ORIGINALS_DIR:?Set DEE_ORIGINALS_DIR to an existing external directory}
+        target: /case/originals
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DEE_WORKING_DIR:?Set DEE_WORKING_DIR to an existing external directory}
+        target: /case/working
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DEE_DATABASE_DIR:?Set DEE_DATABASE_DIR to an existing external directory}
+        target: /case/database
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DEE_OUTPUT_DIR:?Set DEE_OUTPUT_DIR to an existing external directory}
+        target: /case/output
+        bind:
+          create_host_path: false
