@@ -1,0 +1,7 @@
+Application,Apple ID Number,Device Identifier,IP Address,Logged In Date,Signon Status,StoreFront Name
+"Synthetic Application
+with newline",000001,SYNTHETIC-DEVICE-001,203.0.113.20,2024-01-02T03:04:05Z,000,Synthetic Store
+Synthetic Application,000001,,2001:db8::20,2024-01-02T03:04:05+02:00,999,
+Synthetic Application,000001,,synthetic-invalid-ip,raw without timezone,Not Available,Not Available
+Synthetic Application,000001,,,,,
+Synthetic Application,000001,,,,,

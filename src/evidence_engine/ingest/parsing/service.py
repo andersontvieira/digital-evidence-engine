@@ -11,11 +11,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from evidence_engine.errors import EvidenceError
+from evidence_engine.ingest.apple.parsers import PARSERS as APPLE_PARSERS
 from evidence_engine.ingest.generic.hashing import original_reader, sha256_file
 from evidence_engine.ingest.generic.paths import CasePaths, check_path, discover
 from evidence_engine.ingest.google.html import table_document
 from evidence_engine.ingest.google.parsers import PARSERS as GOOGLE_PARSERS
 from evidence_engine.ingest.instagram.parsers import PARSERS
+from evidence_engine.ingest.parsing.csv import csv_document
 from evidence_engine.ingest.parsing.framework import (
     MAX_SOURCE_BYTES,
     Diagnostic,
@@ -166,6 +168,10 @@ def parse_instagram(case_root: Path, parsers: tuple[Parser, ...] = PARSERS) -> P
 
 def parse_google(case_root: Path, parsers: tuple[Parser, ...] = GOOGLE_PARSERS) -> ParseSummary:
     return parse_catalog(case_root, parsers, table_document)
+
+
+def parse_apple(case_root: Path, parsers: tuple[Parser, ...] = APPLE_PARSERS) -> ParseSummary:
+    return parse_catalog(case_root, parsers, csv_document)
 
 
 def parse_catalog(

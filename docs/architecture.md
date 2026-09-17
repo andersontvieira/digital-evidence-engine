@@ -1,9 +1,10 @@
 # Arquitetura
 
-## Milestone 2C
+## Milestone 2D
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
-e dois parsers Google Takeout (SubscriberInfo e ChangeHistory).
+e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
+parsers Apple (inventário de dispositivos, sign-on e atividade técnica de mídia).
 Typer coordena a CLI; SQLAlchemy 2.x persiste SQLite; Pydantic 2.x valida limites
 de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 
@@ -21,6 +22,8 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | ingest/instagram/parsers.py | Somente profile activity, recently deleted e mensagens |
 | ingest/google/html.py | Projeção determinística das tabelas HTML restritas |
 | ingest/google/parsers.py | Somente SubscriberInfo e ChangeHistory |
+| ingest/parsing/csv.py | Projeção CSV textual com índices lógicos e limites |
+| ingest/apple/parsers.py | Somente inventário, sign-on e atividade técnica de mídia |
 | cli/parse.py | Contagens de parsing sem payloads no console |
 | models/entities.py | Foundation, ParserRun e ParsedRecord |
 | storage/database.py | SQLite, foreign keys, schema v2 e migração explícita v1 -> v2 |
@@ -80,6 +83,8 @@ descomprimir o intervalo comprimido inteiro, contar bytes reais e validar CRC/ta
 sem o truncamento de ZipExtFile pelo tamanho declarado. Destinos usam nomes gerados:
 working/ingest-<run>-<sufixo>/<evidence-id>/<índice>.bin.
 Nome de membro e path extraído ficam separados no banco.
+Dois-pontos são aceitos apenas na identidade lógica (ADR 0014), nunca como destino
+físico ou ADS. A recusa de drives Windows, paths absolutos e UNC permanece.
 
 Defaults por ZIP: 512 MiB/membro, 2 GiB total, 10000 entradas, razão 200.
 STORE/DEFLATE apenas; sem symlinks, criptografia ou extractall. Decoding segue
@@ -115,7 +120,11 @@ ParserContext fornece o path relativo/interno. Parser exige parser_id/version,
 matches_path, supports e parse; ParserResult contém observações e diagnósticos.
 Nome/path e estrutura são exigidos juntos. Sem loader de plugins ou novas dependências.
 parse_catalog recebe decoder explícito: strict_json no fluxo Instagram ou table_document
-no fluxo Google. A projeção HTML mantém headers e linhas das tabelas em ordem;
+no fluxo Google, ou csv_document no fluxo Apple. A projeção CSV mantém headers e
+linhas lógicas em ordem, com células textuais e locators $/rows/N; somente os três
+contratos Apple da ADR 0013 são selecionados. Payloads técnicos são subconjuntos
+fiéis da linha original, sem persistir colunas comerciais na projeção de mídia.
+A projeção HTML mantém headers e linhas das tabelas em ordem;
 $/tables/T/rows/R resolve uma linha de dados, excluindo header. O decoder usa somente
 html.parser, sem rede ou recuperação de tabelas malformadas. A ADR 0012 fixa o contrato.
 O serviço verifica se cada locator resolve no documento decodificado e se o payload é subconjunto fiel

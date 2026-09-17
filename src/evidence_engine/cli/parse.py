@@ -8,9 +8,22 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
-from evidence_engine.ingest.parsing.service import parse_google, parse_instagram
+from evidence_engine.ingest.parsing.service import parse_apple, parse_google, parse_instagram
 
 app = typer.Typer(help="Extract observations from cataloged sources.", no_args_is_help=True)
+
+
+@app.command("apple")
+def apple(case_root: CaseRoot) -> None:
+    """Parse only Apple device inventory, sign-on and media device CSV records."""
+    try:
+        summary = parse_apple(case_root)
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+        return
+    typer.echo(json.dumps(asdict(summary), sort_keys=True))
+    if summary.errors:
+        raise typer.Exit(1)
 
 
 @app.command("instagram")

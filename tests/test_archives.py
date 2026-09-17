@@ -3,6 +3,7 @@ import stat
 import struct
 import warnings
 import zipfile
+import zlib
 from io import BytesIO
 from pathlib import Path
 
@@ -64,7 +65,6 @@ def assert_rejected(case_root: Path, limits: ZipLimits | None = None) -> None:
         "synthetic//empty",
         "./synthetic",
         "synthetic/CON.txt",
-        "synthetic/filename:stream",
         "synthetic/trailing.",
         "synthetic/trailing ",
         "synthetic/invalid?.txt",
@@ -76,6 +76,57 @@ def test_unsafe_paths_rejected(case_root: Path, name: str) -> None:
     make_zip(case_root, [name])
     assert_rejected(case_root)
     assert not (case_root.parent / "synthetic-escape").exists()
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "folder/Apple Media Services: Account Change History.csv",
+        "outro/nome:legitimo.csv",
+        "synthetic/filename:stream",
+    ],
+)
+def test_logical_colon_never_becomes_materialized_path(case_root: Path, name: str) -> None:
+    payload = b"synthetic colon member"
+    original = make_zip(case_root, [name], payload)
+    original_hash = hashlib.sha256(original.read_bytes()).hexdigest()
+    assert ingest(case_root).files_added == 1
+    engine = open_database(case_root / "database/evidence.db")
+    with Session(engine) as session:
+        member = session.scalars(select(ArchiveMember)).one()
+        member_id = member.id
+        assert member.member_path == name
+        assert ":" not in member.working_relative_path
+        target = case_root / "working" / member.working_relative_path
+        assert target.resolve().is_relative_to((case_root / "working").resolve())
+        assert target.name == "00000000.bin"
+        assert target.read_bytes() == payload
+        assert member.sha256 == hashlib.sha256(payload).hexdigest()
+        assert member.size_bytes == len(payload)
+        assert member.crc32 == zlib.crc32(payload)
+    assert ingest(case_root).files_added == 0
+    with Session(engine) as session:
+        assert session.scalars(select(ArchiveMember.id)).one() == member_id
+    engine.dispose()
+    assert hashlib.sha256(original.read_bytes()).hexdigest() == original_hash
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "C:/evil.txt",
+        "C:evil.txt",
+        "C:\\evil.txt",
+        "../evil.txt",
+        "/evil.txt",
+        "\\\\server\\share\\evil.txt",
+        "folder:logical/../evil.txt",
+        "folder:logical/..\\evil.txt",
+    ],
+)
+def test_colon_exception_does_not_allow_unsafe_paths(case_root: Path, name: str) -> None:
+    make_zip(case_root, [name])
+    assert_rejected(case_root)
 
 
 @pytest.mark.parametrize(

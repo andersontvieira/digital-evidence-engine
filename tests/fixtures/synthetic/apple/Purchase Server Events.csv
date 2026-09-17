@@ -1,0 +1,3 @@
+Device Hardware Family,Device Hardware Model,Device Identifier,Event Date,Event Time,Metrics Event Time,Event Type,Application Name,Operating System,Operating System Version,User Agent,IP,Billing,Payment,Price,Authorization,Purchase Details
+Synthetic family,"iPhone99,9",SYNTHETIC-DEVICE-001,2024-01-02,2024-01-02T03:04:05Z,2024-01-02T03:04:06Z,Synthetic type,Synthetic Application,Synthetic OS,synthetic-version,"SyntheticAgent, ""quoted""",,SYNTHETIC-EXCLUDED,SYNTHETIC-EXCLUDED,SYNTHETIC-EXCLUDED,SYNTHETIC-EXCLUDED,SYNTHETIC-EXCLUDED
+Synthetic family,,SYNTHETIC-DEVICE-002,,raw without timezone,,Synthetic type,Synthetic Application,,,,,,,,,

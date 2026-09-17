@@ -10,8 +10,8 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 2C: Evidence Foundation, três artefatos Instagram/Meta e duas tabelas
-Google Takeout. Não há parsers de Apple ou WhatsApp, normalização de eventos,
+Milestone 2D: Evidence Foundation, três artefatos Instagram/Meta, duas tabelas
+Google Takeout e três CSVs Apple. Não há parsers de WhatsApp, normalização de eventos,
 timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
 
 ## Arquitetura e preservação
@@ -232,6 +232,45 @@ Limites adicionais: 1000 tabelas, 101000 linhas incluindo headers, 256 colunas,
 HTML fora das duas tabelas/artefatos fica fora do escopo. Consulte a
 [ADR 0012](docs/adr/0012-google-html-table-observations.md).
 
+## Parsing Apple
+
+`dee parse apple --case-root /case` reutiliza o catálogo, a conferência de hashes,
+as transações por fonte e a idempotência existentes. Schema SQLite permanece v2.
+Somente três parsers, todos 1.0.0:
+
+| Parser | CSV | timestamp_raw |
+| --- | --- | --- |
+| apple.device_inventory | Apple ID Device Information.csv | Device Last Heartbeat Timestamp |
+| apple.sign_on_activity | Apple ID SignOn Information.csv | Logged In Date |
+| apple.media_device_activity | Purchase Server Events.csv | Event Time |
+
+Os dois primeiros exigem o diretório literal `Informações da Conta Apple e do dispositivo/`.
+O terceiro exige `Apple_Media_Services/Stores Activity/Other Activity/`, com variante
+explícita contendo `Apple Media Services/` imediatamente após `Apple_Media_Services/`.
+Filename isolado ou diretório diferente não seleciona parser. Headers obrigatórios
+estão definidos em `ingest/apple/parsers.py`; colunas opcionais ausentes não são criadas.
+
+`csv_document` usa csv da biblioteca padrão, UTF-8 com BOM opcional e vírgula.
+Preserva whitespace, células vazias, identificadores com zeros e `Not Available`.
+Quoted fields, aspas escapadas e newline dentro de célula são suportados. Headers
+duplicados/vazios, largura incompatível, NUL e erros do leitor estrito abortam a fonte.
+Limites: 32 MiB, 100000 linhas lógicas, 256 colunas e limite de campo do csv
+(128 KiB no runtime validado). Locators `$/rows/N` excluem o header; `N` começa em zero
+e conta registros CSV, não linhas físicas. Headers em locators de campo escapam ~ e /.
+
+Payload do inventário projeta os 18 campos técnicos documentados; sign-on preserva
+os sete campos do contrato; mídia projeta somente 12 campos técnicos, excluindo
+campos comerciais. Os bytes originais e a cadeia de proveniência permitem recuperar
+as outras colunas. IP só recebe validação sintática; inválido fica raw com warning.
+O papel do timestamp principal é explícito em annotation; os demais horários ficam
+raw no payload, sem timezone inferido ou conversão UTC.
+
+Não há associação entre identificadores, preenchimento de modelo, interpretação
+de Signon Status, localização por StoreFront ou tradução de código para nome comercial.
+Passkeys e os demais artefatos Apple permanecem fora do parsing. Um inventário de
+snapshot não demonstra ausência histórica de aparelhos. Consulte a
+[ADR 0013](docs/adr/0013-apple-csv-observations.md).
+
 ## Política de ZIP
 
 Somente o primeiro nível é extraído. ZIP aninhado é membro opaco. Reconhecimento
@@ -250,7 +289,7 @@ Exemplo: `dee evidence ingest --case-root /case --max-members 500 --max-ratio 10
 
 O inventário inteiro é validado antes da escrita. Recusamos traversal, paths
 absolutos/Windows, backslashes, links e arquivos especiais, duplicatas e colisões
-de maiúsculas, nomes não portáveis, Unicode inválido/não NFC, criptografia e métodos
+de maiúsculas, nomes não portáveis (exceto `:` lógico), Unicode inválido/não NFC, criptografia e métodos
 diferentes de STORE/DEFLATE. Nomes não são corrigidos silenciosamente. Limites de
 bytes também valem durante leitura; CRC e tamanho são conferidos. Sem extractall.
 A descompressão mede todo o intervalo comprimido, independentemente do tamanho
@@ -260,6 +299,9 @@ central directory é limitada antes da criação dos objetos de membros.
 
 Extrações usam diretório exclusivo por execução e nomes numerados .bin.
 member_path/filename originais ficam no banco: nenhum nome do ZIP vira destino.
+`:` é permitido somente no nome lógico; paths absolutos, UNC e designadores de
+drive Windows continuam recusados. Não se materializam ADS. A exceção restrita
+está documentada na [ADR 0014](docs/adr/0014-logical-zip-colon.md).
 Diretórios vazios são validados mas não recebem ArchiveMember. Falhas normais
 removem somente staging próprio e fazem rollback; originais permanecem intactos.
 
@@ -361,8 +403,9 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 1 | Evidence Foundation — concluída |
 | 2A | Framework + três artefatos Instagram/Meta — concluída |
 | 2B | Suporte Meta array/label_values — concluída |
-| 2C | SubscriberInfo e ChangeHistory Google Takeout — esta entrega |
-| 2 futura | Ampliação de formatos, Google Takeout e Apple |
+| 2C | SubscriberInfo e ChangeHistory Google Takeout — concluída |
+| 2D | Três CSVs Apple e validação controlada — esta entrega |
+| 2 futura | Ampliação de formatos somente mediante escopo aprovado |
 | 3 | Normalização de events, devices, networks e messages |
 | 4 | Search e timeline |
 | 5 | Media hashing: SHA-256 e perceptual hashing |

@@ -142,7 +142,9 @@ def validate_name(info: zipfile.ZipInfo) -> str:
         if (
             part in ("", ".", "..")
             or part.endswith((".", " "))
-            or any(char in part for char in '<>:"|?*')
+            # Colon is logical metadata only; extract_zip generates every destination.
+            # Absolute paths and leading Windows drive designators are rejected above.
+            or any(char in part for char in '<>"|?*')
             or part.split(".")[0].upper() in reserved
         ):
             raise EvidenceError("ZIP contains a nonportable or traversal member name")
