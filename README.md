@@ -10,8 +10,8 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 2B: Evidence Foundation mais framework de parsing e três artefatos
-Instagram/Meta. Não há parsers de Google, Apple ou WhatsApp, normalização de eventos,
+Milestone 2C: Evidence Foundation, três artefatos Instagram/Meta e duas tabelas
+Google Takeout. Não há parsers de Apple ou WhatsApp, normalização de eventos,
 timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
 
 ## Arquitetura e preservação
@@ -200,6 +200,38 @@ Paths de seleção também precisam ser relativos e canônicos, sem segmentos . 
 backslashes ou prefixos de drive. Catálogos existentes passam por pré-verificação
 read-only antes de abertura gravável normal, impedindo recovery de v1 antes da recusa.
 
+## Parsing Google Takeout
+
+`dee parse google --case-root /case` usa somente fontes já catalogadas e as mesmas
+transações, verificações de hash e regras de idempotência do parsing Instagram.
+Os parsers `google.subscriber_info` e `google.change_history` começam em 1.0.0.
+
+Seleção exige path canônico, filename SubscriberInfo.html/ChangeHistory.html
+ou sufixo .SubscriberInfo.html/.ChangeHistory.html com prefixo de conta opaco,
+mais headers compatíveis. A posição da tabela ou das colunas não seleciona o parser.
+
+SubscriberInfo requer Timestamp, IP Address, Activity Type, Interactive,
+Initiating Service, Geo, Raw User Agents e Challenges (timestamp, outcome, dusi).
+ChangeHistory requer Timestamp, IP Address e Change Type; Old Value e New Value
+são opcionais. Cada linha é observação separada, inclusive linhas idênticas.
+Payloads usam os headers originais como chaves e textos das células como valores;
+vazios continuam strings vazias, colunas ausentes não são inventadas.
+
+O decoder restrito usa html.parser da biblioteca padrão, sem novas dependências.
+UTF-8/BOM, entidades HTML e br (como newline) são decodificados; não há reparo de
+mojibake ou conversão de datas. timestamp_raw é o texto de Timestamp. IP só recebe
+validação sintática e model code só é anotado literalmente em Raw User Agents.
+Geo é texto informado pela fonte, não consulta externa. Não há nomes comerciais.
+
+Locators como $/tables/0/rows/17 resolvem na projeção determinística table_document
+dos bytes HTML originais; índices começam em zero e rows exclui o header.
+Tabelas aninhadas, spans, headers duplicados e tabelas incompletas são recusados,
+sem observações parciais. Isso pode recusar variantes HTML válidas fora do contrato.
+Limites adicionais: 1000 tabelas, 101000 linhas incluindo headers, 256 colunas,
+64 níveis de markup na célula; continuam os tetos de 32 MiB e 100000 observações.
+HTML fora das duas tabelas/artefatos fica fora do escopo. Consulte a
+[ADR 0012](docs/adr/0012-google-html-table-observations.md).
+
 ## Política de ZIP
 
 Somente o primeiro nível é extraído. ZIP aninhado é membro opaco. Reconhecimento
@@ -328,7 +360,8 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 0 | Bootstrap e arquitetura — concluído |
 | 1 | Evidence Foundation — concluída |
 | 2A | Framework + três artefatos Instagram/Meta — concluída |
-| 2B | Suporte Meta array/label_values — esta entrega |
+| 2B | Suporte Meta array/label_values — concluída |
+| 2C | SubscriberInfo e ChangeHistory Google Takeout — esta entrega |
 | 2 futura | Ampliação de formatos, Google Takeout e Apple |
 | 3 | Normalização de events, devices, networks e messages |
 | 4 | Search e timeline |

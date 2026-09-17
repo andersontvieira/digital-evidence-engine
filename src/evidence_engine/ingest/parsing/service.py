@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -12,10 +13,13 @@ from sqlalchemy.orm import Session
 from evidence_engine.errors import EvidenceError
 from evidence_engine.ingest.generic.hashing import original_reader, sha256_file
 from evidence_engine.ingest.generic.paths import CasePaths, check_path, discover
+from evidence_engine.ingest.google.html import table_document
+from evidence_engine.ingest.google.parsers import PARSERS as GOOGLE_PARSERS
 from evidence_engine.ingest.instagram.parsers import PARSERS
 from evidence_engine.ingest.parsing.framework import (
     MAX_SOURCE_BYTES,
     Diagnostic,
+    JSONValue,
     ParseError,
     Parser,
     ParserContext,
@@ -157,6 +161,16 @@ def source_bytes(
 
 
 def parse_instagram(case_root: Path, parsers: tuple[Parser, ...] = PARSERS) -> ParseSummary:
+    return parse_catalog(case_root, parsers, strict_json)
+
+
+def parse_google(case_root: Path, parsers: tuple[Parser, ...] = GOOGLE_PARSERS) -> ParseSummary:
+    return parse_catalog(case_root, parsers, table_document)
+
+
+def parse_catalog(
+    case_root: Path, parsers: tuple[Parser, ...], decode: Callable[[bytes], JSONValue]
+) -> ParseSummary:
     paths = CasePaths.load(case_root)
     engine = open_database(paths.db_file)
     summary = ParseSummary()
@@ -209,7 +223,7 @@ def parse_instagram(case_root: Path, parsers: tuple[Parser, ...] = PARSERS) -> P
                             summary.records_existing += completed.records_parsed
                             summary.warnings += len(json.loads(completed.warnings_json))
                         else:
-                            document = strict_json(data)
+                            document = decode(data)
                             if not parser.supports(context, document):
                                 run.status = "UNSUPPORTED"
                                 run.warnings_json = json_text(

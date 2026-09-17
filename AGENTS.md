@@ -28,10 +28,10 @@
 
 ## Escopo atual
 
-Milestone 2A: preservar a Evidence Foundation e adicionar somente framework de
-parsing e profile_activity, recently_deleted_content e mensagens Instagram/Meta.
+Milestone 2C: preservar a Evidence Foundation e os parsers Instagram/Meta,
+adicionando somente SubscriberInfo.html e ChangeHistory.html do Google Takeout.
 Parser extrai valores explícitos, sem normalizar, correlacionar ou inferir fatos.
-Google, Apple, WhatsApp, timeline e search continuam fora do escopo.
+Outros artefatos Google, Apple, WhatsApp, timeline e search continuam fora do escopo.
 Consulte README.md e docs/architecture.md. Schema v1 exige migração explícita para v2.
 
 Use `uv sync --locked --extra dev --python 3.12` com uv 0.8.22. Não atualize o

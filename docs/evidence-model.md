@@ -52,6 +52,14 @@ Metadata de conversa usa $ e exclui messages; cada mensagem possui seu próprio
 payload. Payload mantém apenas o objeto/subconjunto extraído daquele registro,
 com valores JSON preservados. Campos extras recebem warning; não são descartados.
 
+Para os dois artefatos Google HTML, o documento é a projeção table_document:
+tables em ordem do arquivo, headers textuais e rows sem a linha de header.
+$/tables/T/rows/R identifica a linha e /<header escapado> identifica a célula.
+Payload usa headers originais e texto das células, decodificando entidades HTML e
+br em newline. Bytes e markup continuam no ArchiveMember/EvidenceFile original.
+Nenhum timestamp vira identidade; linhas iguais permanecem ocorrências distintas.
+Não há nova tabela ou mudança de schema para esse formato.
+
 timestamp_raw é TEXT contendo escalar JSON (número ou string), ou NULL. Isso conserva
 tipo/valor, sem afirmar unidade/timezone. A representação lexical dos bytes originais
 permanece na evidência; o parser não preserva espaços/escapes do JSON serializado.

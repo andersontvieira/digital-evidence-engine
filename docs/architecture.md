@@ -1,8 +1,9 @@
 # Arquitetura
 
-## Milestone 2A
+## Milestone 2C
 
-Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta.
+Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
+e dois parsers Google Takeout (SubscriberInfo e ChangeHistory).
 Typer coordena a CLI; SQLAlchemy 2.x persiste SQLite; Pydantic 2.x valida limites
 de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 
@@ -18,6 +19,8 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | ingest/parsing/framework.py | Contratos puros, JSON estrito e locators reversíveis |
 | ingest/parsing/service.py | Fontes catalogadas, hashes, idempotência e atomicidade por fonte |
 | ingest/instagram/parsers.py | Somente profile activity, recently deleted e mensagens |
+| ingest/google/html.py | Projeção determinística das tabelas HTML restritas |
+| ingest/google/parsers.py | Somente SubscriberInfo e ChangeHistory |
 | cli/parse.py | Contagens de parsing sem payloads no console |
 | models/entities.py | Foundation, ParserRun e ParsedRecord |
 | storage/database.py | SQLite, foreign keys, schema v2 e migração explícita v1 -> v2 |
@@ -111,7 +114,11 @@ verificados por streaming uma vez por execução; cada membro candidato é verif
 ParserContext fornece o path relativo/interno. Parser exige parser_id/version,
 matches_path, supports e parse; ParserResult contém observações e diagnósticos.
 Nome/path e estrutura são exigidos juntos. Sem loader de plugins ou novas dependências.
-O serviço verifica se cada locator resolve no JSON e se o payload é subconjunto fiel
+parse_catalog recebe decoder explícito: strict_json no fluxo Instagram ou table_document
+no fluxo Google. A projeção HTML mantém headers e linhas das tabelas em ordem;
+$/tables/T/rows/R resolve uma linha de dados, excluindo header. O decoder usa somente
+html.parser, sem rede ou recuperação de tabelas malformadas. A ADR 0012 fixa o contrato.
+O serviço verifica se cada locator resolve no documento decodificado e se o payload é subconjunto fiel
 do objeto indicado. Locators repetidos abortam a fonte.
 
 BEGIN IMMEDIATE serializa execução por fonte/parser. Um savepoint reúne todos os
