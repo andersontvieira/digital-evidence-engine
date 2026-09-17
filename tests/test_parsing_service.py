@@ -79,7 +79,8 @@ def test_full_provenance_direct_and_archive_idempotency(case_root: Path) -> None
             run = session.get(ParserRun, record.parser_run_id)
             inventory = session.get(SourceRecord, run.source_record_id)
             assert source.parser_id == record.parser_id == run.parser_id
-            assert source.parser_version == record.parser_version == "1.0.0"
+            expected_version = "1.0.0" if record.parser_id == "meta.instagram_messages" else "1.1.0"
+            assert source.parser_version == record.parser_version == expected_version
             assert source.location == record.source_locator
             assert inventory.parser_id == "evidence_engine.inventory"
             if source.archive_member_id:
@@ -124,8 +125,9 @@ def test_new_parser_version_is_separate_observation_set(case_root: Path) -> None
     source = case_root / "originals/profile_activity.json"
     source.write_bytes((FIXTURES / source.name).read_bytes())
     ingest(case_root)
-    assert parse_instagram(case_root).records_parsed == 3
-    parser = replace(PARSERS[0], parser_version="1.1.0")
+    legacy = replace(PARSERS[0], parser_version="1.0.0")
+    assert parse_instagram(case_root, (legacy,)).records_parsed == 3
+    parser = PARSERS[0]
     assert parse_instagram(case_root, (parser,)).records_parsed == 3
     assert parse_instagram(case_root, (parser,)).records_existing == 3
     engine = open_database(case_root / "database/evidence.db")

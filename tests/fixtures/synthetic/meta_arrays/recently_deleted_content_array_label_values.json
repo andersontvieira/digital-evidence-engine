@@ -1,0 +1,35 @@
+[
+  {
+    "timestamp": 1700000100,
+    "media": [],
+    "fbid": "synthetic-media-001",
+    "label_values": [
+      {"label": "Publicado", "value": "true"},
+      {"label": "Legenda", "value": "Synthetic Caption — ação 🧪"},
+      {"label": "Identificador de carregamento", "value": "synthetic-upload-001"},
+      {"label": "Data/hora de cria\u00c3\u00a7\u00c3\u00a3o", "timestamp_value": 1700000000},
+      {"label": "Metadados", "dict": [{"label": "duration", "value": "5"}]},
+      {"label": "M\u00c3\u00addia", "media": [
+        {"uri": "https://example.invalid/media/1", "creation_timestamp": 1700000000,
+         "title": "Synthetic Media Title", "media_metadata": {
+           "photo_metadata": {"exif_data": [
+             {"device_id": "SYNTHETIC-DEVICE-001", "camera_position": "synthetic-position",
+              "software": "synthetic-software", "source_type": "synthetic-source"}
+           ]}
+         }}
+      ]}
+    ]
+  },
+  {
+    "timestamp": 1700000200,
+    "media": [],
+    "label_values": [
+      {"label": "Publicado", "value": "false"},
+      {"label": "Mídia", "media": [
+        {"uri": "https://example.invalid/media/2", "creation_timestamp": 1700000150,
+         "media_metadata": {"video_metadata": {"exif_data": [{"device_id": "SYNTHETIC-DEVICE-002"}]}}}
+      ]},
+      {"title": "Synthetic opaque group", "dict": [{"title": "Synthetic group", "dict": [{"timestamp_value": 1700000150}]}]}
+    ]
+  }
+]

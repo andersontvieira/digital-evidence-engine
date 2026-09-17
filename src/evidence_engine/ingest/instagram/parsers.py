@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 
+from evidence_engine.ingest.instagram.label_values import observe_labels
 from evidence_engine.ingest.parsing.framework import (
     MAX_RECORDS,
     Diagnostic,
@@ -172,7 +173,7 @@ class MetaListParser:
     collection: str
     record_type: str
     expected_fields: frozenset[str]
-    parser_version: str = "1.0.0"
+    parser_version: str = "1.1.0"
 
     def matches_path(self, context: ParserContext) -> bool:
         return (
@@ -181,13 +182,19 @@ class MetaListParser:
         )
 
     def supports(self, context: ParserContext, document: JSONValue) -> bool:
-        return (
-            self.matches_path(context)
-            and isinstance(document, dict)
+        return self.matches_path(context) and (
+            isinstance(document, dict)
             and isinstance(document.get(self.collection), list)
+            or isinstance(document, list)
+            and (
+                not document
+                or any(isinstance(item, dict) and "label_values" in item for item in document)
+            )
         )
 
     def parse(self, context: ParserContext, document: JSONValue) -> ParserResult:
+        if isinstance(document, list) and self.supports(context, document):
+            return self.parse_array(document)
         if not self.supports(context, document) or not isinstance(document, dict):
             raise ParseError("UNSUPPORTED_SCHEMA")
         items = document[self.collection]
@@ -219,6 +226,45 @@ class MetaListParser:
                 ExtractedRecord(self.record_type, locator, index, timestamp, item, annotations)
             )
             warnings.extend(diagnostics)
+        return ParserResult(records, warnings)
+
+    def parse_array(self, items: list[JSONValue]) -> ParserResult:
+        if len(items) > MAX_RECORDS:
+            raise ParseError("RECORD_LIMIT")
+        records: list[ExtractedRecord] = []
+        warnings: list[Diagnostic] = []
+        for index, item in enumerate(items):
+            if not isinstance(item, dict) or not isinstance(item.get("label_values"), list):
+                raise ParseError("INVALID_LABEL_VALUES")
+            entries = item["label_values"]
+            assert isinstance(entries, list)
+            locator = child_locator("$", index)
+            # Only the item timestamp is the record timestamp. Nested times keep their roles.
+            timestamp, annotations, diagnostics = observe(
+                {key: value for key, value in item.items() if key == "timestamp"},
+                locator,
+                {"timestamp"},
+            )
+            diagnostics.extend(
+                Diagnostic("UNEXPECTED_FIELD", child_locator(locator, key))
+                for key in item
+                if key not in {"timestamp", "media", "label_values", "fbid"}
+            )
+            extra, label_warnings = observe_labels(
+                entries,
+                child_locator(locator, "label_values"),
+                profile=self.parser_id == "meta.profile_activity",
+            )
+            if "media" in item and item["media"] != []:
+                diagnostics.append(
+                    Diagnostic("UNSUPPORTED_ITEM_MEDIA", child_locator(locator, "media"))
+                )
+            annotations.extend(extra)
+            records.append(
+                ExtractedRecord(self.record_type, locator, index, timestamp, item, annotations)
+            )
+            warnings.extend(diagnostics)
+            warnings.extend(label_warnings)
         return ParserResult(records, warnings)
 
 

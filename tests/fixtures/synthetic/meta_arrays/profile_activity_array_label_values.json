@@ -1,0 +1,31 @@
+[
+  {
+    "timestamp": 1700000000,
+    "media": [],
+    "fbid": "synthetic-profile-001",
+    "label_values": [
+      {"label": "\u00c3\u009altimo login", "timestamp_value": 1699999000},
+      {"label": "Tipo", "value": "synthetic_profile_change"},
+      {"label": "Endere\u00c3\u00a7o IP", "value": "203.0.113.10"},
+      {"label": "N\u00c3\u00bamero da porta", "value": "443"},
+      {"label": "App", "value": "Synthetic App"},
+      {"label": "Vers\u00c3\u00a3o do app", "value": "synthetic-1"},
+      {"label": "Agente de usu\u00c3\u00a1rio", "value": "SyntheticAgent iPhone99,9"},
+      {"label": "Idioma", "value": "synthetic-language"},
+      {"label": "Cookie", "value": "synthetic-cookie"},
+      {"label": "Identifica\u00c3\u00a7\u00c3\u00a3o do dispositivo", "value": "SYNTHETIC-DEVICE-001"},
+      {"label": "Detalhes", "dict": [
+        {"label": "Tipo", "value": "synthetic_profile_field"},
+        {"label": "Novo valor", "value": "synthetic_user 🧪"},
+        {"label": "Valor anterior", "value": "synthetic_previous"}
+      ]}
+    ]
+  },
+  {
+    "media": [],
+    "label_values": [
+      {"label": "Detalhes", "dict": [{"label": "Localização", "value": "Synthetic Location"}]},
+      {"label": "Synthetic unknown ~/label", "value": "synthetic opaque value"}
+    ]
+  }
+]

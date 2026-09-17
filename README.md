@@ -10,7 +10,7 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 2A: Evidence Foundation mais framework de parsing e três artefatos
+Milestone 2B: Evidence Foundation mais framework de parsing e três artefatos
 Instagram/Meta. Não há parsers de Google, Apple ou WhatsApp, normalização de eventos,
 timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
 
@@ -140,12 +140,12 @@ user_version; conserva IDs, hashes e tabelas da Foundation. Não cria caso ausen
 não migra versões desconhecidas e não é acionada automaticamente pelo parsing.
 O schema do manifesto de evidências permanece v1, independente do schema SQLite.
 
-Contratos suportados por parsers versão 1.0.0:
+Contratos suportados (perfil/conteúdo excluído 1.1.0; mensagens 1.0.0):
 
 | Artefato/path | Estrutura mínima | Parser |
 | --- | --- | --- |
-| profile_activity.json, inclusive sob prefixo de export | objeto com profile_account_insights: lista de registros | meta.profile_activity |
-| recently_deleted_content.json, inclusive sob prefixo de export | objeto com recently_deleted_media: lista de registros | meta.recently_deleted_content |
+| profile_activity.json, inclusive sob prefixo de export | objeto com profile_account_insights: lista de registros, ou array de itens com label_values | meta.profile_activity |
+| recently_deleted_content.json, inclusive sob prefixo de export | objeto com recently_deleted_media: lista de registros, ou array de itens com label_values | meta.recently_deleted_content |
 | messages/inbox/**/message_<número>.json | objeto com messages: lista e title textual ou participants: lista | meta.instagram_messages |
 
 São contratos explícitos testados com fixtures sintéticos, não uma promessa de
@@ -153,6 +153,17 @@ compatibilidade com todas as variantes históricas da Meta. Nome correto com out
 estrutura gera UNSUPPORTED e warning auditável; não produz observações. Cada item
 deve ser objeto com pelo menos um campo do artefato; item inválido aborta a fonte.
 As tabelas de campos e validações ficam em ingest/instagram/parsers.py.
+
+Nos arrays, cada payload preserva somente seu item, em locator como $/3.
+Labels explícitos e containers limitados são reconhecidos em label_values.py;
+annotations observed_field conservam valor, tipo JSON e locator até o campo.
+Labels desconhecidos e containers não suportados ficam no payload com warning.
+Não há reconhecimento pelo conteúdo, reparo de texto ou conversão de strings
+como "true"/"false" para booleanos. Aliases de labels são literais explícitos.
+timestamp_raw vem somente do timestamp do item; horários aninhados mantêm seus
+papéis e locators nas annotations, sem substituir esse timestamp quando ausente.
+Os contratos objeto anteriores continuam aceitos; registros 1.0.0 não são apagados
+quando a execução 1.1.0 cria seu conjunto separado. Não há alteração de schema SQLite.
 
 Cada observação aponta a SourceRecord e a um locator como
 $/profile_account_insights/12 ou $/messages/17. A conversa é um registro separado
@@ -316,7 +327,8 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | --- | --- |
 | 0 | Bootstrap e arquitetura — concluído |
 | 1 | Evidence Foundation — concluída |
-| 2A | Framework + três artefatos Instagram/Meta — esta entrega |
+| 2A | Framework + três artefatos Instagram/Meta — concluída |
+| 2B | Suporte Meta array/label_values — esta entrega |
 | 2 futura | Ampliação de formatos, Google Takeout e Apple |
 | 3 | Normalização de events, devices, networks e messages |
 | 4 | Search e timeline |
