@@ -15,7 +15,10 @@ def v2_catalog(root):
     (root / "originals/synthetic.txt").write_text("synthetic")
     ingest(root)
     with sqlite3.connect(root / "database/evidence.db") as c:
-        assert c.execute("PRAGMA user_version").fetchone() == (4,)
+        assert c.execute("PRAGMA user_version").fetchone() == (5,)
+        c.execute("DROP TABLE correlation_supports")
+        c.execute("DROP TABLE correlation_candidates")
+        c.execute("DROP TABLE correlation_runs")
         c.execute("DROP TABLE device_observations")
         c.execute("DROP TABLE network_observations")
         c.execute("DROP TABLE observation_runs")
@@ -40,9 +43,9 @@ def test_v2_requires_explicit_migration_and_readers_do_not_migrate(case_root):
         assert result.exit_code == status, result.output
         assert path.read_bytes() == data
     result = CliRunner().invoke(app, ["evidence", "migrate", "--case-root", str(case_root)])
-    assert result.exit_code == 0 and json.loads(result.stdout)["schema_version"] == 4
+    assert result.exit_code == 0 and json.loads(result.stdout)["schema_version"] == 5
     with sqlite3.connect(path) as c:
-        assert c.execute("PRAGMA user_version").fetchone() == (4,)
+        assert c.execute("PRAGMA user_version").fetchone() == (5,)
         assert {
             t: c.execute(f"SELECT * FROM {t} ORDER BY id").fetchall() for t in V2_TABLES
         } == before

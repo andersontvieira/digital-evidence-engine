@@ -3,7 +3,15 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -298,3 +306,89 @@ class NetworkObservation(Base):
     source_field_locator: Mapped[str]
     source_field_name: Mapped[str | None]
     created_at: Mapped[str] = mapped_column(default=utc_now)
+
+
+class CorrelationRun(Base):
+    """One atomic exact-match execution; diagnostics contain no source values."""
+
+    __tablename__ = "correlation_runs"
+    __table_args__ = (CheckConstraint("status IN ('RUNNING', 'COMPLETED', 'FAILED')"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    correlator_id: Mapped[str]
+    correlator_version: Mapped[str]
+    status: Mapped[str]
+    started_at: Mapped[str] = mapped_column(default=utc_now)
+    finished_at: Mapped[str | None]
+    device_observations_inspected: Mapped[int] = mapped_column(default=0)
+    network_observations_inspected: Mapped[int] = mapped_column(default=0)
+    candidates_created: Mapped[int] = mapped_column(default=0)
+    candidates_existing: Mapped[int] = mapped_column(default=0)
+    supports_created: Mapped[int] = mapped_column(default=0)
+    supports_existing: Mapped[int] = mapped_column(default=0)
+    warnings_json: Mapped[str] = mapped_column(default="{}")
+    error_code: Mapped[str | None]
+
+
+class CorrelationCandidate(Base):
+    """Group of exact technical matches, never a shared identity or pairwise edge."""
+
+    __tablename__ = "correlation_candidates"
+    __table_args__ = (
+        UniqueConstraint(
+            "case_id",
+            "correlator_id",
+            "correlator_version",
+            "rule_id",
+            "rule_version",
+            "key_digest",
+        ),
+        UniqueConstraint("id", "candidate_kind"),
+        CheckConstraint("candidate_kind IN ('device', 'network')"),
+        CheckConstraint("support_count >= 2"),
+        CheckConstraint("length(key_digest) = 64"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    correlation_run_id: Mapped[str] = mapped_column(ForeignKey("correlation_runs.id"))
+    correlator_id: Mapped[str]
+    correlator_version: Mapped[str]
+    rule_id: Mapped[str]
+    rule_version: Mapped[str]
+    candidate_kind: Mapped[str]
+    key_digest: Mapped[str] = mapped_column(String(64))
+    support_count: Mapped[int]
+    created_at: Mapped[str] = mapped_column(default=utc_now)
+
+
+class CorrelationSupport(Base):
+    """One typed observation reference; raw values stay in their source table."""
+
+    __tablename__ = "correlation_supports"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["candidate_id", "candidate_kind"],
+            ["correlation_candidates.id", "correlation_candidates.candidate_kind"],
+        ),
+        UniqueConstraint("candidate_id", "support_ordinal"),
+        UniqueConstraint("candidate_id", "device_observation_id"),
+        UniqueConstraint("candidate_id", "network_observation_id"),
+        CheckConstraint("support_ordinal >= 0"),
+        CheckConstraint(
+            "(candidate_kind = 'device' AND device_observation_id IS NOT NULL "
+            "AND network_observation_id IS NULL) OR "
+            "(candidate_kind = 'network' AND network_observation_id IS NOT NULL "
+            "AND device_observation_id IS NULL)"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    candidate_id: Mapped[str]
+    candidate_kind: Mapped[str]
+    support_ordinal: Mapped[int]
+    device_observation_id: Mapped[str | None] = mapped_column(ForeignKey("device_observations.id"))
+    network_observation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("network_observations.id")
+    )

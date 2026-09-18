@@ -2,7 +2,7 @@
 
 Motor técnico local para preservação, catalogação, normalização e
 rastreabilidade de evidências digitais, preparado para futura indexação,
-pesquisa e correlação.
+pesquisa, correlação temporal e resolução controlada de identidade.
 
 **Não é software pericial certificado.** Hashes verificam consistência de conteúdo;
 não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade.
@@ -11,10 +11,10 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 3B: Evidence Foundation, parsers Instagram/Meta, Google e Apple,
-normalização de eventos e observações atômicas de dispositivos/rede a partir de
-ParsedRecords. Não há WhatsApp, timeline, correlação, entidades
-de identidade, OCR, IA/ML, dashboard ou integrações externas.
+Milestone 3C1: Foundation, parsers Instagram/Meta, Google e Apple, normalização,
+observações atômicas e grupos candidatos de igualdade técnica exata. Sem resolução
+de identidade, correlação temporal, score, WhatsApp, timeline, OCR, IA/ML, dashboard
+ou integrações externas.
 
 ## Arquitetura e preservação
 
@@ -131,8 +131,8 @@ dee parse --help
 dee parse instagram --case-root /case
 ```
 
-Catálogos novos usam schema v4. Catálogos v1/v2/v3 exigem migração explícita antes
-de escrita; verify/manifest podem ler v2/v3 sem migrar. Faça backup consistente antes:
+Catálogos novos usam schema v5. Catálogos v1/v2/v3/v4 exigem migração explícita antes
+de escrita; verify/manifest podem ler v2/v3/v4 sem migrar. Faça backup consistente antes:
 
 ```sh
 dee evidence migrate --case-root /case
@@ -140,7 +140,8 @@ dee evidence migrate --case-root /case
 
 A migração transacional percorre v1 -> v2 (parser_runs/parsed_records) e v2 -> v3
 (normalization_runs/normalized_events), seguida de v3 -> v4 (observation_runs,
-device_observations/network_observations), conforme a versão inicial. Atualiza
+device_observations/network_observations) e v4 -> v5 (correlation_runs,
+correlation_candidates/correlation_supports), conforme a versão inicial. Atualiza
 user_version e conserva linhas anteriores. Não cria caso ausente,
 não migra versões desconhecidas e não é acionada automaticamente pelo parsing.
 O schema do manifesto de evidências permanece v1, independente do schema SQLite.
@@ -183,8 +184,9 @@ Código de modelo explicitamente presente no user agent recebe anotação com o 
 de origem; não é convertido em nome comercial nem propagado para outro registro.
 
 Repetir parsing intacto adiciona zero registros. A identidade técnica combina
-fonte de inventário, parser_id, parser_version e locator.
-versões distintas do parser também. Falha desfaz todos os ParsedRecords e SourceRecords
+fonte de inventário, parser_id, parser_version e locator. Exportações distintas
+e versões distintas do parser permanecem conjuntos independentes.
+Falha desfaz todos os ParsedRecords e SourceRecords
 de parsing daquela fonte, registra ParserRun FAILED e permite continuar as demais.
 Tentativas falhas/unsupported permanecem auditáveis; sucesso anterior é reutilizado
 somente após nova conferência do conteúdo. Não há reparse sofisticado nem reparo.
@@ -395,6 +397,27 @@ nunca são fundidas. Cada observer tem transação e run próprios. A CLI imprim
 somente contagens; exit 1 indica observer com falha e 2 erro operacional/schema.
 Detalhes na [ADR 0017](docs/adr/0017-device-network-observations.md).
 
+## Candidatos por igualdade exata (3C1)
+
+```sh
+dee correlate --help
+dee correlate exact --case-root /case
+```
+
+`exact_match.correlator` 1.0.0 aceita somente observers 1.0.0. As duas regras 1.0.0
+agrupam device por fact_kind/namespace/value_raw exato e rede por versão/IP canônico
+persistido. Grupos exigem pelo menos duas observações e mantêm um support por
+ocorrência, sem relações pairwise. Device não cruza namespaces; IP pode cruzar
+plataformas, sem afirmar identidade, localização, autoria ou sessão compartilhada.
+
+Candidates guardam digest SHA-256 da chave versionada; supports referenciam os valores
+nas observações. Reexecução intacta cria zero candidates/supports. Divergência no
+conjunto de supports falha o run, sem alterar resultados anteriores. Adicionar
+observações a um grupo antigo exige versionamento explícito em escopo posterior.
+CLI imprime somente contagens; exit 1 indica run com falha, 2 erro operacional.
+Sem tempo, score ou engine completo de correlação. Veja a
+[ADR 0018](docs/adr/0018-exact-correlation-candidates.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -476,6 +499,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 2 futura  | Ampliação de formatos somente mediante escopo aprovado    |
 | 3A        | Normalização canônica de eventos — concluída              |
 | 3B        | Observações atômicas Device/Network — concluída           |
+| 3C1       | Grupos candidatos por igualdade exata — concluída         |
 | 4         | Search e timeline                                         |
 | 5         | Media hashing: SHA-256 e perceptual hashing               |
 | 6         | Correlation engine                                        |

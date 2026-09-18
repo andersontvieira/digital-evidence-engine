@@ -1,1 +1,1 @@
-"""Reserved for explainable correlations with retained provenance."""
+"""Exact technical match groups, without identity inference."""

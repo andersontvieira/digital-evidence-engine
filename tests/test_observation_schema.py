@@ -17,7 +17,9 @@ def v3_catalog(root):
     populated(root)
     normalize_events(root)
     with sqlite3.connect(root / "database/evidence.db") as c:
-        assert c.execute("PRAGMA user_version").fetchone() == (4,)
+        assert c.execute("PRAGMA user_version").fetchone() == (5,)
+        for table in ("correlation_supports", "correlation_candidates", "correlation_runs"):
+            c.execute(f"DROP TABLE {table}")
         for table in ("device_observations", "network_observations", "observation_runs"):
             c.execute(f"DROP TABLE {table}")
         c.execute("PRAGMA user_version=3")
@@ -40,9 +42,9 @@ def test_v3_requires_explicit_migration_and_all_old_rows_survive(case_root):
         assert result.exit_code == status, result.output
         assert path.read_bytes() == data
     result = CliRunner().invoke(app, ["evidence", "migrate", "--case-root", str(case_root)])
-    assert result.exit_code == 0 and json.loads(result.stdout)["schema_version"] == 4
+    assert result.exit_code == 0 and json.loads(result.stdout)["schema_version"] == 5
     with sqlite3.connect(path) as c:
-        assert c.execute("PRAGMA user_version").fetchone() == (4,)
+        assert c.execute("PRAGMA user_version").fetchone() == (5,)
         assert {
             t: c.execute(f"SELECT * FROM {t} ORDER BY id").fetchall() for t in V3_TABLES
         } == before

@@ -28,12 +28,12 @@
 
 ## Escopo atual
 
-Milestone 3B: preservar Foundation, parsers e normalizers; adicionar somente fatos
-atômicos DeviceObservation/NetworkObservation a partir de ParsedRecords, conforme
-ADR 0017. Observações são DERIVED, sem correlação, identidade ou inferência de autoria.
+Milestone 3C1: preservar Foundation, parsers, normalizers e observers; adicionar
+somente grupos candidatos de igualdade técnica exata a partir de observações,
+conforme ADR 0018. Sem identidade, temporalidade, score ou inferência de autoria.
 Outros artefatos, WhatsApp, timeline e search continuam fora do escopo.
-Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3 exige migração explícita
-para v4; verify/manifest podem inspecionar v2/v3 sem migrar.
+Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
+para v5; verify/manifest podem inspecionar v2/v3/v4 sem migrar.
 
 Use `uv sync --locked --extra dev --python 3.12` com uv 0.8.22. Não atualize o
 lockfile incidentalmente. Hashes catalogados não podem ser substituídos para

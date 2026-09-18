@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 3B
+## Milestone 3C1
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -26,20 +26,21 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | ingest/apple/parsers.py | Somente inventário, sign-on e atividade técnica de mídia |
 | cli/parse.py | Contagens de parsing sem payloads no console |
 | models/entities.py | Foundation, ParserRun e ParsedRecord |
-| storage/database.py | SQLite, foreign keys, schema v4 e migrações explícitas v1 -> v2 -> v3 -> v4 |
+| storage/database.py | SQLite, foreign keys, schema v5 e migrações explícitas v1 -> v2 -> v3 -> v4 -> v5 |
 | normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
 | observations/ | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord |
+| correlation/ | Grupos de igualdade exata com supports, sem identidade ou temporalidade |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
-Outros adaptadores de plataformas, correlation, search e media continuam reservados.
+Outros adaptadores, engine completo de correlação, search e media continuam reservados.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
-local, correlação, search e relatórios de dossier permanecem futuros.
+local, correlação temporal, resolução de identidade, search e dossier permanecem futuros.
 
 ## Fluxo e transações
 
 1. Validar raiz externa ao projeto/Git e originals existente; recusar links,
    junctions, hard links e áreas sobrepostas; criar somente áreas graváveis ausentes.
-2. Abrir database/evidence.db; inicializar schema vazio com user_version=4
+2. Abrir database/evidence.db; inicializar schema vazio com user_version=5
    ou exigir schema reconhecido. Ativar foreign_keys em toda conexão.
 3. Persistir IngestionRun RUNNING com UUID, versão, início UTC e limites usados.
 4. Adquirir BEGIN IMMEDIATE; descobrir arquivos ordenados e verificar a baseline.
@@ -104,11 +105,12 @@ conteúdo. EvidenceFile tem unicidade (case_id, relative_path); ArchiveMember,
 (evidence_file_id, member_path). SourceRecord exige exatamente uma origem.
 Entidades produzidas apontam para IngestionRun. FKs não usam cascade destrutivo.
 
-Novos bancos recebem v4. Catálogos v1/v2/v3 exigem dee evidence migrate para escrita:
+Novos bancos recebem v5. Catálogos v1/v2/v3/v4 exigem dee evidence migrate para escrita:
 v1 -> v2 adiciona parsing; v2 -> v3 adiciona NormalizationRun/NormalizedEvent.
 Passos conhecidos e user_version são atualizados numa transação, sem sucesso parcial.
 v3 -> v4 adiciona somente ObservationRun, DeviceObservation e NetworkObservation.
-Verify/manifest podem ler v2/v3 sem migração; v1 continua recusado antes de migrate.
+v4 -> v5 adiciona CorrelationRun, CorrelationCandidate e CorrelationSupport.
+Verify/manifest podem ler v2/v3/v4 sem migração; v1 continua recusado antes de migrate.
 Tabelas e registros da Foundation permanecem intactos. Versões desconhecidas e
 bancos não versionados com tabelas são recusados. Não há Alembic nem migração silenciosa.
 Antes de abrir um catálogo não vazio para escrita normal, validar schema em modo
@@ -183,6 +185,19 @@ Transação por observer preserva atomicidade e runs FAILED; idempotência usa
 registro/observer/versão/ordinal. Não há leitura de originals/working nem fusão
 entre fontes. Contratos, ordem, sentinelas e limites estão na ADR 0017.
 
+## Candidatos por igualdade exata
+
+DeviceObservation/NetworkObservation -> CorrelationSupport -> CorrelationCandidate.
+Um correlator 1.0.0 agrupa somente observações dos observers 1.0.0. Regra device
+exige igualdade de fact_kind/namespace/raw persistido; regra network exige versão/IP
+canônico, permitindo plataformas diferentes. Cada grupo >=2 guarda digest da chave
+e N supports tipados, sem pairwise edges. Não há tempo, score ou identidade.
+
+BEGIN IMMEDIATE e savepoint tornam cada run atômico. Reexecução valida todos os
+supports/ordinals e detecta grupos desaparecidos; divergência falha sem reescrita.
+Não há leitura de ParsedRecord, NormalizedEvent ou arquivos brutos nesta camada.
+Constraints e seleção de versões estão documentadas na ADR 0018.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -208,5 +223,6 @@ baseline validada. Downloads servem às ferramentas, não à execução do motor
 Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
-manifesto, ZIPs adversariais, parsing, normalização e observações. ADRs 0007–0017 documentam as decisões; os seis
+manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
+ADRs 0007–0018 documentam as decisões; os seis
 princípios originais continuam válidos.

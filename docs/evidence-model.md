@@ -1,6 +1,6 @@
 # Modelo de evidências
 
-## Schema implementado (v4)
+## Schema implementado (v5)
 
 | Entidade | Campos principais e papel |
 | --- | --- |
@@ -38,7 +38,8 @@ Identificam arquivos completos, **não fingem registros de uma plataforma** e n�
 carregam payload. Futuros parsers inserirão SourceRecords com localização real
 (linha, JSON pointer etc.), identificador e versão próprios.
 NormalizedEvent referencia ParsedRecord como derivação; NormalizationRun audita
-a execução. Associação de múltiplos suportes por correlação continua futura.
+a execução. Grupos candidatos exatos referenciam observações por supports na 3C1;
+resolução de identidade permanece futura.
 
 Na Milestone 2A, ParsedRecord aponta para um SourceRecord de parsing com locator
 preciso e parser_id/version. Este referencia a mesma EvidenceFile ou ArchiveMember;
@@ -82,7 +83,7 @@ Migração v1 -> v2 é aditiva, explícita e transacional via dee evidence migra
 
 Schema v3 adiciona somente essas duas tabelas. Migração explícita percorre passos
 v1 -> v2 -> v3 conhecidos em uma transação; nenhuma linha anterior é alterada.
-Verify/manifest podem ler v2/v3 sem migrar. Demais operações exigem versão atual.
+Verify/manifest podem ler v2/v3/v4 sem migrar. Demais operações exigem versão atual.
 
 NormalizationRun registra case, normalizer/versão, status, horários operacionais,
 contagens e diagnósticos técnicos. NormalizedEvent é DERIVED e referencia run,
@@ -141,6 +142,32 @@ Identidade única por ParsedRecord/observer/versão/ordinal; fatos de fontes dif
 permanecem separados, mesmo com valores iguais. Não há entidade Device/Network,
 deduplicação entre registros ou propagação de valores ausentes. Regras na ADR 0017.
 Migração explícita v3 -> v4 integra a cadeia v1 -> v2 -> v3 -> v4 transacional.
+
+## Candidatos exatos (3C1)
+
+Schema v5 adiciona somente:
+
+| Entidade | Campos e papel |
+| --- | --- |
+| CorrelationRun | case, correlator/versão, status, início/fim, contagens de observações/candidates/supports, warnings e error_code técnicos |
+| CorrelationCandidate | case/run, correlator/regra/versões, candidate_kind, key_digest SHA-256, support_count >=2, created_at |
+| CorrelationSupport | candidate_id/kind, support_ordinal 0-based, exatamente um device_observation_id ou network_observation_id |
+
+Candidate representa grupo DERIVED de igualdade técnica, sem entidade compartilhada
+ou conclusão de identidade. Chave device: fact_kind/namespace/value_raw TEXT exato;
+chave network: ip_version/ip_canonical persistidos, somente válidos. Somente versões
+1.0.0 dos observers são aceitas; singleton não produz candidate.
+
+Unicidade por case/correlator/versão/regra/versão/digest. Supports têm FK composta
+para candidate_id/kind, CHECK de referência exclusiva e unicidade por ordinal e
+observação no grupo. Isso impede supports de domínio errado. Valores sensíveis não
+são copiados. Cadeia: Candidate -> Support -> Observation -> ParsedRecord ->
+SourceRecord -> ArchiveMember/EvidenceFile -> SHA-256 original.
+
+Ordem dos supports: parsed_record_id, observation_ordinal, observation_id. Uma
+reexecução conserva IDs/digests/supports; divergência falha o run integralmente.
+Migração v4 -> v5 é aditiva na cadeia explícita, preservando as 12 tabelas anteriores.
+Sem tempo, score, autoria ou ownership. Detalhes na ADR 0018.
 
 ## Manifesto e verify
 
