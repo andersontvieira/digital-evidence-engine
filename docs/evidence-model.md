@@ -1,6 +1,6 @@
 # Modelo de evidências
 
-## Schema implementado (v2)
+## Schema implementado (v3)
 
 | Entidade | Campos principais e papel |
 | --- | --- |
@@ -37,7 +37,8 @@ parser_id=evidence_engine.inventory e parser_version igual à versão do motor.
 Identificam arquivos completos, **não fingem registros de uma plataforma** e não
 carregam payload. Futuros parsers inserirão SourceRecords com localização real
 (linha, JSON pointer etc.), identificador e versão próprios.
-NormalizedRecord ainda não existe; futuramente apontará para todos os suportes.
+NormalizedEvent referencia ParsedRecord como derivação; NormalizationRun audita
+a execução. Associação de múltiplos suportes por correlação continua futura.
 
 Na Milestone 2A, ParsedRecord aponta para um SourceRecord de parsing com locator
 preciso e parser_id/version. Este referencia a mesma EvidenceFile ou ArchiveMember;
@@ -76,6 +77,28 @@ ParserRun FAILED/UNSUPPORTED preserva códigos técnicos/warnings e não possui 
 ParsedRecords válidos. Repetição de uma falha gera tentativa auditável; repetição
 de sucesso intacto reutiliza observações. Nova versão pode produzir novo conjunto.
 Migração v1 -> v2 é aditiva, explícita e transacional via dee evidence migrate.
+
+## NormalizationRun e NormalizedEvent
+
+Schema v3 adiciona somente essas duas tabelas. Migração explícita percorre passos
+v1 -> v2 -> v3 conhecidos em uma transação; nenhuma linha anterior é alterada.
+Verify/manifest podem ler v2 sem migrar. Demais operações exigem versão atual.
+
+NormalizationRun registra case, normalizer/versão, status, horários operacionais,
+contagens e diagnósticos técnicos. NormalizedEvent é DERIVED e referencia run,
+case e ParsedRecord, conservando a cadeia até a evidência original. Guarda platform,
+event_kind, timestamp_raw, occurred_at_utc nullable, time_status/time_basis e apenas
+IP/identifier/model/action/status raw. Raw usa escalar JSON, sem duplicar payload.
+Não contém pessoa, ownership, aparelho canônico ou conclusão de correlação.
+
+Unicidade: ParsedRecord + normalizer_id + versão + event_ordinal. Cada contrato
+atual gera ordinal zero. Exportações distintas geram eventos distintos. Transação
+por normalizer reverte todos os eventos novos daquele run em falha e conserva
+FAILED quando persistível. Os eventos anteriores permanecem intactos.
+Google 1.1.0 reconhece a variante UTC explícita `YYYY-MM-DD HH:MM:SS Z` (ADR 0016).
+Google 1.0.0 permanece como derivação histórica da mesma observação, sem UPDATE
+ou DELETE. Meta/Apple mantêm 1.0.0. Schema v3 e ParsedRecords não mudam.
+Contagem física de versões coexistentes não equivale a acontecimentos distintos.
 
 ## Identidade, idempotência e falhas
 
@@ -125,14 +148,16 @@ Derivações exigem método/versão e entradas; relatos, atribuição; hipótese
 justificativa e incerteza. Contradições serão preservadas. Entidades de afirmação
 ainda não são implementadas. Não inventar dados para preencher contratos.
 
-## Tempo e normalização futura
+## Tempo canônico e correlação futura
 
 Preservar timestamp original, precisão, formato, timezone/offset original quando
 existente, UTC determinável e horário local derivado com zona. Não usar zona da
 máquina para preencher ausência silenciosamente. Horários ambíguos/inexistentes
 em mudanças de horário de verão ficam explícitos, sem UTC inventado.
 
-Somente horários operacionais do motor são persistidos agora, como texto UTC com Z.
+Horários operacionais são texto UTC com Z. Eventos possuem UTC somente quando
+determinável pelo contrato: epoch com unidade conhecida ou data/hora com zona
+explícita. Demais timestamps ficam raw_only/missing; o timestamp raw é conservado.
 Deduplicação futura conservará suportes N:N, critérios e versões das regras.
 Similaridade incerta será candidata a correlação, não fusão destrutiva.
 Hash perceptual futuro não substituirá SHA-256.

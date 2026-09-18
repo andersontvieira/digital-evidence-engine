@@ -309,6 +309,8 @@ def legacy_catalog(root: Path) -> dict[str, list[tuple]]:
     write_source(root, "profile_activity.json", {"profile_account_insights": [{"timestamp": 1}]})
     ingest(root)
     with sqlite3.connect(root / "database/evidence.db") as connection:
+        connection.execute("DROP TABLE normalized_events")
+        connection.execute("DROP TABLE normalization_runs")
         connection.execute("DROP TABLE parsed_records")
         connection.execute("DROP TABLE parser_runs")
         connection.execute("PRAGMA user_version=1")
@@ -327,7 +329,7 @@ def test_v1_requires_explicit_migration_preserving_existing_rows(case_root: Path
         assert database.read_bytes() == original_bytes
     for _ in range(2):
         result = CliRunner().invoke(app, ["evidence", "migrate", "--case-root", str(case_root)])
-        assert result.exit_code == 0 and json.loads(result.stdout)["schema_version"] == 2
+        assert result.exit_code == 0 and json.loads(result.stdout)["schema_version"] == 3
     with sqlite3.connect(database) as connection:
         assert {
             table: connection.execute(f"SELECT * FROM {table}").fetchall() for table in V1_TABLES

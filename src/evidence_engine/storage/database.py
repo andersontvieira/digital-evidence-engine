@@ -1,4 +1,4 @@
-"""SQLite schemas and an explicit, additive v1 -> v2 migration."""
+"""SQLite schemas and explicit, additive v1 -> v2 -> v3 migrations."""
 
 import sqlite3
 from pathlib import Path
@@ -8,10 +8,18 @@ from sqlalchemy import URL, Engine, create_engine, event, inspect
 
 from evidence_engine.errors import EvidenceError
 from evidence_engine.ingest.generic.paths import check_path
-from evidence_engine.models.entities import Base, ParsedRecord, ParserRun
+from evidence_engine.models.entities import (
+    Base,
+    NormalizationRun,
+    NormalizedEvent,
+    ParsedRecord,
+    ParserRun,
+)
 
-SCHEMA_VERSION = 2
-V1_TABLES = set(Base.metadata.tables) - {ParserRun.__tablename__, ParsedRecord.__tablename__}
+SCHEMA_VERSION = 3
+V3_ADDITIONS = {NormalizationRun.__tablename__, NormalizedEvent.__tablename__}
+V2_TABLES = set(Base.metadata.tables) - V3_ADDITIONS
+V1_TABLES = V2_TABLES - {ParserRun.__tablename__, ParsedRecord.__tablename__}
 
 
 def open_database(
@@ -55,10 +63,21 @@ def open_database(
             if version == 0 and not tables and initialize:
                 Base.metadata.create_all(connection)
                 connection.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
-            elif version == 1 and tables == V1_TABLES and migrate:
-                Base.metadata.tables[ParserRun.__tablename__].create(connection)
-                Base.metadata.tables[ParsedRecord.__tablename__].create(connection)
-                connection.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif migrate and (
+                (version == 1 and tables == V1_TABLES) or (version == 2 and tables == V2_TABLES)
+            ):
+                # Both steps share this explicit transaction; any failure restores
+                # the starting schema and all existing rows, including v1 -> v3.
+                if version == 1:
+                    Base.metadata.tables[ParserRun.__tablename__].create(connection)
+                    Base.metadata.tables[ParsedRecord.__tablename__].create(connection)
+                    connection.exec_driver_sql("PRAGMA user_version = 2")
+                Base.metadata.tables[NormalizationRun.__tablename__].create(connection)
+                Base.metadata.tables[NormalizedEvent.__tablename__].create(connection)
+                connection.exec_driver_sql("PRAGMA user_version = 3")
+            elif version == 2 and tables == V2_TABLES and read_only:
+                # Verify/manifest can inspect v2 before explicit migration.
+                pass
             elif version == 1 and tables == V1_TABLES:
                 raise EvidenceError(
                     "Catalog schema v1 requires explicit migration: run evidence migrate"

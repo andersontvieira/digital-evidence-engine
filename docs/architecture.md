@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 2D
+## Milestone 3A
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -26,17 +26,19 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | ingest/apple/parsers.py | Somente inventário, sign-on e atividade técnica de mídia |
 | cli/parse.py | Contagens de parsing sem payloads no console |
 | models/entities.py | Foundation, ParserRun e ParsedRecord |
-| storage/database.py | SQLite, foreign keys, schema v2 e migração explícita v1 -> v2 |
+| storage/database.py | SQLite, foreign keys, schema v3 e migrações explícitas v1 -> v2 -> v3 |
+| normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
 Outros adaptadores de plataformas, correlation, search e media continuam reservados.
-Normalização, timezone de eventos e relatórios de dossier são futuros.
+Normalização canônica de eventos está implementada na 3A. Renderização em timezone
+local, correlação, search e relatórios de dossier permanecem futuros.
 
 ## Fluxo e transações
 
 1. Validar raiz externa ao projeto/Git e originals existente; recusar links,
    junctions, hard links e áreas sobrepostas; criar somente áreas graváveis ausentes.
-2. Abrir database/evidence.db; inicializar schema vazio com user_version=2
+2. Abrir database/evidence.db; inicializar schema vazio com user_version=3
    ou exigir schema reconhecido. Ativar foreign_keys em toda conexão.
 3. Persistir IngestionRun RUNNING com UUID, versão, início UTC e limites usados.
 4. Adquirir BEGIN IMMEDIATE; descobrir arquivos ordenados e verificar a baseline.
@@ -101,8 +103,10 @@ conteúdo. EvidenceFile tem unicidade (case_id, relative_path); ArchiveMember,
 (evidence_file_id, member_path). SourceRecord exige exatamente uma origem.
 Entidades produzidas apontam para IngestionRun. FKs não usam cascade destrutivo.
 
-Novos bancos recebem v2. Catálogos v1 exigem dee evidence migrate, que adiciona
-as duas tabelas de parsing e seus índices em transação antes de atualizar user_version.
+Novos bancos recebem v3. Catálogos v1/v2 exigem dee evidence migrate para escrita:
+v1 -> v2 adiciona parsing; v2 -> v3 adiciona NormalizationRun/NormalizedEvent.
+Passos conhecidos e user_version são atualizados numa transação, sem sucesso parcial.
+Verify/manifest podem ler v2 sem migração; v1 continua recusado antes de migrate.
 Tabelas e registros da Foundation permanecem intactos. Versões desconhecidas e
 bancos não versionados com tabelas são recusados. Não há Alembic nem migração silenciosa.
 Antes de abrir um catálogo não vazio para escrita normal, validar schema em modo
@@ -150,6 +154,23 @@ nem quota global de memória. Valores textuais não recebem reparo de mojibake. 
 timestamp é preservado sem normalização. IP syntax/model code extraído do user agent
 são anotações locais com origem; não alimentam correlação ou interpretação.
 
+## Normalização canônica
+
+ParsedRecord -> NormalizedEvent é uma derivação, sem leitura/extração de novos
+valores dos originais. Três normalizers estáticos selecionam parser_id/versão/tipo;
+um evento por registro elegível, ordinal zero. Conversas e inventário Apple são skips.
+FK até ParsedRecord preserva a cadeia de evidência. Payload completo não é duplicado.
+Campos raw usam escalares JSON; timestamp principal conserva exatamente o raw anterior.
+
+Identidade é ParsedRecord + normalizer_id + versão + ordinal. BEGIN IMMEDIATE
+serializa cada run; savepoint agrupa todos os novos eventos. Falhas preservam runs
+anteriores e permitem FAILED técnico sem payloads. Commit incerto é inspecionado.
+UTC exige base explícita; raw_only/missing continuam válidos. Sem entidades de
+identidade, geolocalização, correlação ou deduplicação. Contratos na ADR 0015.
+Google 1.1.0 adiciona somente o formato exato `YYYY-MM-DD HH:MM:SS Z`, com UTC
+declarado na fonte (ADR 0016); Meta/Apple continuam 1.0.0. Eventos Google 1.0.0
+permanecem intactos. A seleção de versões atuais é externa, sem nova view persistente.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -175,5 +196,5 @@ baseline validada. Downloads servem às ferramentas, não à execução do motor
 Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
-manifesto, ZIPs adversariais e parsing. ADRs 0007–0011 documentam as decisões novas; os seis
+manifesto, ZIPs adversariais, parsing e normalização. ADRs 0007–0016 documentam as decisões; os seis
 princípios originais continuam válidos.

@@ -161,3 +161,58 @@ class ParsedRecord(Base):
     payload_json: Mapped[str]
     annotations_json: Mapped[str] = mapped_column(default="[]")
     created_at: Mapped[str] = mapped_column(default=utc_now)
+
+
+class NormalizationRun(Base):
+    """One atomic normalizer execution; diagnostics contain fixed codes only."""
+
+    __tablename__ = "normalization_runs"
+    __table_args__ = (CheckConstraint("status IN ('RUNNING', 'COMPLETED', 'FAILED')"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    normalizer_id: Mapped[str]
+    normalizer_version: Mapped[str]
+    status: Mapped[str]
+    started_at: Mapped[str] = mapped_column(default=utc_now)
+    completed_at: Mapped[str | None]
+    error_code: Mapped[str | None]
+    diagnostics_json: Mapped[str] = mapped_column(default="[]")
+    events_normalized: Mapped[int] = mapped_column(default=0)
+    events_existing: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[str] = mapped_column(default=utc_now)
+
+
+class NormalizedEvent(Base):
+    """DERIVED representation of one observation; never an identity correlation."""
+
+    __tablename__ = "normalized_events"
+    __table_args__ = (
+        UniqueConstraint(
+            "parsed_record_id", "normalizer_id", "normalizer_version", "event_ordinal"
+        ),
+        CheckConstraint("event_ordinal >= 0"),
+        CheckConstraint("time_status IN ('normalized', 'raw_only', 'missing')"),
+        CheckConstraint("(time_status = 'normalized') = (occurred_at_utc IS NOT NULL)"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    normalization_run_id: Mapped[str] = mapped_column(ForeignKey("normalization_runs.id"))
+    parsed_record_id: Mapped[str] = mapped_column(ForeignKey("parsed_records.id"), index=True)
+    normalizer_id: Mapped[str]
+    normalizer_version: Mapped[str]
+    event_ordinal: Mapped[int] = mapped_column(default=0)
+    platform: Mapped[str]
+    event_kind: Mapped[str]
+    # Raw fields are JSON scalars, preserving original types and empty strings.
+    timestamp_raw: Mapped[str | None]
+    occurred_at_utc: Mapped[str | None]
+    time_status: Mapped[str]
+    time_basis: Mapped[str]
+    ip_raw: Mapped[str | None]
+    device_identifier_raw: Mapped[str | None]
+    device_model_raw: Mapped[str | None]
+    action_raw: Mapped[str | None]
+    status_raw: Mapped[str | None]
+    created_at: Mapped[str] = mapped_column(default=utc_now)

@@ -1,7 +1,8 @@
 # digital-evidence-engine
 
-Motor técnico local para preservação, catalogação e rastreabilidade de evidências
-digitais, preparado para futura indexação, normalização, pesquisa e correlação.
+Motor técnico local para preservação, catalogação, normalização e
+rastreabilidade de evidências digitais, preparado para futura indexação,
+pesquisa e correlação.
 
 **Não é software pericial certificado.** Hashes verificam consistência de conteúdo;
 não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade.
@@ -10,9 +11,9 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 2D: Evidence Foundation, três artefatos Instagram/Meta, duas tabelas
-Google Takeout e três CSVs Apple. Não há parsers de WhatsApp, normalização de eventos,
-timeline, correlação, OCR, IA/ML, dashboard ou integrações externas.
+Milestone 3A: Evidence Foundation, parsers Instagram/Meta, Google e Apple e
+normalização canônica de eventos. Não há WhatsApp, timeline, correlação, entidades
+de identidade, OCR, IA/ML, dashboard ou integrações externas.
 
 ## Arquitetura e preservação
 
@@ -25,7 +26,8 @@ O pacote src/evidence_engine separa CLI, ingestão genérica, modelos, persistê
 e manifestos. SourceRecord aponta para EvidenceFile ou ArchiveMember, ligado ao
 ZIP original, ao SHA-256 e à execução que produziu o registro. OBSERVED, DERIVED,
 REPORTED e HYPOTHESIS permanecem conceitos separados. ParsedRecord armazena os
-valores extraídos, sem interpretação ou entidades Event. Horários operacionais são UTC;
+valores extraídos como OBSERVED; NormalizedEvent existe separadamente como DERIVED.
+Horários operacionais são UTC;
 timestamps de filesystem não são tratados como criação de conteúdo.
 
 O aplicativo não usa rede, telemetria, upload ou APIs externas. Consulte
@@ -101,11 +103,11 @@ Aquisições independentes têm UUIDs/horários próprios e não geram manifesto
 
 Verify recalcula hashes contra o SQLite, sem reparo ou alteração de baseline:
 
-| Estado | Significado |
-| --- | --- |
-| OK | Hash coincide |
-| MISSING | Original catalogado ausente |
-| MODIFIED | Hash diverge |
+| Estado    | Significado                           |
+| --------- | ------------------------------------- |
+| OK        | Hash coincide                         |
+| MISSING   | Original catalogado ausente           |
+| MODIFIED  | Hash diverge                          |
 | UNTRACKED | Arquivo presente ainda não catalogado |
 
 Exit codes: 0 para sucesso (inclusive UNTRACKED isolado), 1 para MISSING/MODIFIED,
@@ -128,25 +130,26 @@ dee parse --help
 dee parse instagram --case-root /case
 ```
 
-Catálogos novos usam schema v2. Um catálogo v1 existente é recusado pelos comandos
-até migração explícita. Faça backup consistente do catálogo antes de migrar:
+Catálogos novos usam schema v3. Catálogos v1/v2 exigem migração explícita antes
+de escrita; verify/manifest podem ler v2 sem migrar. Faça backup consistente antes:
 
 ```sh
 dee evidence migrate --case-root /case
 ```
 
-A migração transacional adiciona somente parser_runs e parsed_records e atualiza
-user_version; conserva IDs, hashes e tabelas da Foundation. Não cria caso ausente,
+A migração transacional percorre v1 -> v2 (parser_runs/parsed_records) e v2 -> v3
+(normalization_runs/normalized_events), conforme a versão inicial. Atualiza
+user_version e conserva linhas anteriores. Não cria caso ausente,
 não migra versões desconhecidas e não é acionada automaticamente pelo parsing.
 O schema do manifesto de evidências permanece v1, independente do schema SQLite.
 
 Contratos suportados (perfil/conteúdo excluído 1.1.0; mensagens 1.0.0):
 
-| Artefato/path | Estrutura mínima | Parser |
-| --- | --- | --- |
-| profile_activity.json, inclusive sob prefixo de export | objeto com profile_account_insights: lista de registros, ou array de itens com label_values | meta.profile_activity |
-| recently_deleted_content.json, inclusive sob prefixo de export | objeto com recently_deleted_media: lista de registros, ou array de itens com label_values | meta.recently_deleted_content |
-| messages/inbox/**/message_<número>.json | objeto com messages: lista e title textual ou participants: lista | meta.instagram_messages |
+| Artefato/path                                                  | Estrutura mínima                                                                            | Parser                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------- |
+| profile_activity.json, inclusive sob prefixo de export         | objeto com profile_account_insights: lista de registros, ou array de itens com label_values | meta.profile_activity         |
+| recently_deleted_content.json, inclusive sob prefixo de export | objeto com recently_deleted_media: lista de registros, ou array de itens com label_values   | meta.recently_deleted_content |
+| messages/inbox/\*\*/message\_<número>.json                     | objeto com messages: lista e title textual ou participants: lista                           | meta.instagram_messages       |
 
 São contratos explícitos testados com fixtures sintéticos, não uma promessa de
 compatibilidade com todas as variantes históricas da Meta. Nome correto com outra
@@ -178,14 +181,15 @@ Código de modelo explicitamente presente no user agent recebe anotação com o 
 de origem; não é convertido em nome comercial nem propagado para outro registro.
 
 Repetir parsing intacto adiciona zero registros. A identidade é fonte de inventário
-+ parser_id + parser_version + locator. Duas exportações iguais continuam separadas;
-versões distintas do parser também. Falha desfaz todos os ParsedRecords e SourceRecords
-de parsing daquela fonte, registra ParserRun FAILED e permite continuar as demais.
-Tentativas falhas/unsupported permanecem auditáveis; sucesso anterior é reutilizado
-somente após nova conferência do conteúdo. Não há reparse sofisticado nem reparo.
-Falha no commit final tem resultado conferido no catálogo: se houve rollback,
-registrar COMMIT_FAILED quando o armazenamento permitir; se já houve persistência,
-preservar o resultado e retornar erro operacional para revisão manual.
+
+- parser_id + parser_version + locator. Duas exportações iguais continuam separadas;
+  versões distintas do parser também. Falha desfaz todos os ParsedRecords e SourceRecords
+  de parsing daquela fonte, registra ParserRun FAILED e permite continuar as demais.
+  Tentativas falhas/unsupported permanecem auditáveis; sucesso anterior é reutilizado
+  somente após nova conferência do conteúdo. Não há reparse sofisticado nem reparo.
+  Falha no commit final tem resultado conferido no catálogo: se houve rollback,
+  registrar COMMIT_FAILED quando o armazenamento permitir; se já houve persistência,
+  preservar o resultado e retornar erro operacional para revisão manual.
 
 A saída JSON da CLI contém apenas contagens, incluindo records_parsed (novos) e
 records_existing (já processados). Exit 0 inclui warnings/unsupported; exit 1 indica
@@ -235,14 +239,14 @@ HTML fora das duas tabelas/artefatos fica fora do escopo. Consulte a
 ## Parsing Apple
 
 `dee parse apple --case-root /case` reutiliza o catálogo, a conferência de hashes,
-as transações por fonte e a idempotência existentes. Schema SQLite permanece v2.
+as transações por fonte e a idempotência existentes. Seu contrato de parsing não mudou.
 Somente três parsers, todos 1.0.0:
 
-| Parser | CSV | timestamp_raw |
-| --- | --- | --- |
-| apple.device_inventory | Apple ID Device Information.csv | Device Last Heartbeat Timestamp |
-| apple.sign_on_activity | Apple ID SignOn Information.csv | Logged In Date |
-| apple.media_device_activity | Purchase Server Events.csv | Event Time |
+| Parser                      | CSV                             | timestamp_raw                   |
+| --------------------------- | ------------------------------- | ------------------------------- |
+| apple.device_inventory      | Apple ID Device Information.csv | Device Last Heartbeat Timestamp |
+| apple.sign_on_activity      | Apple ID SignOn Information.csv | Logged In Date                  |
+| apple.media_device_activity | Purchase Server Events.csv      | Event Time                      |
 
 Os dois primeiros exigem o diretório literal `Informações da Conta Apple e do dispositivo/`.
 O terceiro exige `Apple_Media_Services/Stores Activity/Other Activity/`, com variante
@@ -271,6 +275,47 @@ Passkeys e os demais artefatos Apple permanecem fora do parsing. Um inventário 
 snapshot não demonstra ausência histórica de aparelhos. Consulte a
 [ADR 0013](docs/adr/0013-apple-csv-observations.md).
 
+## Normalização de eventos
+
+```sh
+dee normalize --help
+dee evidence migrate --case-root /case
+dee normalize events --case-root /case
+```
+
+Normalizers `meta.event_normalizer`, `google.event_normalizer` e
+`apple.event_normalizer` operam somente sobre ParsedRecords catalogados.
+Versões produtoras: Meta/Apple 1.0.0 e Google 1.1.0. Google 1.0.0 permanece como
+derivação histórica; versões coexistem sem reescrita dos eventos anteriores.
+Não releem evidências nem alteram parsers. Produzem sete event kinds: account.profile_activity,
+content.activity, communication.message, account.security_activity, account.change,
+account.sign_on e media.activity. Conversas e inventário Apple são skips intencionais.
+
+ParsedRecord é OBSERVED; NormalizedEvent é DERIVED e aponta por FK à observação.
+Campos \*\_raw são escalares JSON preservando tipo, inclusive timestamp_raw copiado
+do ParsedRecord. Não duplicam o payload. IP/identifier/model/action/status vêm somente
+do próprio registro e annotations existentes; não há nova extração de user agents.
+Valores conflitantes ficam NULL com diagnóstico técnico, sem escolher silenciosamente.
+
+Epoch inteiro Meta usa unidade do campo (timestamp/creation_timestamp em segundos,
+timestamp_ms em milissegundos), quando é o único papel do timestamp principal.
+Datas com Z, offset explícito ou sufixo UTC podem gerar occurred_at_utc. Datas sem
+zona, formatos desconhecidos e valores inválidos ficam raw_only; ausência do timestamp
+principal fica missing. Não substituir pelo horário aninhado nem inferir zona por
+IP/StoreFront/máquina. UTC usa microssegundos fixos e Z; raw nunca é substituído.
+
+Cada normalizer tem um run auditável e transação independente. Falha desfaz seus
+novos eventos, registra FAILED quando possível e permite continuar os demais.
+Repetir sem mudanças cria zero eventos; fontes diferentes permanecem ocorrências
+distintas. CLI imprime apenas contagens. Exit 0 permite raw_only/warnings, 1 indica
+falha por normalizer e 2 erro operacional/schema. Consulte diagnostics_json/error_code.
+Google 1.1.0 também aceita exatamente `YYYY-MM-DD HH:MM:SS Z`, validando calendário
+e horário. O literal Z sustenta explicit_utc; essa regra não amplia Meta/Apple nem
+o contrato temporal genérico. A contagem física pode incluir versões históricas;
+validar o conjunto atual exige selecionar versões explicitamente.
+Detalhes na [ADR 0015](docs/adr/0015-canonical-event-normalization.md) e na
+[ADR 0016](docs/adr/0016-google-source-declared-utc.md).
+
 ## Política de ZIP
 
 Somente o primeiro nível é extraído. ZIP aninhado é membro opaco. Reconhecimento
@@ -278,12 +323,12 @@ usa a estrutura ZIP, não só a extensão; .zip inválido provoca erro explícit
 
 Limites por ZIP, configuráveis no comando ingest:
 
-| Opção | Default |
-| --- | --- |
-| --max-file-bytes | 536870912 (512 MiB) |
-| --max-total-bytes | 2147483648 (2 GiB) |
-| --max-members | 10000, incluindo diretórios |
-| --max-ratio | 200 |
+| Opção             | Default                     |
+| ----------------- | --------------------------- |
+| --max-file-bytes  | 536870912 (512 MiB)         |
+| --max-total-bytes | 2147483648 (2 GiB)          |
+| --max-members     | 10000, incluindo diretórios |
+| --max-ratio       | 200                         |
 
 Exemplo: `dee evidence ingest --case-root /case --max-members 500 --max-ratio 100`.
 
@@ -345,7 +390,7 @@ docker compose run --rm dee ruff format --check --no-cache .
 docker compose run --rm dee mypy --cache-dir=/tmp/dee-mypy src
 ```
 
-Fixtures são gerados em diretórios temporários com nomes synthetic-* e conteúdo
+Fixtures são gerados em diretórios temporários com nomes synthetic-\* e conteúdo
 artificial. A suíte cobre imutabilidade, hashes, proveniência, rollback, CLI e
 ZIPs adversariais. Nenhum export real é necessário.
 
@@ -397,18 +442,19 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 
 ## Roadmap
 
-| Milestone | Escopo |
-| --- | --- |
-| 0 | Bootstrap e arquitetura — concluído |
-| 1 | Evidence Foundation — concluída |
-| 2A | Framework + três artefatos Instagram/Meta — concluída |
-| 2B | Suporte Meta array/label_values — concluída |
-| 2C | SubscriberInfo e ChangeHistory Google Takeout — concluída |
-| 2D | Três CSVs Apple e validação controlada — esta entrega |
-| 2 futura | Ampliação de formatos somente mediante escopo aprovado |
-| 3 | Normalização de events, devices, networks e messages |
-| 4 | Search e timeline |
-| 5 | Media hashing: SHA-256 e perceptual hashing |
-| 6 | Correlation engine |
-| 7 | WhatsApp |
-| 8 | Reports e dossier exports |
+| Milestone | Escopo                                                    |
+| --------- | --------------------------------------------------------- |
+| 0         | Bootstrap e arquitetura — concluído                       |
+| 1         | Evidence Foundation — concluída                           |
+| 2A        | Framework + três artefatos Instagram/Meta — concluída     |
+| 2B        | Suporte Meta array/label_values — concluída               |
+| 2C        | SubscriberInfo e ChangeHistory Google Takeout — concluída |
+| 2D        | Três CSVs Apple e validação controlada — concluída        |
+| 2 futura  | Ampliação de formatos somente mediante escopo aprovado    |
+| 3A        | Normalização canônica de eventos — concluída              |
+| 3 futura  | Observações de devices/networks, mediante escopo aprovado |
+| 4         | Search e timeline                                         |
+| 5         | Media hashing: SHA-256 e perceptual hashing               |
+| 6         | Correlation engine                                        |
+| 7         | WhatsApp                                                  |
+| 8         | Reports e dossier exports                                 |
