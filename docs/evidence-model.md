@@ -1,6 +1,6 @@
 # Modelo de evidências
 
-## Schema implementado (v3)
+## Schema implementado (v4)
 
 | Entidade | Campos principais e papel |
 | --- | --- |
@@ -82,7 +82,7 @@ Migração v1 -> v2 é aditiva, explícita e transacional via dee evidence migra
 
 Schema v3 adiciona somente essas duas tabelas. Migração explícita percorre passos
 v1 -> v2 -> v3 conhecidos em uma transação; nenhuma linha anterior é alterada.
-Verify/manifest podem ler v2 sem migrar. Demais operações exigem versão atual.
+Verify/manifest podem ler v2/v3 sem migrar. Demais operações exigem versão atual.
 
 NormalizationRun registra case, normalizer/versão, status, horários operacionais,
 contagens e diagnósticos técnicos. NormalizedEvent é DERIVED e referencia run,
@@ -118,6 +118,29 @@ RUNNING sem término pode indicar interrupção; não é promovido a sucesso.
 ArchiveMember é único por (evidence_file_id, member_path); working_relative_path
 também é único. ZIP recusado não deixa inventário parcialmente catalogado.
 Diretórios ZIP não geram ArchiveMember. ZIP aninhado é membro opaco.
+
+## Observações atômicas (3B)
+
+Schema v4 adiciona três tabelas, sem alterar linhas de v3:
+
+| Entidade | Campos e papel |
+| --- | --- |
+| ObservationRun | UUID, case, observer_id/version, status, started_at/finished_at, records_inspected/supported/skipped, observations_created/existing, warnings_json, error_code |
+| DeviceObservation | UUID, case/run/ParsedRecord, observer_id/version, observation_ordinal, platform, fact_kind identifier/model, namespace, value_raw, source_field_locator/name, created_at |
+| NetworkObservation | UUID, case/run/ParsedRecord, observer_id/version, observation_ordinal, platform, source_role, ip_raw, ip_canonical/ip_version nullable, source_field_locator/name, created_at |
+
+Ambas são DERIVED de um único ParsedRecord OBSERVED. Não referenciam eventos nem
+duplicam timestamps. Raw fields são escalares JSON em TEXT, sem alteração do tipo
+ou conteúdo; device facts não possuem value_canonical. IP canonical é TEXT obtido
+somente por classificação sintática. Inválidos conservam raw, NULLs e warning.
+
+Locator aponta ao campo original (header escapado ou annotation validada contra o
+payload), incluindo o campo UA inteiro quando o valor é um token. Cadeia:
+Observation -> ParsedRecord -> SourceRecord -> ArchiveMember/EvidenceFile -> SHA-256.
+Identidade única por ParsedRecord/observer/versão/ordinal; fatos de fontes diferentes
+permanecem separados, mesmo com valores iguais. Não há entidade Device/Network,
+deduplicação entre registros ou propagação de valores ausentes. Regras na ADR 0017.
+Migração explícita v3 -> v4 integra a cadeia v1 -> v2 -> v3 -> v4 transacional.
 
 ## Manifesto e verify
 

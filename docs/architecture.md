@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 3A
+## Milestone 3B
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -26,8 +26,9 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | ingest/apple/parsers.py | Somente inventário, sign-on e atividade técnica de mídia |
 | cli/parse.py | Contagens de parsing sem payloads no console |
 | models/entities.py | Foundation, ParserRun e ParsedRecord |
-| storage/database.py | SQLite, foreign keys, schema v3 e migrações explícitas v1 -> v2 -> v3 |
+| storage/database.py | SQLite, foreign keys, schema v4 e migrações explícitas v1 -> v2 -> v3 -> v4 |
 | normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
+| observations/ | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
 Outros adaptadores de plataformas, correlation, search e media continuam reservados.
@@ -38,7 +39,7 @@ local, correlação, search e relatórios de dossier permanecem futuros.
 
 1. Validar raiz externa ao projeto/Git e originals existente; recusar links,
    junctions, hard links e áreas sobrepostas; criar somente áreas graváveis ausentes.
-2. Abrir database/evidence.db; inicializar schema vazio com user_version=3
+2. Abrir database/evidence.db; inicializar schema vazio com user_version=4
    ou exigir schema reconhecido. Ativar foreign_keys em toda conexão.
 3. Persistir IngestionRun RUNNING com UUID, versão, início UTC e limites usados.
 4. Adquirir BEGIN IMMEDIATE; descobrir arquivos ordenados e verificar a baseline.
@@ -103,10 +104,11 @@ conteúdo. EvidenceFile tem unicidade (case_id, relative_path); ArchiveMember,
 (evidence_file_id, member_path). SourceRecord exige exatamente uma origem.
 Entidades produzidas apontam para IngestionRun. FKs não usam cascade destrutivo.
 
-Novos bancos recebem v3. Catálogos v1/v2 exigem dee evidence migrate para escrita:
+Novos bancos recebem v4. Catálogos v1/v2/v3 exigem dee evidence migrate para escrita:
 v1 -> v2 adiciona parsing; v2 -> v3 adiciona NormalizationRun/NormalizedEvent.
 Passos conhecidos e user_version são atualizados numa transação, sem sucesso parcial.
-Verify/manifest podem ler v2 sem migração; v1 continua recusado antes de migrate.
+v3 -> v4 adiciona somente ObservationRun, DeviceObservation e NetworkObservation.
+Verify/manifest podem ler v2/v3 sem migração; v1 continua recusado antes de migrate.
 Tabelas e registros da Foundation permanecem intactos. Versões desconhecidas e
 bancos não versionados com tabelas são recusados. Não há Alembic nem migração silenciosa.
 Antes de abrir um catálogo não vazio para escrita normal, validar schema em modo
@@ -171,6 +173,16 @@ Google 1.1.0 adiciona somente o formato exato `YYYY-MM-DD HH:MM:SS Z`, com UTC
 declarado na fonte (ADR 0016); Meta/Apple continuam 1.0.0. Eventos Google 1.0.0
 permanecem intactos. A seleção de versões atuais é externa, sem nova view persistente.
 
+## Observações de dispositivos/rede
+
+Dois observers 1.0.0 derivam diretamente de ParsedRecords, evitando multiplicação
+por versões de NormalizedEvent e incluindo inventário Apple. Cada fato referencia
+o campo original pelo locator e conserva raw. IP canonical usa apenas ipaddress;
+device facts não recebem valor canônico. Nenhuma entidade ou correlação é criada.
+Transação por observer preserva atomicidade e runs FAILED; idempotência usa
+registro/observer/versão/ordinal. Não há leitura de originals/working nem fusão
+entre fontes. Contratos, ordem, sentinelas e limites estão na ADR 0017.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -196,5 +208,5 @@ baseline validada. Downloads servem às ferramentas, não à execução do motor
 Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
-manifesto, ZIPs adversariais, parsing e normalização. ADRs 0007–0016 documentam as decisões; os seis
+manifesto, ZIPs adversariais, parsing, normalização e observações. ADRs 0007–0017 documentam as decisões; os seis
 princípios originais continuam válidos.

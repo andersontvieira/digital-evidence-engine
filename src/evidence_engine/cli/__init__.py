@@ -5,6 +5,7 @@ import typer
 from evidence_engine import __version__
 from evidence_engine.cli.evidence import app as evidence_app
 from evidence_engine.cli.normalize import app as normalize_app
+from evidence_engine.cli.observe import app as observe_app
 from evidence_engine.cli.parse import app as parse_app
 
 app = typer.Typer(
@@ -16,6 +17,7 @@ app = typer.Typer(
 app.add_typer(evidence_app, name="evidence")
 app.add_typer(parse_app, name="parse")
 app.add_typer(normalize_app, name="normalize")
+app.add_typer(observe_app, name="observe")
 
 
 @app.callback()

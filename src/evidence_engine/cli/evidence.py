@@ -69,7 +69,7 @@ def manifest(case_root: CaseRoot) -> None:
 
 @app.command("migrate")
 def migrate(case_root: CaseRoot) -> None:
-    """Explicitly advance v1/v2 catalogs to v3 without changing evidence."""
+    """Explicitly advance v1/v2/v3 catalogs to v4 without changing evidence."""
     try:
         paths = CasePaths.load(case_root)
         engine = open_database(paths.db_file, migrate=True)

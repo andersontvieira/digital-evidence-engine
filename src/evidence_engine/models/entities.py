@@ -216,3 +216,85 @@ class NormalizedEvent(Base):
     action_raw: Mapped[str | None]
     status_raw: Mapped[str | None]
     created_at: Mapped[str] = mapped_column(default=utc_now)
+
+
+class ObservationRun(Base):
+    """One atomic observer execution; warnings contain technical counts only."""
+
+    __tablename__ = "observation_runs"
+    __table_args__ = (CheckConstraint("status IN ('RUNNING', 'COMPLETED', 'FAILED')"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    observer_id: Mapped[str]
+    observer_version: Mapped[str]
+    status: Mapped[str]
+    started_at: Mapped[str] = mapped_column(default=utc_now)
+    finished_at: Mapped[str | None]
+    records_inspected: Mapped[int] = mapped_column(default=0)
+    records_supported: Mapped[int] = mapped_column(default=0)
+    records_skipped: Mapped[int] = mapped_column(default=0)
+    observations_created: Mapped[int] = mapped_column(default=0)
+    observations_existing: Mapped[int] = mapped_column(default=0)
+    warnings_json: Mapped[str] = mapped_column(default="{}")
+    error_code: Mapped[str | None]
+
+
+class DeviceObservation(Base):
+    """DERIVED atomic fact, not an entity or assertion of device identity."""
+
+    __tablename__ = "device_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "parsed_record_id", "observer_id", "observer_version", "observation_ordinal"
+        ),
+        CheckConstraint("observation_ordinal >= 0"),
+        CheckConstraint("fact_kind IN ('identifier', 'model')"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    observation_run_id: Mapped[str] = mapped_column(ForeignKey("observation_runs.id"))
+    parsed_record_id: Mapped[str] = mapped_column(ForeignKey("parsed_records.id"), index=True)
+    observer_id: Mapped[str]
+    observer_version: Mapped[str]
+    observation_ordinal: Mapped[int]
+    platform: Mapped[str]
+    fact_kind: Mapped[str]
+    namespace: Mapped[str]
+    # JSON scalar encoding preserves the source type, spelling and leading zeros.
+    value_raw: Mapped[str]
+    source_field_locator: Mapped[str]
+    source_field_name: Mapped[str | None]
+    created_at: Mapped[str] = mapped_column(default=utc_now)
+
+
+class NetworkObservation(Base):
+    """DERIVED occurrence of an explicit IP field; no network identity."""
+
+    __tablename__ = "network_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "parsed_record_id", "observer_id", "observer_version", "observation_ordinal"
+        ),
+        CheckConstraint("observation_ordinal >= 0"),
+        CheckConstraint("ip_version IS NULL OR ip_version IN (4, 6)"),
+        CheckConstraint("(ip_canonical IS NULL) = (ip_version IS NULL)"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    observation_run_id: Mapped[str] = mapped_column(ForeignKey("observation_runs.id"))
+    parsed_record_id: Mapped[str] = mapped_column(ForeignKey("parsed_records.id"), index=True)
+    observer_id: Mapped[str]
+    observer_version: Mapped[str]
+    observation_ordinal: Mapped[int]
+    platform: Mapped[str]
+    source_role: Mapped[str]
+    # JSON scalar, just like other raw catalog fields; canonical is plain text.
+    ip_raw: Mapped[str]
+    ip_canonical: Mapped[str | None]
+    ip_version: Mapped[int | None]
+    source_field_locator: Mapped[str]
+    source_field_name: Mapped[str | None]
+    created_at: Mapped[str] = mapped_column(default=utc_now)
