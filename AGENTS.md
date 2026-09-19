@@ -28,10 +28,10 @@
 
 ## Escopo atual
 
-Milestone 4A2: preservar as camadas existentes; consultas técnicas exatas de
-Device/NetworkObservation e proveniência por FKs, conforme ADRs 0019 e 0020.
+Milestone 4B1: preservar as camadas existentes; incident-window read-only de eventos
+atuais, proveniência e contexto somente do mesmo ParsedRecord, conforme ADR 0021.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
-Busca textual, timeline composta, correlação temporal e identidade ficam fora do escopo.
+Sem propagação entre registros, busca textual, correlação temporal ou identidade.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
 para v5; verify/manifest podem inspecionar v2/v3/v4 sem migrar.
 

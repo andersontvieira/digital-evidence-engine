@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 4A2
+## Milestone 4B1
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -30,7 +30,7 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
 | observations/ | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord |
 | correlation/ | Grupos de igualdade exata com supports, sem identidade ou temporalidade |
-| query/ | Timeline atual, busca técnica exata e proveniência por FKs, somente leitura |
+| query/ | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
 Outros adaptadores, engine completo de correlação, busca textual e media continuam reservados.
@@ -227,6 +227,15 @@ e mantém um snapshot por consulta. Sem nova entidade, migration ou cache.
 Projeções, limites, ordenação, NOT_FOUND e risco externo de shell history: ADR 0020.
 Busca técnica não produz conclusão de identidade, sessão, localização ou autoria.
 
+## Janela de eventos com contexto de origem
+
+Incident-window usa read_catalog e timeline_in_snapshot para compor eventos atuais,
+proveniência da 4A2 e observations 1.0.0 do mesmo ParsedRecord numa única transação
+de leitura. Contextos nunca se propagam por tempo, valor ou candidate; memberships
+são somente os supports persistidos. Sem novos vínculos entre eventos, entidades,
+schema ou persistência. Bounds UTC Z obrigatórios; ordem idêntica à timeline.
+Resumo essencial com total completo e prefixo limitado; contrato na ADR 0021.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -253,5 +262,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0020 documentam as decisões; os seis
+ADRs 0007–0021 documentam as decisões; os seis
 princípios originais continuam válidos.

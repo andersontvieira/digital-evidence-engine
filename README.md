@@ -11,8 +11,8 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 4A2: Foundation, parsers, normalização, observações, candidatos exatos,
-timeline atual, busca técnica exata e proveniência somente leitura. Sem resolução
+Milestone 4B1: Foundation, parsers, normalização, observações, candidatos exatos,
+timeline atual, busca técnica, proveniência e janela de eventos com contexto de origem. Sem resolução
 de identidade, correlação temporal, score, WhatsApp, timeline investigativa, OCR, IA/ML, dashboard
 ou integrações externas.
 
@@ -477,6 +477,29 @@ podem ficar no histórico do shell do operador, fora do controle do engine.
 Busca não implica correlação, identidade, ownership ou autoria. Busca textual e
 correlação temporal permanecem futuras. [ADR 0020](docs/adr/0020-technical-search-provenance.md).
 
+## Janela de eventos com contexto (4B1)
+
+```sh
+dee query incident-window --case-root /case --start 2026-01-02T00:00:00Z --end 2026-01-03T00:00:00Z
+```
+
+Start/end obrigatórios em UTC Z, intervalo [start,end). Filtros opcionais:
+`--platform`, `--event-kind`; limit default 500, máximo 5000. Mesma política current
+e ordenação da timeline. Cada item contém os nove campos do evento, proveniência
+da 4A2 e device_context/network_context somente do **mesmo ParsedRecord**, produzidos
+pelos observers 1.0.0. Contextos ordenam por observation_ordinal/observation_id;
+candidate_ids vêm apenas de CorrelationSupport persistido, em ordem ASC.
+
+Sem observation própria, o contexto fica vazio. Não se copiam fatos de registros
+próximos ou de mesmo candidate/valor. Origem comum não prova dispositivo, pessoa,
+sessão ou autoria. Um único snapshot read-only, schema v5, sem reler evidência nem
+persistir resultados. Sem raw device values, IPs ou payloads.
+
+matched_total conta todos os eventos datados da janela; returned/truncated descrevem
+o prefixo. undated_current_events mantém a semântica 4A1; não há agregados adicionais
+de contexto. JSON determinístico; resultados reais permanecem fora do Git.
+Detalhes na [ADR 0021](docs/adr/0021-incident-window-view.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -561,6 +584,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 3C1       | Grupos candidatos por igualdade exata — concluída         |
 | 4A1       | Read-only current timeline query — concluída              |
 | 4A2       | Technical Search & Provenance Drill-down — concluída      |
+| 4B1       | Incident Window View — concluída                          |
 | 4 futura  | Search e ampliação da timeline                            |
 | 5         | Media hashing: SHA-256 e perceptual hashing               |
 | 6         | Correlation engine                                        |
