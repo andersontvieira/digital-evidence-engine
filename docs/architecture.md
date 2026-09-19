@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 4A1
+## Milestone 4A2
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -30,12 +30,12 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
 | observations/ | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord |
 | correlation/ | Grupos de igualdade exata com supports, sem identidade ou temporalidade |
-| query/ | Política current-event versionada e timeline read-only, sem schema novo |
+| query/ | Timeline atual, busca técnica exata e proveniência por FKs, somente leitura |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
-Outros adaptadores, engine completo de correlação, search e media continuam reservados.
+Outros adaptadores, engine completo de correlação, busca textual e media continuam reservados.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
-local, correlação temporal, resolução de identidade, search e dossier permanecem futuros.
+local, correlação temporal, resolução de identidade, busca textual e dossier permanecem futuros.
 
 ## Fluxo e transações
 
@@ -213,6 +213,20 @@ items, sem reduzir matched_total. Undated conta os atuais sem UTC sob os filtros
 platform/event_kind, sem aplicação de janela temporal. JSON não contém dados raw
 ou relógio operacional. Contrato e limites na ADR 0019; schema continua v5.
 
+## Busca técnica e proveniência
+
+Search usa apenas device.observer/network.observer 1.0.0. Device compara namespace
+e JSON string exatos; network canonicaliza apenas a entrada IP. Nenhum raw value
+é retornado. Membership vem exclusivamente de CorrelationSupport persistido.
+Provenance resolve cinco tipos por UUID, seguindo FKs até SourceRecord e original
+direto ou ArchiveMember/container, com locators e hashes catalogados. Não abre
+evidência nem conecta eventos a sibling observations. Histórico permanece acessível.
+
+`query.catalog.read_catalog` reutiliza o opener read-only da 4A1, exige schema v5
+e mantém um snapshot por consulta. Sem nova entidade, migration ou cache.
+Projeções, limites, ordenação, NOT_FOUND e risco externo de shell history: ADR 0020.
+Busca técnica não produz conclusão de identidade, sessão, localização ou autoria.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -239,5 +253,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0019 documentam as decisões; os seis
+ADRs 0007–0020 documentam as decisões; os seis
 princípios originais continuam válidos.

@@ -9,10 +9,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
+from evidence_engine.query.provenance import query_provenance
+from evidence_engine.query.search import query_device, query_network
 from evidence_engine.query.timeline import query_timeline
 
 app = typer.Typer(
-    help="Read-only queries of explicitly selected current events.", no_args_is_help=True
+    help="Read-only current events, exact technical search and persisted provenance.",
+    no_args_is_help=True,
 )
 
 
@@ -34,3 +37,71 @@ def timeline(
         fail(error)
         return
     typer.echo(json.dumps(asdict(result), ensure_ascii=True, sort_keys=True, separators=(",", ":")))
+
+
+@app.command("device")
+def device(
+    case_root: CaseRoot,
+    namespace: Annotated[str, typer.Option(help="Exact required namespace.")],
+    value: Annotated[str, typer.Option(help="Literal string; no coercion or normalization.")],
+    platform: Annotated[str | None, typer.Option()] = None,
+    fact_kind: Annotated[str | None, typer.Option(help="identifier or model.")] = None,
+    limit: Annotated[int, typer.Option(min=1, max=10000)] = 100,
+) -> None:
+    """Search device.observer 1.0.0 without echoing the searched value."""
+    try:
+        result = query_device(
+            case_root,
+            namespace=namespace,
+            value=value,
+            platform=platform,
+            fact_kind=fact_kind,
+            limit=limit,
+        )
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+        return
+    typer.echo(json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":")))
+
+
+@app.command("network")
+def network(
+    case_root: CaseRoot,
+    ip: Annotated[str, typer.Option(help="IP address; input syntax canonicalized only.")],
+    platform: Annotated[str | None, typer.Option()] = None,
+    source_role: Annotated[str | None, typer.Option()] = None,
+    limit: Annotated[int, typer.Option(min=1, max=10000)] = 100,
+) -> None:
+    """Search network.observer 1.0.0 without echoing the IP."""
+    try:
+        result = query_network(
+            case_root, ip=ip, platform=platform, source_role=source_role, limit=limit
+        )
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+        return
+    typer.echo(json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":")))
+
+
+@app.command("provenance")
+def provenance(
+    case_root: CaseRoot,
+    kind: Annotated[
+        str,
+        typer.Option(
+            help="event, parsed-record, device-observation, network-observation, candidate."
+        ),
+    ],
+    object_id: Annotated[str, typer.Option("--id", help="Exact object UUID.")],
+    limit: Annotated[int, typer.Option(min=1, max=1000)] = 100,
+) -> None:
+    """Follow persisted foreign keys to cataloged originals and hashes; never reread evidence."""
+    try:
+        result = query_provenance(case_root, kind=kind, object_id=object_id, limit=limit)
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+        return
+    if result is None:
+        typer.echo('{"status":"NOT_FOUND"}')
+        raise typer.Exit(2)
+    typer.echo(json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":")))

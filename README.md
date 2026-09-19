@@ -11,8 +11,8 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 4A1: Foundation, parsers, normalização, observações, candidatos exatos e
-consulta read-only da timeline canônica atual. Sem resolução
+Milestone 4A2: Foundation, parsers, normalização, observações, candidatos exatos,
+timeline atual, busca técnica exata e proveniência somente leitura. Sem resolução
 de identidade, correlação temporal, score, WhatsApp, timeline investigativa, OCR, IA/ML, dashboard
 ou integrações externas.
 
@@ -443,6 +443,40 @@ normalizer_id/version, time_status e time_basis. Nenhum payload, IP ou device é
 retornado. Sem export, busca textual, rendering local ou correlação temporal.
 Detalhes na [ADR 0019](docs/adr/0019-current-event-timeline-policy.md).
 
+## Busca técnica e proveniência (4A2)
+
+```sh
+dee query device --case-root /case --namespace meta.synthetic.identifier --value SYNTHETIC-DEVICE-X
+dee query network --case-root /case --ip 203.0.113.10 --limit 100
+dee query provenance --case-root /case --kind candidate --id <uuid> --limit 500
+```
+
+Device exige namespace e string literal, serializada como JSON sem coerção, trim
+ou alteração de case. `--value 123` busca a string, não o número. Filtros opcionais:
+`--platform` e `--fact-kind identifier|model`. Network usa somente `ipaddress.ip_address`
+para canonicalizar a entrada e comparar IP/versão persistidos, sem reler ip_raw;
+filtros opcionais `--platform` e `--source-role`. Observers elegíveis: device.observer
+1.0.0 e network.observer 1.0.0, sem aceitação automática de versões futuras.
+
+Buscas retornam contagens e metadados, sem ecoar device values ou IPs. Ordem:
+platform, parsed_record_id, observation_ordinal, observation_id. Limit 1–10000,
+default 100; matched_total independe do limite. candidate_ids são memberships já
+persistidos, ordenados, sem criar agrupamentos ou inferir identidade.
+
+Provenance aceita exatamente event, parsed-record, device-observation,
+network-observation e candidate. Segue somente FKs até original/container e SHA-256
+catalogado, sem ler evidência bruta. Eventos históricos são acessíveis por ID;
+current_policy_match informa a política 4A1. Candidate preserva support_ordinal,
+com limit 1–1000 (default 100), returned_supports e supports_truncated; sem cursor.
+Objeto ausente: JSON NOT_FOUND, exit 2. Entrada inválida/falha técnica: exit 2.
+
+Schema v5, mode=ro/query_only e snapshot de leitura, sem migration, backup ou runs.
+JSON determinístico não inclui payloads nem raw values. Paths, locators, IDs e hashes
+da proveniência continuam dados de caso: não os adicione ao Git. Argumentos CLI
+podem ficar no histórico do shell do operador, fora do controle do engine.
+Busca não implica correlação, identidade, ownership ou autoria. Busca textual e
+correlação temporal permanecem futuras. [ADR 0020](docs/adr/0020-technical-search-provenance.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -525,8 +559,9 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 3A        | Normalização canônica de eventos — concluída              |
 | 3B        | Observações atômicas Device/Network — concluída           |
 | 3C1       | Grupos candidatos por igualdade exata — concluída         |
-| 4A1       | Read-only current timeline query — concluída               |
-| 4 futura  | Search e ampliação da timeline                              |
+| 4A1       | Read-only current timeline query — concluída              |
+| 4A2       | Technical Search & Provenance Drill-down — concluída      |
+| 4 futura  | Search e ampliação da timeline                            |
 | 5         | Media hashing: SHA-256 e perceptual hashing               |
 | 6         | Correlation engine                                        |
 | 7         | WhatsApp                                                  |
