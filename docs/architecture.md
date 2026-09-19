@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 3C1
+## Milestone 4A1
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -30,6 +30,7 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
 | observations/ | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord |
 | correlation/ | Grupos de igualdade exata com supports, sem identidade ou temporalidade |
+| query/ | Política current-event versionada e timeline read-only, sem schema novo |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
 
 Outros adaptadores, engine completo de correlação, search e media continuam reservados.
@@ -198,6 +199,20 @@ supports/ordinals e detecta grupos desaparecidos; divergência falha sem reescri
 Não há leitura de ParsedRecord, NormalizedEvent ou arquivos brutos nesta camada.
 Constraints e seleção de versões estão documentadas na ADR 0018.
 
+## Current timeline read-only
+
+`current_event_policy` 1.0.0 seleciona explicitamente normalizers Meta/Apple 1.0.0
+e Google 1.1.0. A seleção é reutilizável em SQL, sem MAX(version) ou persistência.
+`query/timeline.py` consulta somente nove colunas técnicas de NormalizedEvent,
+em conexão mode=ro/query_only e snapshot de leitura único; exige schema v5.
+Não lê ParsedRecord, candidates, originals ou working, nem grava runs/cache/views.
+
+UTC não NULL determina inclusão e ordem, com desempate platform/event_kind/event_id.
+Filtros UTC Z usam [start,end); platform/event_kind são igualdade exata. Limit limita
+items, sem reduzir matched_total. Undated conta os atuais sem UTC sob os filtros
+platform/event_kind, sem aplicação de janela temporal. JSON não contém dados raw
+ou relógio operacional. Contrato e limites na ADR 0019; schema continua v5.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -224,5 +239,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0018 documentam as decisões; os seis
+ADRs 0007–0019 documentam as decisões; os seis
 princípios originais continuam válidos.

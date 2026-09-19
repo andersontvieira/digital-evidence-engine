@@ -28,10 +28,10 @@
 
 ## Escopo atual
 
-Milestone 3C1: preservar Foundation, parsers, normalizers e observers; adicionar
-somente grupos candidatos de igualdade técnica exata a partir de observações,
-conforme ADR 0018. Sem identidade, temporalidade, score ou inferência de autoria.
-Outros artefatos, WhatsApp, timeline e search continuam fora do escopo.
+Milestone 4A1: preservar as camadas existentes; adicionar somente política explícita
+de versões atuais e consulta read-only de NormalizedEvent, conforme ADR 0019.
+Schema continua v5, sem migration, runs, views, índices ou cache para queries.
+Timeline investigativa, search, correlação temporal e identidade ficam fora do escopo.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
 para v5; verify/manifest podem inspecionar v2/v3/v4 sem migrar.
 

@@ -11,9 +11,9 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 3C1: Foundation, parsers Instagram/Meta, Google e Apple, normalização,
-observações atômicas e grupos candidatos de igualdade técnica exata. Sem resolução
-de identidade, correlação temporal, score, WhatsApp, timeline, OCR, IA/ML, dashboard
+Milestone 4A1: Foundation, parsers, normalização, observações, candidatos exatos e
+consulta read-only da timeline canônica atual. Sem resolução
+de identidade, correlação temporal, score, WhatsApp, timeline investigativa, OCR, IA/ML, dashboard
 ou integrações externas.
 
 ## Arquitetura e preservação
@@ -418,6 +418,31 @@ CLI imprime somente contagens; exit 1 indica run com falha, 2 erro operacional.
 Sem tempo, score ou engine completo de correlação. Veja a
 [ADR 0018](docs/adr/0018-exact-correlation-candidates.md).
 
+## Consulta da timeline atual (4A1)
+
+```sh
+dee query --help
+dee query timeline --case-root /case --limit 1000
+dee query timeline --case-root /case --platform google --event-kind account.change
+dee query timeline --case-root /case --start 2026-01-02T03:04:05Z --end 2026-01-03T00:00:00Z
+```
+
+Política `current_event_policy` 1.0.0: Meta/Apple normalizers 1.0.0 e Google 1.1.0.
+Versões históricas permanecem intactas; versões futuras não entram automaticamente.
+Consulta exige schema v5 e abre SQLite somente para leitura, sem criar runs, views,
+índices ou migrar. Não requer backup nem altera o catálogo.
+
+Ordem: UTC, platform, event_kind, event_id, todos crescentes. Bounds exigem UTC
+explícito com Z e usam [start,end). platform/event_kind aceitam um valor exato cada.
+Limit: 1–10000, default 1000. JSON informa matched_total, returned, truncated e
+undated_current_events; esta última contagem respeita platform/event_kind,
+independentemente da janela temporal, sem inventar UTC.
+
+Items contêm IDs do evento/ParsedRecord, UTC, platform, event_kind,
+normalizer_id/version, time_status e time_basis. Nenhum payload, IP ou device é
+retornado. Sem export, busca textual, rendering local ou correlação temporal.
+Detalhes na [ADR 0019](docs/adr/0019-current-event-timeline-policy.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -500,7 +525,8 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 3A        | Normalização canônica de eventos — concluída              |
 | 3B        | Observações atômicas Device/Network — concluída           |
 | 3C1       | Grupos candidatos por igualdade exata — concluída         |
-| 4         | Search e timeline                                         |
+| 4A1       | Read-only current timeline query — concluída               |
+| 4 futura  | Search e ampliação da timeline                              |
 | 5         | Media hashing: SHA-256 e perceptual hashing               |
 | 6         | Correlation engine                                        |
 | 7         | WhatsApp                                                  |
