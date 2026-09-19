@@ -28,8 +28,8 @@
 
 ## Escopo atual
 
-Milestone 5A: preservar as camadas existentes; inventário de mídias catalogadas,
-verificação size/SHA-256 e duplicatas exatas read-only, conforme ADR 0023.
+Milestone 5A1: preservar as camadas existentes; projeção read-only de conteúdos
+SHA-256 distintos sobre as occurrences verificadas da 5A, conforme ADR 0024.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
 Sem perceptual hash, decode, dependências de imagem, correlação temporal ou identidade.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita

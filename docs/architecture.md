@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 5A
+## Milestone 5A1
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -256,6 +256,12 @@ signature-first e extensão como hint; ISO-BMFF ambíguo permanece unsupported.
 Agrupamento SHA-256 em memória conserva todas as ocorrências/proveniências. Não há
 decode, perceptual hash, nova entidade, dependência ou escrita de resultado. ADR 0023.
 
+`media contents` projeta os items verificados da 5A em conteúdos SHA-256 distintos,
+com todas as occurrences e representative determinístico para uso computacional.
+Singletons são conteúdos; contagens de formato/tipo são por conteúdo. Inconsistência
+de formato/tipo/tamanho no mesmo SHA falha tecnicamente. Sem novo scanner ou leitura
+adicional de bytes. A futura 5B poderá processar cada conteúdo uma vez. ADR 0024.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -282,5 +288,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0023 documentam as decisões; os seis
+ADRs 0007–0024 documentam as decisões; os seis
 princípios originais continuam válidos.

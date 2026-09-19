@@ -11,7 +11,7 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 5A: inventário read-only de mídia e duplicatas exatas sobre a Foundation,
+Milestone 5A1: conteúdos exatos sobre o inventário read-only de mídia da Foundation,
 timeline atual, busca técnica, proveniência, janela de eventos com contexto de
 origem e matrix read-only de candidates persistidos na janela. Sem resolução
 de identidade, correlação temporal, score, WhatsApp, timeline investigativa,
@@ -552,6 +552,17 @@ resultados; outputs reais permanecem fora do Git. Schema v5, nenhuma dependênci
 nova, perceptual hash ou entidade persistida. Leituras podem atualizar atime conforme
 filesystem/mount. Contrato e limitações: [ADR 0023](docs/adr/0023-media-inventory-exact-duplicates.md).
 
+## Conjunto de conteúdos exatos (5A1)
+
+`dee media contents --case-root /case` reutiliza o inventário verificado da 5A
+e retorna um content por SHA-256 distinto, incluindo singletons. Preserva todas
+as occurrences; contagens por formato/tipo são por conteúdo, não por ocorrência.
+Representative é a primeira occurrence na ordenação documentada, apenas para
+futuro processamento computacional; não é evidência canônica ou preferência de
+origem/autoria. Inconsistências de formato/tipo/tamanho por SHA causam erro técnico.
+JSON determinístico, schema v5 e nenhuma escrita ou dependência nova. Sem decode
+ou perceptual hashing. [ADR 0024](docs/adr/0024-exact-media-content-set.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -640,6 +651,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 4B2       | Incident Candidate Matrix — concluída                     |
 | 4 futura  | Search e ampliação da timeline                            |
 | 5A        | Media inventory + exact duplicate baseline — concluída    |
+| 5A1       | Exact media content set — concluída                       |
 | 5B        | Perceptual image hashing — futura                         |
 | 6         | Correlation engine                                        |
 | 7         | WhatsApp                                                  |
