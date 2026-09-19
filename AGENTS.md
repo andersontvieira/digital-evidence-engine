@@ -28,11 +28,10 @@
 
 ## Escopo atual
 
-Milestone 5B0: contrato documental para perceptual hash futuro, conforme ADR 0025.
-Nenhum perceptual hash implementado ainda; preservar integralmente a 5A/5A1.
-Nesta etapa, somente documentação: sem código, dependências ou processamento real.
+Milestone 5B: pHash read-only por exact content JPEG/PNG da 5A1, conforme ADR 0026.
+Preservar representatives/occurrences; revalidar bytes, sem fallback ou persistência.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
-Sem perceptual hash, decode, dependências de imagem, correlação temporal ou identidade.
+Sem dHash, matriz de distância, threshold, classificação, correlação temporal ou identidade.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
 para v5; verify/manifest podem inspecionar v2/v3/v4 sem migrar.
 

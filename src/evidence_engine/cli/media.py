@@ -10,6 +10,7 @@ from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
 from evidence_engine.media.contents import media_contents
 from evidence_engine.media.inventory import inventory_media
+from evidence_engine.media.perceptual import perceptual_hashes
 
 app = typer.Typer(help="Read-only inventory of cataloged media bytes.", no_args_is_help=True)
 
@@ -23,6 +24,20 @@ def inventory(case_root: CaseRoot) -> None:
         fail(error)
         return
     typer.echo(json.dumps(asdict(result), ensure_ascii=True, sort_keys=True, separators=(",", ":")))
+
+
+@app.command("perceptual-hash")
+def perceptual_hash(case_root: CaseRoot) -> None:
+    """Compute DERIVED pHash once per JPEG/PNG content; no similarity interpretation."""
+    try:
+        result = perceptual_hashes(case_root)
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+        return
+    payload = json.dumps(asdict(result), ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    typer.echo((payload + "\n").encode("ascii"), nl=False)
+    if result.failed_count or result.unsupported_count:
+        raise typer.Exit(1)
 
 
 @app.command("contents")

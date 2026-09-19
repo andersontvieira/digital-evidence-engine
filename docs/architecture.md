@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 5B0
+## Milestone 5B
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -262,10 +262,10 @@ Singletons são conteúdos; contagens de formato/tipo são por conteúdo. Incons
 de formato/tipo/tamanho no mesmo SHA falha tecnicamente. Sem novo scanner ou leitura
 adicional de bytes. A futura 5B poderá processar cada conteúdo uma vez. ADR 0024.
 
-5B0 define somente o contrato futuro (ADR 0025), sem código, dependência ou schema.
-5B deverá partir dos exact contents da 5A1, inicialmente JPEG/PNG, com pHash sobre
-pixels orientados e alpha composto em branco. Preferência read-only, uma execução
-por conteúdo e projeção a todas as occurrences; nenhum perceptual hash entregue.
+5B0 definiu o contrato histórico (ADR 0025). media/ agora implementa pHash read-only
+sobre exact contents da 5A1: JPEG/PNG, revalidação do representative, decode completo,
+pixels orientados e alpha branco, sem ICC. Uma execução por conteúdo e projeção
+a todas as occurrences; sem schema/persistência, threshold ou matriz. ADR 0026.
 
 ## Manifesto, verificação e logs
 
@@ -289,9 +289,10 @@ parâmetros, tracebacks ou paths absolutos nas mensagens da CLI.
 uv 0.8.22 sincroniza uv.lock; setuptools fixado continua backend.
 Docker fixa base por digest. Windows/Linux usam o mesmo lockfile; Python 3.12 é
 baseline validada. Downloads servem às ferramentas, não à execução do motor.
-Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados.
+Pillow/ImageHash entram na 5B, com transitivas no lock; BeautifulSoup/lxml e
+python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0025 documentam as decisões; os seis
+ADRs 0007–0026 documentam as decisões; os seis
 princípios originais continuam válidos.

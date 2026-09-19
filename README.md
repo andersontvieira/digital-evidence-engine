@@ -11,9 +11,8 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 5B0 define o contrato futuro de perceptual hash, somente documental
-([ADR 0025](docs/adr/0025-perceptual-image-hash-contract.md)). Nenhum perceptual hash
-implementado ainda. A entrega funcional permanece na 5A1: conteúdos exatos sobre
+Milestone 5B entrega pHash read-only por conteúdo exato JPEG/PNG
+([ADR 0026](docs/adr/0026-perceptual-image-hashing.md)), sobre a 5A1 e
 o inventário read-only de mídia da Foundation,
 timeline atual, busca técnica, proveniência, janela de eventos com contexto de
 origem e matrix read-only de candidates persistidos na janela. Sem resolução
@@ -63,7 +62,7 @@ Sem ativação no Windows, use `.\.venv\Scripts\dee.exe`.
 Downloads acontecem somente na instalação/build. Para atualizar dependências
 deliberadamente, altere pyproject.toml, execute `uv lock --python 3.12`, revise
 uv.lock e repita as verificações. Não use --upgrade incidentalmente.
-Pillow, imagehash, BeautifulSoup/lxml e python-dateutil seguem adiados até uso concreto.
+Pillow 12.3.0 e ImageHash 4.3.2 suportam a 5B; BeautifulSoup/lxml e python-dateutil seguem adiados.
 
 ## Caso e CLI
 
@@ -566,6 +565,23 @@ origem/autoria. Inconsistências de formato/tipo/tamanho por SHA causam erro té
 JSON determinístico, schema v5 e nenhuma escrita ou dependência nova. Sem decode
 ou perceptual hashing. [ADR 0024](docs/adr/0024-exact-media-content-set.md).
 
+## pHash técnico por conteúdo (5B)
+
+`dee media perceptual-hash --case-root /case` reutiliza a 5A1 e processa somente
+o representative de cada conteúdo JPEG/PNG, revalidando size/SHA-256 e estabilidade.
+Decode completo, EXIF transpose, alpha sobre branco, RGB e nenhum transform ICC.
+image.phash/1.0.0 usa hash_size=8, highfreq_factor=4 e retorna 64 bits/16 hex.
+pHash é uma feature DERIVED: **pHash não é prova de igualdade** ou autoria.
+Sem threshold, classificação, dHash, matriz de distâncias ou persistência.
+
+Exit 0 indica sucesso; exit 1 emite JSON completo com FAILED/UNSUPPORTED por
+conteúdo; exit 2 aborta por erro global/operacional/integridade, sem JSON parcial.
+APNG/multiframe são recusados e os guards de decompression bomb são preservados.
+Todas as occurrences permanecem associadas ao resultado; não há fallback de fonte.
+Execução integrada validada em Linux; no host Windows avaliado, divergência
+stat/fstat ctime na Foundation impede paridade real. Pipeline sintético Windows/Linux
+equivalente; detalhes e limites na ADR 0026. Outputs reais permanecem fora do Git.
+
 ## Testes e qualidade
 
 ```sh
@@ -636,27 +652,27 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 
 ## Roadmap
 
-| Milestone | Escopo                                                    |
-| --------- | --------------------------------------------------------- |
-| 0         | Bootstrap e arquitetura — concluído                       |
-| 1         | Evidence Foundation — concluída                           |
-| 2A        | Framework + três artefatos Instagram/Meta — concluída     |
-| 2B        | Suporte Meta array/label_values — concluída               |
-| 2C        | SubscriberInfo e ChangeHistory Google Takeout — concluída |
-| 2D        | Três CSVs Apple e validação controlada — concluída        |
-| 2 futura  | Ampliação de formatos somente mediante escopo aprovado    |
-| 3A        | Normalização canônica de eventos — concluída              |
-| 3B        | Observações atômicas Device/Network — concluída           |
-| 3C1       | Grupos candidatos por igualdade exata — concluída         |
-| 4A1       | Read-only current timeline query — concluída              |
-| 4A2       | Technical Search & Provenance Drill-down — concluída      |
-| 4B1       | Incident Window View — concluída                          |
-| 4B2       | Incident Candidate Matrix — concluída                     |
-| 4 futura  | Search e ampliação da timeline                            |
-| 5A        | Media inventory + exact duplicate baseline — concluída    |
-| 5A1       | Exact media content set — concluída                       |
-| 5B0       | Perceptual hash contract — esta entrega                   |
-| 5B        | Perceptual image hashing — futura                         |
-| 6         | Correlation engine                                        |
-| 7         | WhatsApp                                                  |
-| 8         | Reports e dossier exports                                 |
+| Milestone | Escopo                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------- | -------- |
+| 0         | Bootstrap e arquitetura — concluído                                                             |
+| 1         | Evidence Foundation — concluída                                                                 |
+| 2A        | Framework + três artefatos Instagram/Meta — concluída                                           |
+| 2B        | Suporte Meta array/label_values — concluída                                                     |
+| 2C        | SubscriberInfo e ChangeHistory Google Takeout — concluída                                       |
+| 2D        | Três CSVs Apple e validação controlada — concluída                                              |
+| 2 futura  | Ampliação de formatos somente mediante escopo aprovado                                          |
+| 3A        | Normalização canônica de eventos — concluída                                                    |
+| 3B        | Observações atômicas Device/Network — concluída                                                 |
+| 3C1       | Grupos candidatos por igualdade exata — concluída                                               |
+| 4A1       | Read-only current timeline query — concluída                                                    |
+| 4A2       | Technical Search & Provenance Drill-down — concluída                                            |
+| 4B1       | Incident Window View — concluída                                                                |
+| 4B2       | Incident Candidate Matrix — concluída                                                           |
+| 4 futura  | Search e ampliação da timeline                                                                  |
+| 5A        | Media inventory + exact duplicate baseline — concluída                                          |
+| 5A1       | Exact media content set — concluída                                                             |
+| 5B0       | Perceptual hash contract — concluída                                                            |
+| 5B        | Perceptual image hashing — concluída; integração Linux validada, paridade real Windows pendente | pendente |
+| 6         | Correlation engine                                                                              |
+| 7         | WhatsApp                                                                                        |
+| 8         | Reports e dossier exports                                                                       |
