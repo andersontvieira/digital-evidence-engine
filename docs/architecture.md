@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 4B2
+## Milestone 5A
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -32,8 +32,9 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | correlation/ | Grupos de igualdade exata com supports, sem identidade ou temporalidade |
 | query/ | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
 | reports/manifest.py | Snapshot determinístico e escrita atômica |
+| media/ | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only |
 
-Outros adaptadores, engine completo de correlação, busca textual e media continuam reservados.
+Outros adaptadores, engine completo de correlação, busca textual e perceptual hashing ficam futuros.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
 local, correlação temporal, resolução de identidade, busca textual e dossier permanecem futuros.
 
@@ -246,6 +247,15 @@ Platforms/event kinds são dos eventos filtrados; limite aplica-se só a candida
 IDs permitem drill-down pela 4A2 sem duplicar proveniência. Contrato, ordenação,
 semântica de múltiplos eventos por ParsedRecord e limites: ADR 0022.
 
+## Inventário de mídia catalogada
+
+Entrada exclusivamente EvidenceFile/ArchiveMember, sem depender de parsers ou eventos.
+read_catalog mantém snapshot v5; original_reader e sha256_stream verificam conteúdo
+e estabilidade de leitura de originals e materializações existentes. Prefixo limitado,
+signature-first e extensão como hint; ISO-BMFF ambíguo permanece unsupported.
+Agrupamento SHA-256 em memória conserva todas as ocorrências/proveniências. Não há
+decode, perceptual hash, nova entidade, dependência ou escrita de resultado. ADR 0023.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -272,5 +282,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0022 documentam as decisões; os seis
+ADRs 0007–0023 documentam as decisões; os seis
 princípios originais continuam válidos.

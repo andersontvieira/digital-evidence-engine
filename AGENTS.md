@@ -28,10 +28,10 @@
 
 ## Escopo atual
 
-Milestone 4B2: preservar as camadas existentes; matrix read-only de candidates já
-persistidos via observations do mesmo ParsedRecord de eventos atuais, conforme ADR 0022.
+Milestone 5A: preservar as camadas existentes; inventário de mídias catalogadas,
+verificação size/SHA-256 e duplicatas exatas read-only, conforme ADR 0023.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
-Sem propagação entre registros, busca textual, correlação temporal ou identidade.
+Sem perceptual hash, decode, dependências de imagem, correlação temporal ou identidade.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
 para v5; verify/manifest podem inspecionar v2/v3/v4 sem migrar.
 

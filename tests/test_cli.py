@@ -1,4 +1,4 @@
-"""Exercise only the commands delivered in Milestone 0."""
+"""Exercise delivered command discovery and keep future commands unavailable."""
 
 import pytest
 from typer.testing import CliRunner
@@ -21,8 +21,15 @@ def test_version() -> None:
     assert result.stdout.strip() == __version__
 
 
-@pytest.mark.parametrize("command", ["ingest", "search", "timeline", "media"])
+@pytest.mark.parametrize("command", ["ingest", "search", "timeline"])
 def test_future_commands_are_not_exposed(command: str) -> None:
     result = runner.invoke(app, [command])
     assert result.exit_code == 2
     assert "No such command" in result.output
+
+
+@pytest.mark.parametrize("arguments", [["media", "--help"], ["media", "inventory", "--help"]])
+def test_media_help(arguments: list[str]) -> None:
+    result = runner.invoke(app, arguments, color=False)
+    assert result.exit_code == 0
+    assert "inventory" in result.output

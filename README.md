@@ -11,7 +11,7 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 4B2: Foundation, parsers, normalização, observações, candidatos exatos,
+Milestone 5A: inventário read-only de mídia e duplicatas exatas sobre a Foundation,
 timeline atual, busca técnica, proveniência, janela de eventos com contexto de
 origem e matrix read-only de candidates persistidos na janela. Sem resolução
 de identidade, correlação temporal, score, WhatsApp, timeline investigativa,
@@ -526,6 +526,32 @@ omite raw values/IPs/payloads/provenance completa; use os IDs com os comandos
 provenance/incident-window existentes para drill-down. Snapshot único read-only,
 schema v5, sem persistência adicional. [ADR 0022](docs/adr/0022-incident-candidate-matrix.md).
 
+## Inventário de mídia e duplicatas exatas (5A)
+
+```sh
+dee media --help
+dee media inventory --case-root /case
+```
+
+Inspeciona somente EvidenceFiles e ArchiveMembers catalogados: originals em leitura
+e membros já materializados em working. Sem reextração ou reparo. Prefixo limitado
+a 4096 bytes reconhece JPEG, PNG, GIF, WEBP e HEIF/HEIC/AVIF por brands explícitas;
+extensão é apenas hint. MP4/MOV genéricos e outros ISO-BMFF não classificados ficam
+fora dos media items, sem inferir presença de vídeo. Assinatura não é decode.
+
+Todas as ocorrências passam pela verificação streaming de size/SHA-256 catalogados
+com estabilidade antes/depois. Ausência ou divergência encerra com exit 2, sem
+atualizar baseline ou retornar JSON parcial. Hashes iguais agrupam mídias verificadas
+em duplicate_groups, preservando todos os IDs/paths de ocorrência, sem pares N².
+Bytes iguais não provam mesmo evento, fonte, upload ou autoria.
+
+JSON determinístico informa scanned_occurrences, recognized_media, verified_media,
+unrecognized_occurrences, format_counts, kind_counts, contagens de duplicatas, items
+e duplicate_groups. Sem imagem, thumbnail, base64 ou path absoluto. Não escreve
+resultados; outputs reais permanecem fora do Git. Schema v5, nenhuma dependência
+nova, perceptual hash ou entidade persistida. Leituras podem atualizar atime conforme
+filesystem/mount. Contrato e limitações: [ADR 0023](docs/adr/0023-media-inventory-exact-duplicates.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -613,7 +639,8 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 4B1       | Incident Window View — concluída                          |
 | 4B2       | Incident Candidate Matrix — concluída                     |
 | 4 futura  | Search e ampliação da timeline                            |
-| 5         | Media hashing: SHA-256 e perceptual hashing               |
+| 5A        | Media inventory + exact duplicate baseline — concluída    |
+| 5B        | Perceptual image hashing — futura                         |
 | 6         | Correlation engine                                        |
 | 7         | WhatsApp                                                  |
 | 8         | Reports e dossier exports                                 |

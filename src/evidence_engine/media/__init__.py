@@ -1,1 +1,1 @@
-"""Reserved for media metadata and content/perceptual hashing."""
+"""Read-only cataloged media discovery; no decoding or perceptual hashes."""
