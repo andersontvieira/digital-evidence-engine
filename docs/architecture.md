@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 5A1
+## Milestone 5B0
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -262,6 +262,11 @@ Singletons são conteúdos; contagens de formato/tipo são por conteúdo. Incons
 de formato/tipo/tamanho no mesmo SHA falha tecnicamente. Sem novo scanner ou leitura
 adicional de bytes. A futura 5B poderá processar cada conteúdo uma vez. ADR 0024.
 
+5B0 define somente o contrato futuro (ADR 0025), sem código, dependência ou schema.
+5B deverá partir dos exact contents da 5A1, inicialmente JPEG/PNG, com pHash sobre
+pixels orientados e alpha composto em branco. Preferência read-only, uma execução
+por conteúdo e projeção a todas as occurrences; nenhum perceptual hash entregue.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -288,5 +293,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0024 documentam as decisões; os seis
+ADRs 0007–0025 documentam as decisões; os seis
 princípios originais continuam válidos.

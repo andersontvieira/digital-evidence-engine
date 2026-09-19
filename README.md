@@ -11,7 +11,10 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 5A1: conteúdos exatos sobre o inventário read-only de mídia da Foundation,
+Milestone 5B0 define o contrato futuro de perceptual hash, somente documental
+([ADR 0025](docs/adr/0025-perceptual-image-hash-contract.md)). Nenhum perceptual hash
+implementado ainda. A entrega funcional permanece na 5A1: conteúdos exatos sobre
+o inventário read-only de mídia da Foundation,
 timeline atual, busca técnica, proveniência, janela de eventos com contexto de
 origem e matrix read-only de candidates persistidos na janela. Sem resolução
 de identidade, correlação temporal, score, WhatsApp, timeline investigativa,
@@ -652,6 +655,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 4 futura  | Search e ampliação da timeline                            |
 | 5A        | Media inventory + exact duplicate baseline — concluída    |
 | 5A1       | Exact media content set — concluída                       |
+| 5B0       | Perceptual hash contract — esta entrega                   |
 | 5B        | Perceptual image hashing — futura                         |
 | 6         | Correlation engine                                        |
 | 7         | WhatsApp                                                  |
