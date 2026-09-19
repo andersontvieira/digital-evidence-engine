@@ -11,10 +11,11 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 4B1: Foundation, parsers, normalização, observações, candidatos exatos,
-timeline atual, busca técnica, proveniência e janela de eventos com contexto de origem. Sem resolução
-de identidade, correlação temporal, score, WhatsApp, timeline investigativa, OCR, IA/ML, dashboard
-ou integrações externas.
+Milestone 4B2: Foundation, parsers, normalização, observações, candidatos exatos,
+timeline atual, busca técnica, proveniência, janela de eventos com contexto de
+origem e matrix read-only de candidates persistidos na janela. Sem resolução
+de identidade, correlação temporal, score, WhatsApp, timeline investigativa,
+OCR, IA/ML, dashboard ou integrações externas.
 
 ## Arquitetura e preservação
 
@@ -500,6 +501,31 @@ o prefixo. undated_current_events mantém a semântica 4A1; não há agregados a
 de contexto. JSON determinístico; resultados reais permanecem fora do Git.
 Detalhes na [ADR 0021](docs/adr/0021-incident-window-view.md).
 
+## Matrix de candidates na janela (4B2)
+
+```sh
+dee query incident-candidates --case-root /case --start 2026-01-02T00:00:00Z --end 2026-01-03T00:00:00Z --candidate-kind device
+```
+
+Seleciona eventos atuais com os mesmos bounds UTC Z [start,end) e filtros opcionais
+platform/event-kind da timeline. candidate-kind aceita device/network; omitido inclui
+ambos. Só aparecem candidates já persistidos, via observations 1.0.0 do **mesmo
+ParsedRecord** e respectivos CorrelationSupports. Nenhuma correlação nova é criada.
+
+candidate_support_count é global; window_event_count conta eventos distintos na
+janela; window_support_occurrences conta links evento/support, sem colapsar múltiplas
+observations. window_platforms/event_kinds vêm apenas dos eventos filtrados.
+Ordenação: event count DESC, support occurrences DESC, candidate kind/ID ASC.
+Eventos preservam a ordem da timeline; links usam support_ordinal/observation_id ASC.
+Contagens não representam força probatória, identidade, sessão ou autoria.
+
+Limit 1–1000, default 100, limita candidates; matched_candidates permanece completo.
+returned_candidates/truncated descrevem o prefixo. Todos os eventos internos são
+retornados, sem cursor. Janelas grandes podem produzir saída extensa. JSON compacto
+omite raw values/IPs/payloads/provenance completa; use os IDs com os comandos
+provenance/incident-window existentes para drill-down. Snapshot único read-only,
+schema v5, sem persistência adicional. [ADR 0022](docs/adr/0022-incident-candidate-matrix.md).
+
 ## Testes e qualidade
 
 ```sh
@@ -585,6 +611,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 4A1       | Read-only current timeline query — concluída              |
 | 4A2       | Technical Search & Provenance Drill-down — concluída      |
 | 4B1       | Incident Window View — concluída                          |
+| 4B2       | Incident Candidate Matrix — concluída                     |
 | 4 futura  | Search e ampliação da timeline                            |
 | 5         | Media hashing: SHA-256 e perceptual hashing               |
 | 6         | Correlation engine                                        |

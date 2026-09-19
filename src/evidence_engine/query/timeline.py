@@ -93,11 +93,12 @@ def timeline_in_snapshot(
     end_utc: str | None,
     platform: str | None,
     event_kind: str | None,
-    limit: int,
+    limit: int | None,
 ) -> TimelineResult:
     """Execute the existing timeline projection in a caller-owned read snapshot.
 
     Bounds must already be validated and normalized with utc_bound.
+    Internal callers may use limit=None to compose all matches before limiting candidates.
     """
     filters = [current_event_predicate()]
     if platform is not None:

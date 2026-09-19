@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 4B1
+## Milestone 4B2
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -236,6 +236,16 @@ são somente os supports persistidos. Sem novos vínculos entre eventos, entidad
 schema ou persistência. Bounds UTC Z obrigatórios; ordem idêntica à timeline.
 Resumo essencial com total completo e prefixo limitado; contrato na ADR 0021.
 
+## Matrix de candidates persistidos na janela
+
+Reutiliza timeline_in_snapshot sem limite interno de eventos e same_record_context
+da 4B1 para navegar pelos supports persistidos até candidates existentes. Um único
+read_catalog mantém snapshot coerente; nenhuma nova relação ou persistência.
+Contagens globais de supports ficam separadas de eventos/ocorrências da janela.
+Platforms/event kinds são dos eventos filtrados; limite aplica-se só a candidates.
+IDs permitem drill-down pela 4A2 sem duplicar proveniência. Contrato, ordenação,
+semântica de múltiplos eventos por ParsedRecord e limites: ADR 0022.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -262,5 +272,5 @@ Pillow/imagehash/BeautifulSoup/lxml/python-dateutil só entram quando utilizados
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0021 documentam as decisões; os seis
+ADRs 0007–0022 documentam as decisões; os seis
 princípios originais continuam válidos.

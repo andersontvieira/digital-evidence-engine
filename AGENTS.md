@@ -28,8 +28,8 @@
 
 ## Escopo atual
 
-Milestone 4B1: preservar as camadas existentes; incident-window read-only de eventos
-atuais, proveniência e contexto somente do mesmo ParsedRecord, conforme ADR 0021.
+Milestone 4B2: preservar as camadas existentes; matrix read-only de candidates já
+persistidos via observations do mesmo ParsedRecord de eventos atuais, conforme ADR 0022.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
 Sem propagação entre registros, busca textual, correlação temporal ou identidade.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
