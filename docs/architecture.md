@@ -8,33 +8,33 @@ parsers Apple (inventário de dispositivos, sign-on e atividade técnica de míd
 Typer coordena a CLI; SQLAlchemy 2.x persiste SQLite; Pydantic 2.x valida limites
 de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 
-| Módulo | Responsabilidade |
-| --- | --- |
-| cli/evidence.py | Opções, mensagens técnicas e exit codes |
-| config.py | Limites validados e imutáveis de ZIP |
-| ingest/generic/paths.py | Áreas do caso, exclusão de links e descoberta |
-| ingest/generic/hashing.py | SHA-256 streaming e verificação de estabilidade |
-| ingest/generic/archives.py | Inventário validado e extração ZIP |
-| ingest/generic/service.py | Coordenação transacional e proveniência |
-| ingest/generic/verification.py | Comparação de originais com baseline |
-| ingest/parsing/framework.py | Contratos puros, JSON estrito e locators reversíveis |
-| ingest/parsing/service.py | Fontes catalogadas, hashes, idempotência e atomicidade por fonte |
-| ingest/instagram/parsers.py | Somente profile activity, recently deleted e mensagens |
-| ingest/google/html.py | Projeção determinística das tabelas HTML restritas |
-| ingest/google/parsers.py | Somente SubscriberInfo e ChangeHistory |
-| ingest/parsing/csv.py | Projeção CSV textual com índices lógicos e limites |
-| ingest/apple/parsers.py | Somente inventário, sign-on e atividade técnica de mídia |
-| cli/parse.py | Contagens de parsing sem payloads no console |
-| models/entities.py | Foundation, ParserRun e ParsedRecord |
-| storage/database.py | SQLite, foreign keys, schema v5 e migrações explícitas v1 -> v2 -> v3 -> v4 -> v5 |
-| normalization/ | Contratos estáticos e transações de eventos DERIVED por normalizer |
-| observations/ | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord |
-| correlation/ | Grupos de igualdade exata com supports, sem identidade ou temporalidade |
-| query/ | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
-| reports/manifest.py | Snapshot determinístico e escrita atômica |
-| media/ | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only |
+| Módulo                         | Responsabilidade                                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| cli/evidence.py                | Opções, mensagens técnicas e exit codes                                                  |
+| config.py                      | Limites validados e imutáveis de ZIP                                                     |
+| ingest/generic/paths.py        | Áreas do caso, exclusão de links e descoberta                                            |
+| ingest/generic/hashing.py      | SHA-256 streaming e verificação de estabilidade                                          |
+| ingest/generic/archives.py     | Inventário validado e extração ZIP                                                       |
+| ingest/generic/service.py      | Coordenação transacional e proveniência                                                  |
+| ingest/generic/verification.py | Comparação de originais com baseline                                                     |
+| ingest/parsing/framework.py    | Contratos puros, JSON estrito e locators reversíveis                                     |
+| ingest/parsing/service.py      | Fontes catalogadas, hashes, idempotência e atomicidade por fonte                         |
+| ingest/instagram/parsers.py    | Somente profile activity, recently deleted e mensagens                                   |
+| ingest/google/html.py          | Projeção determinística das tabelas HTML restritas                                       |
+| ingest/google/parsers.py       | Somente SubscriberInfo e ChangeHistory                                                   |
+| ingest/parsing/csv.py          | Projeção CSV textual com índices lógicos e limites                                       |
+| ingest/apple/parsers.py        | Somente inventário, sign-on e atividade técnica de mídia                                 |
+| cli/parse.py                   | Contagens de parsing sem payloads no console                                             |
+| models/entities.py             | Foundation, ParserRun e ParsedRecord                                                     |
+| storage/database.py            | SQLite, foreign keys, schema v5 e migrações explícitas v1 -> v2 -> v3 -> v4 -> v5        |
+| normalization/                 | Contratos estáticos e transações de eventos DERIVED por normalizer                       |
+| observations/                  | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord                      |
+| correlation/                   | Grupos de igualdade exata com supports, sem identidade ou temporalidade                  |
+| query/                         | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
+| reports/manifest.py            | Snapshot determinístico e escrita atômica                                                |
+| media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
-Outros adaptadores, engine completo de correlação, busca textual e perceptual hashing ficam futuros.
+Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
 local, correlação temporal, resolução de identidade, busca textual e dossier permanecem futuros.
 
@@ -47,9 +47,10 @@ local, correlação temporal, resolução de identidade, busca textual e dossier
 3. Persistir IngestionRun RUNNING com UUID, versão, início UTC e limites usados.
 4. Adquirir BEGIN IMMEDIATE; descobrir arquivos ordenados e verificar a baseline.
    Escritores SQLite concorrentes são serializados, com timeout de 30 s.
-5. Calcular SHA-256 em blocos de 1 MiB, abrindo originais exclusivamente para leitura.
-   Comparar identidade, tamanho, mtime e ctime antes/depois; atime fica fora da
-   comparação. Esses metadados não são armazenados como datas do conteúdo.
+5. Calcular SHA-256 em blocos, abrindo originais somente para leitura.
+   Validar identidade por device/inode/tipo. Para estabilidade durante a leitura,
+   comparar size/mtime em ambas as plataformas e também ctime no POSIX.
+   Windows não usa ctime/birthtime como invariante de mutação.
 6. Originais idênticos não geram registros repetidos; ausência/alteração aborta
    sem atualizar baseline.
 7. Inserir EvidenceFiles novos, extrair ZIPs validados em staging exclusivo,
@@ -267,6 +268,12 @@ sobre exact contents da 5A1: JPEG/PNG, revalidação do representative, decode c
 pixels orientados e alpha branco, sem ICC. Uma execução por conteúdo e projeção
 a todas as occurrences; sem schema/persistência, threshold ou matriz. ADR 0026.
 
+Foundation separa identidade (dev, ino, tipo) de estabilidade: size/mtime em ambas
+as plataformas, mais ctime no POSIX. Windows não usa ctime nem birthtime como
+invariante de mutação. Comparações path/handle antes/depois, path safety e baseline
+SHA-256/tamanho preservadas. Compatibilidade real Windows/Linux validada pela W1,
+encerrando a limitação de plataforma da 5B. ADR 0027.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -294,5 +301,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0026 documentam as decisões; os seis
+ADRs 0007–0027 documentam as decisões; os seis
 princípios originais continuam válidos.

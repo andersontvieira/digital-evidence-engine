@@ -30,6 +30,8 @@
 
 Milestone 5B: pHash read-only por exact content JPEG/PNG da 5A1, conforme ADR 0026.
 Preservar representatives/occurrences; revalidar bytes, sem fallback ou persistência.
+Compatibilidade Foundation Windows (W1) concluída: identidade e estabilidade por
+plataforma conforme ADR 0027; preservar checks path/handle e SHA-256/tamanho.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
 Sem dHash, matriz de distância, threshold, classificação, correlação temporal ou identidade.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita

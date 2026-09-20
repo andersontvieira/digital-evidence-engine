@@ -578,9 +578,12 @@ Exit 0 indica sucesso; exit 1 emite JSON completo com FAILED/UNSUPPORTED por
 conteúdo; exit 2 aborta por erro global/operacional/integridade, sem JSON parcial.
 APNG/multiframe são recusados e os guards de decompression bomb são preservados.
 Todas as occurrences permanecem associadas ao resultado; não há fallback de fonte.
-Execução integrada validada em Linux; no host Windows avaliado, divergência
-stat/fstat ctime na Foundation impede paridade real. Pipeline sintético Windows/Linux
-equivalente; detalhes e limites na ADR 0026. Outputs reais permanecem fora do Git.
+Compatibilidade Foundation Windows resolvida pela
+[ADR 0027](docs/adr/0027-platform-file-identity-and-read-stability.md): identidade e
+estabilidade seguem políticas explícitas por plataforma. Validação integrada real
+Windows/Linux equivalente, incluindo JSON byte-identical; limitação anterior da
+5B encerrada em suplementos externos, preservando o relatório histórico.
+Outputs reais permanecem fora do Git.
 
 ## Testes e qualidade
 
@@ -652,27 +655,28 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 
 ## Roadmap
 
-| Milestone | Escopo                                                                                          |
-| --------- | ----------------------------------------------------------------------------------------------- | -------- |
-| 0         | Bootstrap e arquitetura — concluído                                                             |
-| 1         | Evidence Foundation — concluída                                                                 |
-| 2A        | Framework + três artefatos Instagram/Meta — concluída                                           |
-| 2B        | Suporte Meta array/label_values — concluída                                                     |
-| 2C        | SubscriberInfo e ChangeHistory Google Takeout — concluída                                       |
-| 2D        | Três CSVs Apple e validação controlada — concluída                                              |
-| 2 futura  | Ampliação de formatos somente mediante escopo aprovado                                          |
-| 3A        | Normalização canônica de eventos — concluída                                                    |
-| 3B        | Observações atômicas Device/Network — concluída                                                 |
-| 3C1       | Grupos candidatos por igualdade exata — concluída                                               |
-| 4A1       | Read-only current timeline query — concluída                                                    |
-| 4A2       | Technical Search & Provenance Drill-down — concluída                                            |
-| 4B1       | Incident Window View — concluída                                                                |
-| 4B2       | Incident Candidate Matrix — concluída                                                           |
-| 4 futura  | Search e ampliação da timeline                                                                  |
-| 5A        | Media inventory + exact duplicate baseline — concluída                                          |
-| 5A1       | Exact media content set — concluída                                                             |
-| 5B0       | Perceptual hash contract — concluída                                                            |
-| 5B        | Perceptual image hashing — concluída; integração Linux validada, paridade real Windows pendente | pendente |
-| 6         | Correlation engine                                                                              |
-| 7         | WhatsApp                                                                                        |
-| 8         | Reports e dossier exports                                                                       |
+| Milestone | Escopo                                                               |
+| --------- | -------------------------------------------------------------------- |
+| 0         | Bootstrap e arquitetura — concluído                                  |
+| 1         | Evidence Foundation — concluída                                      |
+| 2A        | Framework + três artefatos Instagram/Meta — concluída                |
+| 2B        | Suporte Meta array/label_values — concluída                          |
+| 2C        | SubscriberInfo e ChangeHistory Google Takeout — concluída            |
+| 2D        | Três CSVs Apple e validação controlada — concluída                   |
+| 2 futura  | Ampliação de formatos somente mediante escopo aprovado               |
+| 3A        | Normalização canônica de eventos — concluída                         |
+| 3B        | Observações atômicas Device/Network — concluída                      |
+| 3C1       | Grupos candidatos por igualdade exata — concluída                    |
+| 4A1       | Read-only current timeline query — concluída                         |
+| 4A2       | Technical Search & Provenance Drill-down — concluída                 |
+| 4B1       | Incident Window View — concluída                                     |
+| 4B2       | Incident Candidate Matrix — concluída                                |
+| 4 futura  | Search e ampliação da timeline                                       |
+| 5A        | Media inventory + exact duplicate baseline — concluída               |
+| 5A1       | Exact media content set — concluída                                  |
+| 5B0       | Perceptual hash contract — concluída                                 |
+| 5B        | Perceptual image hashing — concluída; Windows/Linux validados        |
+| W1        | Windows Foundation identity/read-stability compatibility — concluída |
+| 6         | Correlation engine                                                   |
+| 7         | WhatsApp                                                             |
+| 8         | Reports e dossier exports                                            |
