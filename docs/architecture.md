@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 6B
+## Milestone 8A0 — contrato documental; implementação até 6B
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -319,6 +319,25 @@ integridade. Referências, braços, casos, runs, versões, ordinais e support_co
 são conferidos; inconsistência alcançada causa erro global, sem partial success.
 O contrato permanece no ADR 0029; implementação e validação estão no ADR 0030.
 
+## Report contract (8A0)
+
+A 8A0 define o contrato do Relatório Técnico Consolidado de Análise e Organização
+de Evidências Digitais, sem geração implementada e sem certificação pericial.
+Futuros reports serão consumidores read-only das camadas existentes; não alteram
+o evidence database nem recalculam fatos já disponíveis. Schema permanece v5.
+Devem reutilizar queries, provenance e policies versionadas, mantendo distinguíveis
+OBSERVED, DERIVED, REPORTED e HYPOTHESIS, sem promover hipótese a fato.
+
+A futura 8A1 definirá o snapshot estruturado e determinístico de suporte;
+a 8A2 tratará de rendering/consolidação e seleção auditável dos achados. DTO,
+schema JSON, comando e formatos finais permanecem por decidir nessas etapas.
+Achados terão bases técnicas/provenance e limitações, com contagens por unidade,
+distinção current/historical e ausência limitada ao universo consultado.
+Não haverá conclusão automática de identidade, autoria, sessão, causalidade
+ou questão jurídica. O gap analysis obrigatório da 8A2 poderá orientar o escopo
+de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031;
+Milestone 8 e dossier final permanecem incompletos.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -346,5 +365,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0030 documentam as decisões; os seis
+ADRs 0007–0031 documentam as decisões; os seis
 princípios originais continuam válidos.

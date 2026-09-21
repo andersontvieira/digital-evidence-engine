@@ -11,6 +11,11 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
+O motor já fornece as camadas técnicas até a 6B, concluída. A 8A0 define somente
+o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md),
+sem implementar geração automática. Snapshot estruturado e consolidação ficam
+para as futuras 8A1 e 8A2.
+
 Milestone 6B implementa [Temporal + Exact Signal Overlap](docs/adr/0030-temporal-exact-signal-overlap.md),
 conforme o [contrato 6B0](docs/adr/0029-temporal-exact-signal-overlap-contract.md).
 Enriquece o prefixo de pares temporais com memberships de candidates exatos
@@ -730,6 +735,9 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | W1        | Windows Foundation identity/read-stability compatibility — concluída |
 | 6A        | Temporal Proximity Candidates — concluída                            |
 | 6B0       | Temporal + Exact Signal Overlap — contrato concluído                 |
-| 6B        | Temporal + Exact Signal Overlap — esta entrega                       |
-| 7         | WhatsApp                                                             |
-| 8         | Reports e dossier exports                                            |
+| 6B        | Temporal + Exact Signal Overlap — concluída                          |
+| 7         | WhatsApp — futura; escopo orientado pelo gap analysis da 8A2          |
+| 8A0       | Consolidated Technical Report Contract — esta entrega documental     |
+| 8A1       | Read-only Report Data Snapshot — futura                              |
+| 8A2       | First Consolidated Technical Report — futura                         |
+| 8B        | Dossier / final exports — futura                                     |

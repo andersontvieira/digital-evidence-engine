@@ -28,9 +28,11 @@
 
 ## Escopo atual
 
-Milestone 6B: Temporal + Exact Signal Overlap read-only, conforme ADRs 0029/0030.
-Reutilizar a primitive 6A em snapshot único e memberships exatas persistidas,
-carregadas em lote. Preservar prefixo/ordem temporal e separar device/network.
+Milestone 8A0 documental: contrato de relatório técnico consolidado, ADR 0031.
+Nenhum código funcional de reports ou acesso a caso real nesta etapa; schema v5.
+Preservar OBSERVED, DERIVED, REPORTED e HYPOTHESIS e a provenance existente.
+Proibir conclusões automáticas de identity, authorship, session, causality
+ou questões jurídicas. Dados reais permanecem fora do Git.
 Preservar as camadas existentes, inclusive pHash e candidates exatos persistidos.
 Compatibilidade Foundation Windows (W1) concluída: identidade e estabilidade por
 plataforma conforme ADR 0027; preservar checks path/handle e SHA-256/tamanho.
