@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 5B
+## Milestone 6A
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -29,14 +29,14 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | storage/database.py            | SQLite, foreign keys, schema v5 e migrações explícitas v1 -> v2 -> v3 -> v4 -> v5        |
 | normalization/                 | Contratos estáticos e transações de eventos DERIVED por normalizer                       |
 | observations/                  | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord                      |
-| correlation/                   | Grupos de igualdade exata com supports, sem identidade ou temporalidade                  |
+| correlation/                   | Grupos exatos persistidos e pares temporais read-only, sem identidade                    |
 | query/                         | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
 | reports/manifest.py            | Snapshot determinístico e escrita atômica                                                |
 | media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
 Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
-local, correlação temporal, resolução de identidade, busca textual e dossier permanecem futuros.
+local, correlação multissinal, resolução de identidade, busca textual e dossier permanecem futuros.
 
 ## Fluxo e transações
 
@@ -274,6 +274,24 @@ invariante de mutação. Comparações path/handle antes/depois, path safety e b
 SHA-256/tamanho preservadas. Compatibilidade real Windows/Linux validada pela W1,
 encerrando a limitação de plataforma da 5B. ADR 0027.
 
+## Candidates temporais read-only (6A)
+
+`correlation/temporal.py` reutiliza `read_catalog` e `timeline_in_snapshot` sem
+limite de eventos, num único snapshot SQLite read-only/query_only. A política
+current explícita permanece 1.0.0 (Meta 1.0.0, Google 1.1.0, Apple 1.0.0).
+Janela UTC `[start,end)` e filtros exatos de plataforma/tipo precedem os pares.
+O raio inteiro obrigatório é limite de consulta. Somente current UTC event time
+decide a inclusão: não consulta device, network, exact candidates ou pHash.
+
+Uma varredura sobre a timeline ordenada conta todos os pares elegíveis, usando
+microssegundos inteiros, e materializa apenas o prefixo limitado. A ordem é a
+chave completa de A seguida da chave completa de B; empates seguem a timeline.
+`TemporalPairCandidate` é DTO DERIVED transitório, separado do ORM persistido.
+Não há pair_id, score, confidence, sessão, identidade ou autoria. Schema v5 e
+as entidades persistidas permanecem intactos; sem novas tabelas, runs, cache,
+índices, views ou escrita. Endpoints reutilizam os nove campos da timeline;
+proveniência detalhada continua nos comandos de query existentes. ADR 0028.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -301,5 +319,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0027 documentam as decisões; os seis
+ADRs 0007–0028 documentam as decisões; os seis
 princípios originais continuam válidos.

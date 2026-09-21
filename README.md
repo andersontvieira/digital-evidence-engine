@@ -11,13 +11,37 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 5B entrega pHash read-only por conteúdo exato JPEG/PNG
+Milestone 6A entrega pares candidatos read-only de proximidade temporal entre
+eventos current ([ADR 0028](docs/adr/0028-temporal-proximity-candidates.md)).
+Preserva a 5B, com pHash read-only por conteúdo exato JPEG/PNG
 ([ADR 0026](docs/adr/0026-perceptual-image-hashing.md)), sobre a 5A1 e
 o inventário read-only de mídia da Foundation,
 timeline atual, busca técnica, proveniência, janela de eventos com contexto de
 origem e matrix read-only de candidates persistidos na janela. Sem resolução
-de identidade, correlação temporal, score, WhatsApp, timeline investigativa,
+de identidade, correlação conclusiva, score, WhatsApp, timeline investigativa,
 OCR, IA/ML, dashboard ou integrações externas.
+
+## Pares candidatos temporais (6A)
+
+```console
+dee correlate temporal-candidates --case-root /case --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z --max-delta-seconds 300
+```
+
+Exemplo exclusivamente sintético. A janela UTC é `[start,end)`; `--platform` e
+`--event-kind` filtram os eventos current antes de formar pares. O raio inteiro
+é obrigatório (1–86400 segundos), escolhido pelo operador como limite de consulta.
+O delta é exato em microssegundos inteiros. A proximidade é candidate técnico
+DERIVED; não prova relação entre eventos, pessoas ou dispositivos, sessão,
+autoria ou causalidade.
+
+`--limit` (default 1000, 1–10000) retorna um prefixo, preservando eligible_events
+e matched_pairs completos. Pares seguem a chave completa da timeline para A e
+depois B: UTC, plataforma, tipo, ID. Sem pair_id artificial, score, confidence,
+persistência ou combinação com device/network/pHash. Os endpoints contêm somente
+os nove campos técnicos da timeline; IDs permitem aprofundar a proveniência via
+`dee query provenance` e `dee query incident-window`. JSON determinístico, com
+paridade Windows/Linux. Janelas densas podem exigir tempo quadrático na contagem
+de pares, mesmo com limite pequeno. Detalhes no [ADR 0028](docs/adr/0028-temporal-proximity-candidates.md).
 
 ## Arquitetura e preservação
 
@@ -677,6 +701,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 5B0       | Perceptual hash contract — concluída                                 |
 | 5B        | Perceptual image hashing — concluída; Windows/Linux validados        |
 | W1        | Windows Foundation identity/read-stability compatibility — concluída |
-| 6         | Correlation engine                                                   |
+| 6A        | Temporal Proximity Candidates — esta entrega                         |
+| 6B        | Multi-signal correlation — futura                                    |
 | 7         | WhatsApp                                                             |
 | 8         | Reports e dossier exports                                            |
