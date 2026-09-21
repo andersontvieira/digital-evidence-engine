@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 6A
+## Milestone 6B0 — contrato documental; implementação até 6A
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -261,7 +261,8 @@ decode, perceptual hash, nova entidade, dependência ou escrita de resultado. AD
 com todas as occurrences e representative determinístico para uso computacional.
 Singletons são conteúdos; contagens de formato/tipo são por conteúdo. Inconsistência
 de formato/tipo/tamanho no mesmo SHA falha tecnicamente. Sem novo scanner ou leitura
-adicional de bytes. A futura 5B poderá processar cada conteúdo uma vez. ADR 0024.
+adicional de bytes. Essa projeção é a unidade de entrada reutilizada pela 5B para
+processar cada conteúdo uma vez. ADR 0024.
 
 5B0 definiu o contrato histórico (ADR 0025). media/ agora implementa pHash read-only
 sobre exact contents da 5A1: JPEG/PNG, revalidação do representative, decode completo,
@@ -292,6 +293,23 @@ as entidades persistidas permanecem intactos; sem novas tabelas, runs, cache,
 índices, views ou escrita. Endpoints reutilizam os nove campos da timeline;
 proveniência detalhada continua nos comandos de query existentes. ADR 0028.
 
+## Contrato Temporal + Exact Signal Overlap (6B0)
+
+A 6B0 define a futura interseção read-only entre `TemporalPairCandidate` da 6A
+e memberships de `CorrelationCandidate` exatos persistidos pela 3C1. Nenhuma
+implementação 6B ainda. Somente observations do mesmo ParsedRecord de cada
+endpoint contribuem, sob versões explícitas de observers, correlator e regras.
+Device/network permanecem conjuntos separados; ausência de interseção é válida
+e não demonstra diferença. Multiplicidade de supports não é peso; endpoints do
+mesmo ParsedRecord são sinalizados sem presumir fontes independentes.
+
+O contrato preserva prefixo, ordem e contagens temporais da 6A, sem filtro por
+overlap, ranking ou score. Exige um único snapshot `read_catalog` para eventos,
+observations e supports, com memberships carregadas em lote, sem N+1 SQL.
+Schema v5, sem persistência adicional. pHash fica excluído: não existe vínculo
+media-event aprovado entre NormalizedEvent/ParsedRecord e ExactMediaContent.
+Decisões, semântica de erros e plano futuro de validação estão no ADR 0029.
+
 ## Manifesto, verificação e logs
 
 Manifesto exporta a baseline, não afirma integridade atual: execute verify.
@@ -319,5 +337,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0028 documentam as decisões; os seis
+ADRs 0007–0029 documentam as decisões; os seis
 princípios originais continuam válidos.

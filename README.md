@@ -2,7 +2,7 @@
 
 Motor técnico local para preservação, catalogação, normalização e
 rastreabilidade de evidências digitais, preparado para futura indexação,
-pesquisa, correlação temporal e resolução controlada de identidade.
+pesquisa, correlação multissinal e resolução controlada de identidade.
 
 **Não é software pericial certificado.** Hashes verificam consistência de conteúdo;
 não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade.
@@ -10,6 +10,10 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 **Real case evidence must never be committed to this repository.**
 
 ## Estado atual
+
+Milestone 6B0 define somente o [contrato de Temporal + Exact Signal Overlap](docs/adr/0029-temporal-exact-signal-overlap-contract.md).
+A futura 6B poderá enriquecer pares temporais com memberships de candidates
+exatos device/network persistidos, sem score ou identidade. Ainda não implementada.
 
 Milestone 6A entrega pares candidatos read-only de proximidade temporal entre
 eventos current ([ADR 0028](docs/adr/0028-temporal-proximity-candidates.md)).
@@ -701,7 +705,8 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 5B0       | Perceptual hash contract — concluída                                 |
 | 5B        | Perceptual image hashing — concluída; Windows/Linux validados        |
 | W1        | Windows Foundation identity/read-stability compatibility — concluída |
-| 6A        | Temporal Proximity Candidates — esta entrega                         |
-| 6B        | Multi-signal correlation — futura                                    |
+| 6A        | Temporal Proximity Candidates — concluída                            |
+| 6B0       | Temporal + Exact Signal Overlap contract — esta entrega              |
+| 6B        | Temporal + Exact Signal Overlap — futura                             |
 | 7         | WhatsApp                                                             |
 | 8         | Reports e dossier exports                                            |

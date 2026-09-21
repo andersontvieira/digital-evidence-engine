@@ -28,13 +28,14 @@
 
 ## Escopo atual
 
-Milestone 6A: camada read-only de candidates temporais entre current events,
-conforme ADR 0028. Janela e raio explícitos; apenas UTC, sem combinar outros sinais.
+Milestone 6B0 documental: contrato de Temporal + Exact Signal Overlap, ADR 0029.
+Nenhum código funcional 6B nesta etapa. A 6A está concluída conforme ADR 0028.
 Preservar as camadas existentes, inclusive pHash e candidates exatos persistidos.
 Compatibilidade Foundation Windows (W1) concluída: identidade e estabilidade por
 plataforma conforme ADR 0027; preservar checks path/handle e SHA-256/tamanho.
 Schema continua v5, sem migration, runs, views, índices ou cache para queries.
-Sem identity, session, score, confidence, authorship ou correlação conclusiva.
+Sem identity, session, score, confidence, authorship, media-event inference
+ou correlação conclusiva.
 Consulte README.md e docs/architecture.md. Escrita em v1/v2/v3/v4 exige migração explícita
 para v5; verify/manifest podem inspecionar v2/v3/v4 sem migrar.
 
