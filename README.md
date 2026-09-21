@@ -11,9 +11,10 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-Milestone 6B0 define somente o [contrato de Temporal + Exact Signal Overlap](docs/adr/0029-temporal-exact-signal-overlap-contract.md).
-A futura 6B poderá enriquecer pares temporais com memberships de candidates
-exatos device/network persistidos, sem score ou identidade. Ainda não implementada.
+Milestone 6B implementa [Temporal + Exact Signal Overlap](docs/adr/0030-temporal-exact-signal-overlap.md),
+conforme o [contrato 6B0](docs/adr/0029-temporal-exact-signal-overlap-contract.md).
+Enriquece o prefixo de pares temporais com memberships de candidates exatos
+device/network persistidos, sem score ou identidade.
 
 Milestone 6A entrega pares candidatos read-only de proximidade temporal entre
 eventos current ([ADR 0028](docs/adr/0028-temporal-proximity-candidates.md)).
@@ -46,6 +47,27 @@ os nove campos técnicos da timeline; IDs permitem aprofundar a proveniência vi
 `dee query provenance` e `dee query incident-window`. JSON determinístico, com
 paridade Windows/Linux. Janelas densas podem exigir tempo quadrático na contagem
 de pares, mesmo com limite pequeno. Detalhes no [ADR 0028](docs/adr/0028-temporal-proximity-candidates.md).
+
+## Temporal + Exact Signal Overlap (6B)
+
+```console
+dee correlate temporal-exact-overlap --case-root /case --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z --max-delta-seconds 300 --limit 1000
+```
+
+Exemplo exclusivamente sintético. Argumentos, filtros e limites seguem a 6A.
+Um único snapshot read-only preserva exatamente os pares, deltas, prefixo,
+ordem e contagens temporais. A carga em lote obtém memberships de observations
+do mesmo ParsedRecord de cada endpoint, sob versões elegíveis explícitas da 3C1.
+Os arrays device/network mostram somente a interseção de candidate IDs persistidos,
+sem multiplicidade, ordenados lexicalmente. Shared exact candidate é membership
+técnica compartilhada; não estabelece mesmo dispositivo, pessoa, conta ou sessão.
+
+Arrays vazios são normais e não provam diferença. `same_parsed_record` explicita
+a igualdade dos IDs dos registros; nesse caso, o overlap pode derivar da mesma
+observation, sem duas fontes independentes. Não há filtro por overlap, score,
+ranking, pHash linking ou persistência. Relações inconsistentes alcançadas geram
+erro técnico global (exit 2), sem saída parcial. Candidate IDs permitem drill-down
+via `dee query provenance --kind candidate`. Detalhes no ADR 0030.
 
 ## Arquitetura e preservação
 
@@ -505,8 +527,9 @@ Schema v5, mode=ro/query_only e snapshot de leitura, sem migration, backup ou ru
 JSON determinístico não inclui payloads nem raw values. Paths, locators, IDs e hashes
 da proveniência continuam dados de caso: não os adicione ao Git. Argumentos CLI
 podem ficar no histórico do shell do operador, fora do controle do engine.
-Busca não implica correlação, identidade, ownership ou autoria. Busca textual e
-correlação temporal permanecem futuras. [ADR 0020](docs/adr/0020-technical-search-provenance.md).
+Busca não implica correlação, identidade, ownership ou autoria. A 4A2 não produz
+correlação temporal; candidates temporais read-only são fornecidos separadamente
+pela 6A. Busca textual permanece futura. [ADR 0020](docs/adr/0020-technical-search-provenance.md).
 
 ## Janela de eventos com contexto (4B1)
 
@@ -706,7 +729,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 5B        | Perceptual image hashing — concluída; Windows/Linux validados        |
 | W1        | Windows Foundation identity/read-stability compatibility — concluída |
 | 6A        | Temporal Proximity Candidates — concluída                            |
-| 6B0       | Temporal + Exact Signal Overlap contract — esta entrega              |
-| 6B        | Temporal + Exact Signal Overlap — futura                             |
+| 6B0       | Temporal + Exact Signal Overlap — contrato concluído                 |
+| 6B        | Temporal + Exact Signal Overlap — esta entrega                       |
 | 7         | WhatsApp                                                             |
 | 8         | Reports e dossier exports                                            |

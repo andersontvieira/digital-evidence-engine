@@ -8,6 +8,7 @@ import typer
 from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
+from evidence_engine.correlation.overlap import temporal_exact_overlap
 from evidence_engine.correlation.service import correlate_exact
 from evidence_engine.correlation.temporal import temporal_candidates
 from evidence_engine.errors import EvidenceError
@@ -60,5 +61,41 @@ def temporal(
     except (EvidenceError, OSError, SQLAlchemyError) as error:
         fail(error)
         return
-    payload = json.dumps(asdict(result), ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    _emit_json(asdict(result))
+
+
+def _emit_json(value: object) -> None:
+    payload = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
     typer.echo((payload + "\n").encode("ascii"), nl=False)
+
+
+@app.command("temporal-exact-overlap")
+def overlap(
+    case_root: CaseRoot,
+    start: Annotated[str, typer.Option(help="Required inclusive UTC bound ending in Z.")],
+    end: Annotated[str, typer.Option(help="Required exclusive UTC bound ending in Z.")],
+    max_delta_seconds: Annotated[
+        int,
+        typer.Option(
+            min=1, max=86400, help="Required retrieval bound, not an evidentiary threshold."
+        ),
+    ],
+    platform: Annotated[str | None, typer.Option(help="Exact event platform filter.")] = None,
+    event_kind: Annotated[str | None, typer.Option(help="Exact event kind filter.")] = None,
+    limit: Annotated[int, typer.Option(min=1, max=10000)] = 1000,
+) -> None:
+    """Enrich the temporal prefix with shared persisted exact candidate IDs."""
+    try:
+        result = temporal_exact_overlap(
+            case_root,
+            start=start,
+            end=end,
+            max_delta_seconds=max_delta_seconds,
+            platform=platform,
+            event_kind=event_kind,
+            limit=limit,
+        )
+    except (EvidenceError, OSError, SQLAlchemyError) as error:
+        fail(error)
+        return
+    _emit_json(asdict(result))

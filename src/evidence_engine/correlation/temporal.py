@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from sqlalchemy import Connection
+
 from evidence_engine.errors import EvidenceError
 from evidence_engine.query.catalog import read_catalog, validate_limit
 from evidence_engine.query.timeline import TimelineItem, timeline_in_snapshot, utc_bound
@@ -78,6 +80,21 @@ def temporal_candidates(
     event_kind: str | None = None,
     limit: int = 1000,
 ) -> TemporalCandidates:
+    start_utc, end_utc = temporal_bounds(start, end, max_delta_seconds, limit)
+    with read_catalog(case_root) as connection:
+        return temporal_candidates_in_snapshot(
+            connection,
+            start_utc=start_utc,
+            end_utc=end_utc,
+            max_delta_seconds=max_delta_seconds,
+            platform=platform,
+            event_kind=event_kind,
+            limit=limit,
+        )
+
+
+def temporal_bounds(start: str, end: str, max_delta_seconds: int, limit: int) -> tuple[str, str]:
+    """Shared public-input validation, before opening either temporal query."""
     validate_limit(limit, 10000)
     if type(max_delta_seconds) is not int or not 1 <= max_delta_seconds <= 86400:
         raise EvidenceError("Temporal max_delta_seconds must be between 1 and 86400")
@@ -86,16 +103,29 @@ def temporal_candidates(
         raise EvidenceError("Temporal candidates require start and end UTC bounds")
     if start_utc >= end_utc:
         raise EvidenceError("Temporal start must precede end")
-    with read_catalog(case_root) as connection:
-        timeline = timeline_in_snapshot(
-            connection,
-            start_utc=start_utc,
-            end_utc=end_utc,
-            platform=platform,
-            event_kind=event_kind,
-            limit=None,
-        )
-        matched, items = _sweep_pairs(timeline.items, max_delta_seconds, limit)
+    return start_utc, end_utc
+
+
+def temporal_candidates_in_snapshot(
+    connection: Connection,
+    *,
+    start_utc: str,
+    end_utc: str,
+    max_delta_seconds: int,
+    platform: str | None,
+    event_kind: str | None,
+    limit: int,
+) -> TemporalCandidates:
+    """Compose in the caller's read snapshot; arguments must already be validated."""
+    timeline = timeline_in_snapshot(
+        connection,
+        start_utc=start_utc,
+        end_utc=end_utc,
+        platform=platform,
+        event_kind=event_kind,
+        limit=None,
+    )
+    matched, items = _sweep_pairs(timeline.items, max_delta_seconds, limit)
     return TemporalCandidates(
         TemporalPolicy(max_delta_seconds),
         TemporalWindow(start_utc, end_utc, platform, event_kind),

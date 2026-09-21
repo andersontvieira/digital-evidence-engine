@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 6B0 — contrato documental; implementação até 6A
+## Milestone 6B
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -29,14 +29,14 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | storage/database.py            | SQLite, foreign keys, schema v5 e migrações explícitas v1 -> v2 -> v3 -> v4 -> v5        |
 | normalization/                 | Contratos estáticos e transações de eventos DERIVED por normalizer                       |
 | observations/                  | Dois observers estáticos de fatos atômicos DERIVED por ParsedRecord                      |
-| correlation/                   | Grupos exatos persistidos e pares temporais read-only, sem identidade                    |
+| correlation/                   | Candidates exatos persistidos, pares temporais e composição overlap read-only            |
 | query/                         | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
 | reports/manifest.py            | Snapshot determinístico e escrita atômica                                                |
 | media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
 Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
-local, correlação multissinal, resolução de identidade, busca textual e dossier permanecem futuros.
+local, ampliação da correlação multissinal, resolução de identidade, busca textual e dossier permanecem futuros.
 
 ## Fluxo e transações
 
@@ -295,9 +295,9 @@ proveniência detalhada continua nos comandos de query existentes. ADR 0028.
 
 ## Contrato Temporal + Exact Signal Overlap (6B0)
 
-A 6B0 define a futura interseção read-only entre `TemporalPairCandidate` da 6A
-e memberships de `CorrelationCandidate` exatos persistidos pela 3C1. Nenhuma
-implementação 6B ainda. Somente observations do mesmo ParsedRecord de cada
+A 6B0 definiu o contrato histórico da interseção read-only entre `TemporalPairCandidate`
+da 6A e memberships de `CorrelationCandidate` exatos persistidos pela 3C1.
+A 6B implementa essa composição em `correlation/overlap.py`. Somente observations do mesmo ParsedRecord de cada
 endpoint contribuem, sob versões explícitas de observers, correlator e regras.
 Device/network permanecem conjuntos separados; ausência de interseção é válida
 e não demonstra diferença. Multiplicidade de supports não é peso; endpoints do
@@ -308,7 +308,16 @@ overlap, ranking ou score. Exige um único snapshot `read_catalog` para eventos,
 observations e supports, com memberships carregadas em lote, sem N+1 SQL.
 Schema v5, sem persistência adicional. pHash fica excluído: não existe vínculo
 media-event aprovado entre NormalizedEvent/ParsedRecord e ExactMediaContent.
-Decisões, semântica de erros e plano futuro de validação estão no ADR 0029.
+O wrapper 6A e a composição 6B reutilizam `temporal_candidates_in_snapshot` e
+`_sweep_pairs`, com validação comum dos argumentos. A associação da 4B1 e a carga
+6B usam `same_record_predicate`. Projeções explícitas carregam IDs e metadados,
+sem raw values, em lotes determinísticos de até 400 referências; não há SQL por par.
+IDs de observations têm escopo por tabela: o lookup usa somente a FK tipada
+device_observation_id ou network_observation_id correspondente, sem cruzar braços.
+Supports adicionais dos candidates alcançados servem somente à validação de
+integridade. Referências, braços, casos, runs, versões, ordinais e support_count
+são conferidos; inconsistência alcançada causa erro global, sem partial success.
+O contrato permanece no ADR 0029; implementação e validação estão no ADR 0030.
 
 ## Manifesto, verificação e logs
 
@@ -337,5 +346,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0029 documentam as decisões; os seis
+ADRs 0007–0030 documentam as decisões; os seis
 princípios originais continuam válidos.

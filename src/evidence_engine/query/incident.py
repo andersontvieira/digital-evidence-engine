@@ -1,9 +1,10 @@
 """Current events with explicit same-ParsedRecord context, never temporal correlation."""
 
+from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
 
-from sqlalchemy import Connection, select
+from sqlalchemy import ColumnElement, Connection, and_, select
 
 from evidence_engine.errors import EvidenceError
 from evidence_engine.models.entities import DeviceObservation, NetworkObservation
@@ -19,6 +20,16 @@ from evidence_engine.query.search import (
 from evidence_engine.query.timeline import timeline_in_snapshot, utc_bound
 
 
+def same_record_predicate(kind: ObservationKind, record_ids: Sequence[str]) -> ColumnElement[bool]:
+    """The shared same-record association and explicit observer allowlist."""
+    model = DeviceObservation if kind == "device" else NetworkObservation
+    return and_(
+        model.parsed_record_id.in_(record_ids),
+        model.observer_id == f"{kind}.observer",
+        model.observer_version == "1.0.0",
+    )
+
+
 def same_record_context(
     connection: Connection,
     kind: ObservationKind,
@@ -29,11 +40,7 @@ def same_record_context(
     rows = (
         connection.execute(
             select(*columns)
-            .where(
-                model.parsed_record_id == parsed_record_id,
-                model.observer_id == f"{kind}.observer",
-                model.observer_version == "1.0.0",
-            )
+            .where(same_record_predicate(kind, [parsed_record_id]))
             .order_by(model.observation_ordinal, model.id)
         )
         .mappings()
