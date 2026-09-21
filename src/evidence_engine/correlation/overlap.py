@@ -15,6 +15,7 @@ from evidence_engine.correlation.exact import (
     RULE_VERSION,
 )
 from evidence_engine.correlation.temporal import (
+    TemporalCandidates,
     TemporalWindow,
     temporal_bounds,
     temporal_candidates_in_snapshot,
@@ -308,31 +309,38 @@ def temporal_exact_overlap(
             event_kind=event_kind,
             limit=limit,
         )
-        memberships = _memberships(
-            connection,
-            {
-                event.event_id: event.parsed_record_id
-                for pair in temporal.items
-                for event in (pair.event_a, pair.event_b)
-            },
-        )
-        items = []
-        for pair in temporal.items:
-            a, b = pair.event_a.parsed_record_id, pair.event_b.parsed_record_id
-            items.append(
-                TemporalExactOverlapCandidate(
-                    pair.delta_microseconds,
-                    pair.event_a,
-                    pair.event_b,
-                    a == b,
-                    SharedExactCandidates(
-                        tuple(sorted(memberships["device"][a] & memberships["device"][b])),
-                        tuple(sorted(memberships["network"][a] & memberships["network"][b])),
-                    ),
-                )
+        return overlap_in_snapshot(connection, temporal)
+
+
+def overlap_in_snapshot(
+    connection: Connection, temporal: TemporalCandidates
+) -> TemporalExactOverlapResult:
+    """Project memberships onto the already computed 6A prefix in the same snapshot."""
+    memberships = _memberships(
+        connection,
+        {
+            event.event_id: event.parsed_record_id
+            for pair in temporal.items
+            for event in (pair.event_a, pair.event_b)
+        },
+    )
+    items = []
+    for pair in temporal.items:
+        a, b = pair.event_a.parsed_record_id, pair.event_b.parsed_record_id
+        items.append(
+            TemporalExactOverlapCandidate(
+                pair.delta_microseconds,
+                pair.event_a,
+                pair.event_b,
+                a == b,
+                SharedExactCandidates(
+                    tuple(sorted(memberships["device"][a] & memberships["device"][b])),
+                    tuple(sorted(memberships["network"][a] & memberships["network"][b])),
+                ),
             )
+        )
     return TemporalExactOverlapResult(
-        TemporalExactOverlapPolicy(max_delta_seconds),
+        TemporalExactOverlapPolicy(temporal.policy.max_delta_seconds),
         temporal.window,
         temporal.eligible_events,
         temporal.matched_pairs,

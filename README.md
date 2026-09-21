@@ -11,10 +11,25 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
-O motor já fornece as camadas técnicas até a 6B, concluída. A 8A0 define somente
-o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md),
-sem implementar geração automática. Snapshot estruturado e consolidação ficam
-para as futuras 8A1 e 8A2.
+A 8A0 concluiu o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md).
+Esta entrega 8A1 implementa o [Read-only Report Data Snapshot](docs/adr/0032-read-only-report-data-snapshot.md):
+JSON técnico determinístico com contagens, coverage, policies, provenance,
+candidates a achados e inputs de lacunas. A 8A2 consumirá esses dados para
+consolidação e gap analysis; permanece futura.
+
+```console
+dee report snapshot --case-root /case
+dee report snapshot --case-root /case --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z --max-delta-seconds 300 --platform meta --event-kind content.activity
+```
+
+Exemplo sintético. O trio start/end/max-delta-seconds é opcional e indivisível;
+platform/event-kind exigem a janela completa. Resumos case-wide usam um único
+snapshot DB read-only; mídia mantém leituras verificadas e catálogos separados,
+sem atomicidade global SQLite/filesystem. stdout somente, sem arquivo automático.
+Limites independentes: 500 eventos incident, 100 candidates matrix e 1000 pares
+temporais/overlap, com totais e truncamento explícitos. Schema v5 preservado.
+O snapshot estruturado não gera relatório em prosa, conclusão jurídica ou decisão
+de identidade/autoria. Dados e relatórios reais permanecem fora do Git.
 
 Milestone 6B implementa [Temporal + Exact Signal Overlap](docs/adr/0030-temporal-exact-signal-overlap.md),
 conforme o [contrato 6B0](docs/adr/0029-temporal-exact-signal-overlap-contract.md).
@@ -736,8 +751,8 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 6A        | Temporal Proximity Candidates — concluída                            |
 | 6B0       | Temporal + Exact Signal Overlap — contrato concluído                 |
 | 6B        | Temporal + Exact Signal Overlap — concluída                          |
-| 7         | WhatsApp — futura; escopo orientado pelo gap analysis da 8A2          |
-| 8A0       | Consolidated Technical Report Contract — esta entrega documental     |
-| 8A1       | Read-only Report Data Snapshot — futura                              |
+| 7         | WhatsApp — futura; escopo orientado pelo gap analysis da 8A2         |
+| 8A0       | Consolidated Technical Report Contract — concluída                   |
+| 8A1       | Read-only Report Data Snapshot — concluída                           |
 | 8A2       | First Consolidated Technical Report — futura                         |
 | 8B        | Dossier / final exports — futura                                     |

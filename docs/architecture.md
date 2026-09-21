@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 8A0 — contrato documental; implementação até 6B
+## Milestone 8A1 — read-only report data snapshot
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -32,6 +32,8 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | correlation/                   | Candidates exatos persistidos, pares temporais e composição overlap read-only            |
 | query/                         | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
 | reports/manifest.py            | Snapshot determinístico e escrita atômica                                                |
+| reports/snapshot.py            | Projeção técnica read-only para relatório, sem persistência                              |
+| cli/report.py                  | JSON ASCII determinístico, LF explícito e zero ou uma janela                             |
 | media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
 Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
@@ -328,15 +330,41 @@ o evidence database nem recalculam fatos já disponíveis. Schema permanece v5.
 Devem reutilizar queries, provenance e policies versionadas, mantendo distinguíveis
 OBSERVED, DERIVED, REPORTED e HYPOTHESIS, sem promover hipótese a fato.
 
-A futura 8A1 definirá o snapshot estruturado e determinístico de suporte;
-a 8A2 tratará de rendering/consolidação e seleção auditável dos achados. DTO,
-schema JSON, comando e formatos finais permanecem por decidir nessas etapas.
+A 8A1 implementa o snapshot estruturado e determinístico de suporte;
+a 8A2 tratará de rendering/consolidação e seleção auditável dos achados.
+DTO, schema JSON e comando 8A1 estão definidos no ADR 0032; formatos do relatório
+humano permanecem futuros.
 Achados terão bases técnicas/provenance e limitações, com contagens por unidade,
 distinção current/historical e ausência limitada ao universo consultado.
 Não haverá conclusão automática de identidade, autoria, sessão, causalidade
 ou questão jurídica. O gap analysis obrigatório da 8A2 poderá orientar o escopo
 de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031;
 Milestone 8 e dossier final permanecem incompletos.
+
+## Report data snapshot (8A1)
+
+`dee report snapshot` compõe metadata/policies, inventory físico, coverage
+histórica, resumo current pela policy explícita, candidates exatos elegíveis,
+mídia verificada e zero ou uma analysis window. Trio temporal indivisível com
+UTC Z, [start,end) e raio 1–86400; platform/event-kind só filtram a janela.
+
+Todos os componentes DB e o índice de provenance compartilham um read_catalog
+mode=ro/query_only/BEGIN. Primitives pequenas extraídas de incident, matrix e
+overlap preservam as APIs públicas; a 6B recebe exatamente o prefixo calculado
+pela 6A. Mídia conserva inventory/project_contents/perceptual_hashes e seus
+checks de SHA/tamanho/estabilidade, com catálogos próprios declarados no envelope.
+Não há snapshot atômico DB/filesystem.
+
+IDs técnicos tipados, source locators e SHA catalogados permitem drill-down;
+provenance de ParsedRecords é deduplicada no índice, sem paths/payloads pessoais.
+Duplicatas conservam todas as ocorrências. Findings são projeções DERIVED sem
+seleção interpretativa ou IDs inventados. Gap inputs contêm contagens, flags e
+truncamentos, sem classificar A–F. Limites separados conservam unidades.
+ParsedRecord permanece OBSERVED; NormalizedEvent permanece DERIVED.
+
+JSON compacto ASCII com LF explícito, sem generated_at/clock/UUID. stdout somente,
+sem runs, migrations, views, índices, caches ou arquivos automáticos. A 8A2 será
+consumidora desses dados e do contrato 8A0; não está implementada.
 
 ## Manifesto, verificação e logs
 
@@ -365,5 +393,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0031 documentam as decisões; os seis
+ADRs 0007–0032 documentam as decisões; os seis
 princípios originais continuam válidos.

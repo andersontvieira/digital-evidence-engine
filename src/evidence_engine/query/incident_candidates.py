@@ -96,67 +96,87 @@ def query_incident_candidates(
     if start_utc >= end_utc:
         raise EvidenceError("Incident candidates start must precede end")
     with read_catalog(case_root) as connection:
-        timeline = timeline_in_snapshot(
+        return incident_candidates_in_snapshot(
             connection,
             start_utc=start_utc,
             end_utc=end_utc,
             platform=platform,
             event_kind=event_kind,
-            limit=None,
+            limit=limit,
+            candidate_kind=candidate_kind,
         )
-        entries: dict[str, Projection] = {}
-        references: dict[tuple[str, str], Projection] = {}
-        kinds: tuple[ObservationKind, ...] = ("device", "network")
-        for event in timeline.items:
-            for kind in kinds:
-                if candidate_kind is not None and kind != candidate_kind:
-                    continue
-                for observation in same_record_context(connection, kind, event.parsed_record_id):
-                    for candidate_id in observation["candidate_ids"]:
-                        if candidate_id not in entries:
-                            entries[candidate_id] = candidate_metadata(
-                                connection, candidate_id, kind
-                            )
-                            entries[candidate_id]["events"] = []
-                        link = support_link(connection, candidate_id, kind, observation)
-                        key = candidate_id, event.event_id
-                        if key not in references:
-                            references[key] = {
-                                "event_id": event.event_id,
-                                "parsed_record_id": event.parsed_record_id,
-                                "occurred_at_utc": event.occurred_at_utc,
-                                "platform": event.platform,
-                                "event_kind": event.event_kind,
-                                "observation_links": [],
-                            }
-                            # Timeline order is preserved; each distinct event is appended once.
-                            entries[candidate_id]["events"].append(references[key])
-                        references[key]["observation_links"].append(link)
-        items = list(entries.values())
-        for item in items:
-            events = item["events"]
-            for reference in events:
-                reference["observation_links"].sort(
-                    key=lambda link: (link["support_ordinal"], link["observation_id"])
-                )
-            item["window_event_count"] = len(events)
-            # One occurrence per event/support link, even when events share a source record.
-            item["window_support_occurrences"] = sum(len(e["observation_links"]) for e in events)
-            item["window_platforms"] = sorted({e["platform"] for e in events})
-            item["window_event_kinds"] = sorted({e["event_kind"] for e in events})
-        items.sort(
-            key=lambda item: (
-                -item["window_event_count"],
-                -item["window_support_occurrences"],
-                item["candidate_kind"],
-                item["candidate_id"],
+
+
+def incident_candidates_in_snapshot(
+    connection: Connection,
+    *,
+    start_utc: str,
+    end_utc: str,
+    platform: str | None,
+    event_kind: str | None,
+    candidate_kind: str | None,
+    limit: int,
+) -> Projection:
+    """Compose in the caller's read snapshot; arguments must already be validated."""
+    timeline = timeline_in_snapshot(
+        connection,
+        start_utc=start_utc,
+        end_utc=end_utc,
+        platform=platform,
+        event_kind=event_kind,
+        limit=None,
+    )
+    entries: dict[str, Projection] = {}
+    references: dict[tuple[str, str], Projection] = {}
+    kinds: tuple[ObservationKind, ...] = ("device", "network")
+    for event in timeline.items:
+        for kind in kinds:
+            if candidate_kind is not None and kind != candidate_kind:
+                continue
+            for observation in same_record_context(connection, kind, event.parsed_record_id):
+                for candidate_id in observation["candidate_ids"]:
+                    if candidate_id not in entries:
+                        entries[candidate_id] = candidate_metadata(connection, candidate_id, kind)
+                        entries[candidate_id]["events"] = []
+                    link = support_link(connection, candidate_id, kind, observation)
+                    key = candidate_id, event.event_id
+                    if key not in references:
+                        references[key] = {
+                            "event_id": event.event_id,
+                            "parsed_record_id": event.parsed_record_id,
+                            "occurred_at_utc": event.occurred_at_utc,
+                            "platform": event.platform,
+                            "event_kind": event.event_kind,
+                            "observation_links": [],
+                        }
+                        # Timeline order is preserved; each distinct event is appended once.
+                        entries[candidate_id]["events"].append(references[key])
+                    references[key]["observation_links"].append(link)
+    items = list(entries.values())
+    for item in items:
+        events = item["events"]
+        for reference in events:
+            reference["observation_links"].sort(
+                key=lambda link: (link["support_ordinal"], link["observation_id"])
             )
+        item["window_event_count"] = len(events)
+        # One occurrence per event/support link, even when events share a source record.
+        item["window_support_occurrences"] = sum(len(e["observation_links"]) for e in events)
+        item["window_platforms"] = sorted({e["platform"] for e in events})
+        item["window_event_kinds"] = sorted({e["event_kind"] for e in events})
+    items.sort(
+        key=lambda item: (
+            -item["window_event_count"],
+            -item["window_support_occurrences"],
+            item["candidate_kind"],
+            item["candidate_id"],
         )
-        return {
-            "policy_id": timeline.policy_id,
-            "policy_version": timeline.policy_version,
-            "matched_candidates": len(items),
-            "returned_candidates": min(limit, len(items)),
-            "truncated": len(items) > limit,
-            "items": items[:limit],
-        }
+    )
+    return {
+        "policy_id": timeline.policy_id,
+        "policy_version": timeline.policy_version,
+        "matched_candidates": len(items),
+        "returned_candidates": min(limit, len(items)),
+        "truncated": len(items) > limit,
+        "items": items[:limit],
+    }

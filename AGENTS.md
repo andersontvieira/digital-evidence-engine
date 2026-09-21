@@ -28,8 +28,10 @@
 
 ## Escopo atual
 
-Milestone 8A0 documental: contrato de relatório técnico consolidado, ADR 0031.
-Nenhum código funcional de reports ou acesso a caso real nesta etapa; schema v5.
+Milestone 8A1: read-only report data snapshot, sob ADRs 0031 e 0032; schema v5.
+Composição DB em um read snapshot; mídia usa verified read-only components.
+Validação real autorizada, com snapshots e relatório exclusivamente fora do Git.
+Sem prosa automática, WhatsApp, persistência ou inferência de identidade/autoria.
 Preservar OBSERVED, DERIVED, REPORTED e HYPOTHESIS e a provenance existente.
 Proibir conclusões automáticas de identity, authorship, session, causality
 ou questões jurídicas. Dados reais permanecem fora do Git.

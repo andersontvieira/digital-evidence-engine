@@ -10,6 +10,7 @@ from evidence_engine.cli.normalize import app as normalize_app
 from evidence_engine.cli.observe import app as observe_app
 from evidence_engine.cli.parse import app as parse_app
 from evidence_engine.cli.query import app as query_app
+from evidence_engine.cli.report import app as report_app
 
 app = typer.Typer(
     help="Local engine for organizing and tracing digital evidence.",
@@ -24,6 +25,7 @@ app.add_typer(observe_app, name="observe")
 app.add_typer(correlate_app, name="correlate")
 app.add_typer(query_app, name="query")
 app.add_typer(media_app, name="media")
+app.add_typer(report_app, name="report")
 
 
 @app.callback()
