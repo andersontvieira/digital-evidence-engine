@@ -12,10 +12,22 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 ## Estado atual
 
 A 8A0 concluiu o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md).
-Esta entrega 8A1 implementa o [Read-only Report Data Snapshot](docs/adr/0032-read-only-report-data-snapshot.md):
+A 8A1 concluiu o [Read-only Report Data Snapshot](docs/adr/0032-read-only-report-data-snapshot.md):
 JSON técnico determinístico com contagens, coverage, policies, provenance,
-candidates a achados e inputs de lacunas. A 8A2 consumirá esses dados para
-consolidação e gap analysis; permanece futura.
+candidates a achados e inputs de lacunas. Esta entrega 8A2 implementa o
+[First Consolidated Technical Report](docs/adr/0033-first-consolidated-technical-report.md):
+templates Markdown pt-BR determinísticos nas 20 seções do contrato.
+
+```console
+dee report consolidated --snapshot /synthetic/anchor.json --snapshot /synthetic/window.json
+```
+
+O renderer recebe de 1 a 20 JSONs 8A1, com exatamente um anchor sem janela;
+não recebe case-root nem acessa DB/originals/working. Confere igualdade das seções
+case-wide, ordena janelas e inclui todos os finding candidates retornados, com
+F/W/G locais e ponteiros de provenance. Lacunas automáticas somente B/C/D sob
+regras explícitas; A/E/F e a necessidade de WhatsApp exigem contexto externo.
+stdout UTF-8/LF somente; relatório e snapshots reais permanecem fora do Git.
 
 ```console
 dee report snapshot --case-root /case
@@ -754,5 +766,5 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 7         | WhatsApp — futura; escopo orientado pelo gap analysis da 8A2         |
 | 8A0       | Consolidated Technical Report Contract — concluída                   |
 | 8A1       | Read-only Report Data Snapshot — concluída                           |
-| 8A2       | First Consolidated Technical Report — futura                         |
+| 8A2       | First Consolidated Technical Report — concluído                      |
 | 8B        | Dossier / final exports — futura                                     |

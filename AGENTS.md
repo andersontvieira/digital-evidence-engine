@@ -28,10 +28,11 @@
 
 ## Escopo atual
 
-Milestone 8A1: read-only report data snapshot, sob ADRs 0031 e 0032; schema v5.
-Composição DB em um read snapshot; mídia usa verified read-only components.
+Milestone 8A2: consolidated report por templates determinísticos, sob ADRs 0031–0033.
+Renderer consome somente JSONs 8A1; não abre CASE_ROOT, DB, originals ou working.
+Preservar contrato 8A1 e schema v5; sem novas inferências ou prosa gerada por LLM.
 Validação real autorizada, com snapshots e relatório exclusivamente fora do Git.
-Sem prosa automática, WhatsApp, persistência ou inferência de identidade/autoria.
+Sem WhatsApp, persistência ou inferência automática de identidade/autoria.
 Preservar OBSERVED, DERIVED, REPORTED e HYPOTHESIS e a provenance existente.
 Proibir conclusões automáticas de identity, authorship, session, causality
 ou questões jurídicas. Dados reais permanecem fora do Git.

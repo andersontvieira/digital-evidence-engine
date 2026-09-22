@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import asdict
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -9,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
+from evidence_engine.reports.consolidated import consolidated_report
 from evidence_engine.reports.snapshot import report_snapshot
 
 app = typer.Typer(help="Read-only technical report support data.", no_args_is_help=True)
@@ -42,3 +44,21 @@ def snapshot(
         return
     payload = json.dumps(asdict(result), ensure_ascii=True, sort_keys=True, separators=(",", ":"))
     typer.echo((payload + "\n").encode("ascii"), nl=False)
+
+
+@app.command("consolidated")
+def consolidated(
+    snapshots: Annotated[
+        list[Path],
+        typer.Option(
+            "--snapshot", help="External 8A1 JSON; repeat up to 20 times, with exactly one anchor."
+        ),
+    ],
+) -> None:
+    """Render deterministic pt-BR Markdown from snapshots only, without CASE_ROOT."""
+    try:
+        content = consolidated_report(snapshots)
+    except EvidenceError as error:
+        fail(error)
+        return
+    typer.echo(content.encode("utf-8"), nl=False)

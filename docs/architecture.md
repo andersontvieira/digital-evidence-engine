@@ -1,6 +1,6 @@
 # Arquitetura
 
-## Milestone 8A1 — read-only report data snapshot
+## Milestone 8A2 — first consolidated technical report
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
 e dois parsers Google Takeout (SubscriberInfo e ChangeHistory), além de três
@@ -33,7 +33,8 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | query/                         | Timeline, busca técnica, proveniência e janela com contexto do mesmo registro; read-only |
 | reports/manifest.py            | Snapshot determinístico e escrita atômica                                                |
 | reports/snapshot.py            | Projeção técnica read-only para relatório, sem persistência                              |
-| cli/report.py                  | JSON ASCII determinístico, LF explícito e zero ou uma janela                             |
+| reports/consolidated.py        | Validação de JSONs 8A1, modelo consolidado e templates Markdown determinísticos          |
+| cli/report.py                  | Snapshot JSON ASCII/LF e consolidated Markdown UTF-8/LF; ambos stdout/read-only          |
 | media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
 Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
@@ -331,9 +332,9 @@ Devem reutilizar queries, provenance e policies versionadas, mantendo distinguí
 OBSERVED, DERIVED, REPORTED e HYPOTHESIS, sem promover hipótese a fato.
 
 A 8A1 implementa o snapshot estruturado e determinístico de suporte;
-a 8A2 tratará de rendering/consolidação e seleção auditável dos achados.
+a 8A2 implementa rendering/consolidação e seleção auditável dos achados.
 DTO, schema JSON e comando 8A1 estão definidos no ADR 0032; formatos do relatório
-humano permanecem futuros.
+humano em Markdown estão definidos no ADR 0033; outros exports permanecem futuros.
 Achados terão bases técnicas/provenance e limitações, com contagens por unidade,
 distinção current/historical e ausência limitada ao universo consultado.
 Não haverá conclusão automática de identidade, autoria, sessão, causalidade
@@ -363,8 +364,29 @@ truncamentos, sem classificar A–F. Limites separados conservam unidades.
 ParsedRecord permanece OBSERVED; NormalizedEvent permanece DERIVED.
 
 JSON compacto ASCII com LF explícito, sem generated_at/clock/UUID. stdout somente,
-sem runs, migrations, views, índices, caches ou arquivos automáticos. A 8A2 será
-consumidora desses dados e do contrato 8A0; não está implementada.
+sem runs, migrations, views, índices, caches ou arquivos automáticos. A 8A2 é
+consumidora desses dados e do contrato 8A0.
+
+## Consolidated technical report (8A2)
+
+Fluxo: JSONs 8A1 → validação do conjunto → ConsolidatedReportModel → Markdown
+pt-BR determinístico. `dee report consolidated --snapshot ...` aceita até 20
+arquivos e exige um anchor sem janela. Não possui case-root. O módulo depende
+apenas de stdlib/EvidenceError: nenhuma consulta ao evidence DB, originals,
+working, mídia ou invocação de 8A1 durante rendering.
+
+Igualdade de metadata/case-wide/gap inputs delimita a coerência do conjunto;
+janelas únicas são ordenadas pela chave canônica. Findings incluem todos os
+candidates retornados, com duplicatas case-wide apresentadas pelo anchor uma vez.
+F/W/G são referências locais; apêndice usa ponteiros lógicos, sem UUIDs, hashes
+ou nomes de arquivos de input. Contagens físicas/current e truncamentos permanecem
+distintos. Distribuições de overlap descrevem somente o prefixo.
+
+As 20 seções incluem gaps B/C/D sob regras explícitas; A/E/F não são automatizadas.
+WhatsApp permanece condicional. Templates não usam LLM, prosa livre pessoal,
+inferência nova ou integração externa. UTF-8/LF em stdout; sem persistência.
+Report policy 1.0.0 é separada do snapshot 1.0.0 e do evidence schema v5.
+Custódia/autenticidade dos JSONs não é demonstrada pela validação estrutural.
 
 ## Manifesto, verificação e logs
 
@@ -393,5 +415,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0032 documentam as decisões; os seis
+ADRs 0007–0033 documentam as decisões; os seis
 princípios originais continuam válidos.
