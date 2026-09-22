@@ -28,7 +28,10 @@
 
 ## Escopo atual
 
-Milestone 8A2: consolidated report por templates determinísticos, sob ADRs 0031–0033.
+Milestone 8A4 concluída: source-media linkage read-only sob ADR 0034: referência aprovada,
+exact member path no mesmo container, bytes verificados; sem fuzzy ou inferência
+de action semantics. Não resolve message attachments sem referência explícita.
+Integração ao relatório fica para a futura 8A4.1; preservar 8A1/8A2 e ADRs 0031–0033.
 Renderer consome somente JSONs 8A1; não abre CASE_ROOT, DB, originals ou working.
 Preservar contrato 8A1 e schema v5; sem novas inferências ou prosa gerada por LLM.
 Validação real autorizada, com snapshots e relatório exclusivamente fora do Git.

@@ -1,5 +1,25 @@
 # Arquitetura
 
+## Milestone 8A4 — exact source–media provenance link
+
+Concluída sob ADR 0034, com fechamento de integridade controlado em Linux.
+
+Fluxo: CurrentEvent → ParsedRecord → approved SourceMediaReference extractor →
+exact ArchiveMember resolution → byte verification → existing ExactMediaContent
+lookup → SourceMediaLink projection. Contrato detalhado no ADR 0034.
+
+media/source_links.py lê somente campos aprovados do payload persistido Meta
+1.1.0; não é parser genérico de URI. Resolve path literal no mesmo container,
+verifica a entrada única do ZIP e SHA/tamanho no leitor estável da Foundation.
+Reutiliza inventory_in_snapshot e project_contents, sem mudar políticas de
+formato, schemas ou persistência. O wrapper público de inventory mantém sua API.
+Uma read transaction abrange todos os componentes DB; filesystem não é atômico
+com SQLite. Mesmo referências fora do prefixo são verificadas antes de limit.
+
+Fonte é OBSERVED, resolução DERIVED. Não é media similarity, inferência de
+message attachment nem evidence attribution. 8A1/8A2 continuam sem consumir essa
+query; integração fica para 8A4.1. 8A3 foi análise externa, sem feature tracked.
+
 ## Milestone 8A2 — first consolidated technical report
 
 Motor local sem rede e sem certificação pericial, com três parsers Instagram/Meta
@@ -309,8 +329,9 @@ mesmo ParsedRecord são sinalizados sem presumir fontes independentes.
 O contrato preserva prefixo, ordem e contagens temporais da 6A, sem filtro por
 overlap, ranking ou score. Exige um único snapshot `read_catalog` para eventos,
 observations e supports, com memberships carregadas em lote, sem N+1 SQL.
-Schema v5, sem persistência adicional. pHash fica excluído: não existe vínculo
-media-event aprovado entre NormalizedEvent/ParsedRecord e ExactMediaContent.
+Schema v5, sem persistência adicional. pHash permanece excluído do contrato
+6B: a 6B não consome o source-media provenance link introduzido posteriormente
+na 8A4 nem define vínculo pHash-evento.
 O wrapper 6A e a composição 6B reutilizam `temporal_candidates_in_snapshot` e
 `_sweep_pairs`, com validação comum dos argumentos. A associação da 4B1 e a carga
 6B usam `same_record_predicate`. Projeções explícitas carregam IDs e metadados,
@@ -415,5 +436,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0033 documentam as decisões; os seis
+ADRs 0007–0034 documentam as decisões; os seis
 princípios originais continuam válidos.

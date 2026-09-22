@@ -11,10 +11,15 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 
 ## Estado atual
 
+A 8A3 concluiu a revisão analítica externa, sem código de produto. A 8A4 está
+concluída e implementa [Exact Source–Media Provenance Link](docs/adr/0034-exact-source-media-provenance-link.md):
+referências aprovadas já persistidas até membros exatos verificados.
+Integração ao relatório humano permanece na futura 8A4.1.
+
 A 8A0 concluiu o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md).
 A 8A1 concluiu o [Read-only Report Data Snapshot](docs/adr/0032-read-only-report-data-snapshot.md):
 JSON técnico determinístico com contagens, coverage, policies, provenance,
-candidates a achados e inputs de lacunas. Esta entrega 8A2 implementa o
+candidates a achados e inputs de lacunas. A 8A2 implementou o
 [First Consolidated Technical Report](docs/adr/0033-first-consolidated-technical-report.md):
 templates Markdown pt-BR determinísticos nas 20 seções do contrato.
 
@@ -668,6 +673,37 @@ Windows/Linux equivalente, incluindo JSON byte-identical; limitação anterior d
 5B encerrada em suplementos externos, preservando o relatório histórico.
 Outputs reais permanecem fora do Git.
 
+## Exact Source–Media Provenance Link (8A4)
+
+```console
+dee media source-links --case-root /case --start 2024-01-01T00:00:00Z --end 2024-01-01T01:00:00Z --platform meta --event-kind content.activity --limit 500
+```
+
+Exemplo sintético. Bounds UTC obrigatórios [start,end); filtros exatos;
+current_event_policy vigente. O adapter v1 aceita somente
+meta.recently_deleted_content/1.1.0/recently_deleted_content, nos campos uri
+da lista media sob labels Mídia explicitamente contratados do payload persistido.
+Não pesquisa URIs arbitrárias nem relê JSON original para descobri-las.
+
+Igualdade literal de referência e member_path no mesmo EvidenceFile; bytes e
+SHA/tamanho do ZIP/membro verificados read-only. Retorna LINK_EXACT_MEDIA_CONTENT,
+LINK_ARCHIVE_MEMBER_ONLY, NO_CATALOG_MEMBER_MATCH, NO_SOURCE_MEDIA_REFERENCE ou
+UNSUPPORTED_SOURCE_REFERENCE_TYPE. MEMBER_ONLY não significa arquivo inválido;
+apenas falta de conteúdo correspondente sob a policy atual. Formatos não mudam.
+Falha de integridade é global, exit 2, sem JSON parcial nem ajuste do catálogo.
+
+limit 1–5000 (default 500) retorna prefixo por UTC/platform/kind/event ID/locator/
+referência; summary preserva totais de eventos, referências, itens e status.
+Referências múltiplas geram vários itens por evento; ausência gera um item.
+Todos os matches são verificados antes do corte. DB usa um read snapshot;
+filesystem tem verificações próprias, sem atomicidade conjunta. Inventário
+existente também verifica outras ocorrências e suas materializações em working.
+
+Referência é OBSERVED e link é DERIVED. Nenhuma afirmação de publicação, envio,
+autoria, identidade, sessão ou causalidade. Sem fuzzy, pHash ou ligação de
+communication.message por tempo/thread. stdout somente; dados reais fora do Git.
+8A1/8A2 não mudam nesta etapa; integração humana exige a futura 8A4.1.
+
 ## Testes e qualidade
 
 ```sh
@@ -763,8 +799,11 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 6A        | Temporal Proximity Candidates — concluída                            |
 | 6B0       | Temporal + Exact Signal Overlap — contrato concluído                 |
 | 6B        | Temporal + Exact Signal Overlap — concluída                          |
-| 7         | WhatsApp — futura; escopo orientado pelo gap analysis da 8A2         |
+| 7         | WhatsApp — condicional, não acionada                                |
 | 8A0       | Consolidated Technical Report Contract — concluída                   |
 | 8A1       | Read-only Report Data Snapshot — concluída                           |
 | 8A2       | First Consolidated Technical Report — concluído                      |
+| 8A3       | Directed Investigative Review — concluída; análise externa, sem produto |
+| 8A4       | Exact Source–Media Provenance Link — concluída                       |
+| 8A4.1     | Consolidated Report Media-Link Integration — futura                  |
 | 8B        | Dossier / final exports — futura                                     |
