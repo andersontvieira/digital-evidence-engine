@@ -218,6 +218,7 @@ def test_duplicate_semantic_windows(snapshots):
         duplicate["analysis_window"]["window"],
         duplicate["analysis_window"]["temporal_proximity"]["window"],
         duplicate["analysis_window"]["temporal_exact_overlap"]["window"],
+        duplicate["analysis_window"]["source_media_links"]["scope"],
     ):
         scope["start"] = START
         scope["end"] = END

@@ -236,132 +236,154 @@ def query_source_links(
         raise EvidenceError("Source media links require start before end in UTC")
     paths = CasePaths.load(case_root)
     with read_catalog(case_root) as connection:
-        timeline = timeline_in_snapshot(
+        return source_links_in_snapshot(
+            paths,
             connection,
             start_utc=start_utc,
             end_utc=end_utc,
             platform=platform,
             event_kind=event_kind,
-            limit=None,
+            limit=limit,
         )
-        items: list[Projection] = []
-        members: dict[str, CatalogMember] = {}
-        containers: dict[str, CatalogContainer] = {}
-        for event in timeline.items:
-            row = (
-                connection.execute(
-                    select(
-                        ParsedRecord.id,
-                        ParsedRecord.parser_id,
-                        ParsedRecord.parser_version,
-                        ParsedRecord.record_type,
-                        ParsedRecord.source_locator,
-                        ParsedRecord.payload_json,
-                    ).where(ParsedRecord.id == event.parsed_record_id)
-                )
-                .mappings()
-                .one_or_none()
+
+
+def source_links_in_snapshot(
+    paths: CasePaths,
+    connection: Connection,
+    *,
+    start_utc: str,
+    end_utc: str,
+    platform: str | None,
+    event_kind: str | None,
+    limit: int,
+) -> Projection:
+    """Existing 8A4 query in a caller-owned read transaction; validated bounds/limit."""
+    timeline = timeline_in_snapshot(
+        connection,
+        start_utc=start_utc,
+        end_utc=end_utc,
+        platform=platform,
+        event_kind=event_kind,
+        limit=None,
+    )
+    items: list[Projection] = []
+    members: dict[str, CatalogMember] = {}
+    containers: dict[str, CatalogContainer] = {}
+    for event in timeline.items:
+        row = (
+            connection.execute(
+                select(
+                    ParsedRecord.id,
+                    ParsedRecord.parser_id,
+                    ParsedRecord.parser_version,
+                    ParsedRecord.record_type,
+                    ParsedRecord.source_locator,
+                    ParsedRecord.payload_json,
+                ).where(ParsedRecord.id == event.parsed_record_id)
             )
-            if row is None:
-                raise EvidenceError("SOURCE_MEDIA_RECORD_INTEGRITY_ERROR")
-            references = extract_meta_references(ParsedMediaSource(**row))
-            origin = record_origin(connection, event.parsed_record_id)
-            for reference in references or (None,):
-                resolution: Projection = {
-                    "classification": "DERIVED",
-                    "status": (
-                        "UNSUPPORTED_SOURCE_REFERENCE_TYPE"
-                        if references is None
-                        else "NO_SOURCE_MEDIA_REFERENCE"
-                        if reference is None
-                        else "NO_CATALOG_MEMBER_MATCH"
-                    ),
-                }
-                if reference is not None:
-                    if event.platform != reference.platform:
-                        raise EvidenceError("SOURCE_MEDIA_PLATFORM_INTEGRITY_ERROR")
-                    member = resolve_member(
-                        connection, origin["evidence_file_id"], reference.reference_value
-                    )
-                    if member is not None:
-                        members[member.id] = member
-                        parent = (
-                            connection.execute(
-                                select(
-                                    EvidenceFile.id,
-                                    EvidenceFile.relative_path,
-                                    EvidenceFile.size_bytes,
-                                    EvidenceFile.sha256,
-                                    EvidenceFile.is_archive,
-                                ).where(EvidenceFile.id == member.evidence_file_id)
-                            )
-                            .mappings()
-                            .one_or_none()
-                        )
-                        if parent is None:
-                            raise EvidenceError("SOURCE_MEDIA_CONTAINER_INTEGRITY_ERROR")
-                        containers[member.evidence_file_id] = CatalogContainer(**parent)
-                        resolution["archive_member_id"] = member.id
-                items.append(
-                    {
-                        "event": asdict(event),
-                        "source_reference": asdict(reference) if reference else None,
-                        "provenance": origin,
-                        "resolution": resolution,
-                        "limitations": list(LIMITATIONS),
-                    }
-                )
-        if members:
-            originals = {
-                p.relative_to(paths.originals).as_posix(): p for p in discover(paths.originals)
+            .mappings()
+            .one_or_none()
+        )
+        if row is None:
+            raise EvidenceError("SOURCE_MEDIA_RECORD_INTEGRITY_ERROR")
+        references = extract_meta_references(ParsedMediaSource(**row))
+        origin = record_origin(connection, event.parsed_record_id)
+        for reference in references or (None,):
+            resolution: Projection = {
+                "classification": "DERIVED",
+                "status": (
+                    "UNSUPPORTED_SOURCE_REFERENCE_TYPE"
+                    if references is None
+                    else "NO_SOURCE_MEDIA_REFERENCE"
+                    if reference is None
+                    else "NO_CATALOG_MEMBER_MATCH"
+                ),
             }
-            for member in members.values():
-                container = containers[member.evidence_file_id]
-                path = originals.get(container.relative_path)
-                if path is None:
-                    raise EvidenceError("MISSING_SOURCE_MEDIA_CONTAINER")
-                verify_member(path, container, member)
-            # Reuse the existing scanner and exact-content algorithm within THIS read snapshot.
-            contents = project_contents(inventory_in_snapshot(paths, connection).items).contents
-            for item in items:
-                if "archive_member_id" in item["resolution"]:
-                    item["resolution"] = content_projection(
-                        members[item["resolution"]["archive_member_id"]], contents
+            if reference is not None:
+                if event.platform != reference.platform:
+                    raise EvidenceError("SOURCE_MEDIA_PLATFORM_INTEGRITY_ERROR")
+                member = resolve_member(
+                    connection, origin["evidence_file_id"], reference.reference_value
+                )
+                if member is not None:
+                    members[member.id] = member
+                    parent = (
+                        connection.execute(
+                            select(
+                                EvidenceFile.id,
+                                EvidenceFile.relative_path,
+                                EvidenceFile.size_bytes,
+                                EvidenceFile.sha256,
+                                EvidenceFile.is_archive,
+                            ).where(EvidenceFile.id == member.evidence_file_id)
+                        )
+                        .mappings()
+                        .one_or_none()
                     )
-        counts = dict(sorted(Counter(i["resolution"]["status"] for i in items).items()))
-        return {
-            "policy": {
-                "policy_id": POLICY_ID,
-                "policy_version": POLICY_VERSION,
-                "feature_class": "DERIVED",
-                "relation_kind": "source_media.exact_provenance_link",
-                "current_event_policy_id": CURRENT_POLICY_ID,
-                "current_event_policy_version": CURRENT_POLICY_VERSION,
-            },
-            "scope": {
-                "start": start_utc,
-                "end": end_utc,
-                "platform": platform,
-                "event_kind": event_kind,
-                "limit": limit,
-            },
-            "consistency": {
-                "database_consistency": "single_read_snapshot",
-                "database_scope": "events_references_provenance_members_and_media_inventory",
-                "filesystem_consistency": "verified_stable_reads",
-                "atomic_database_filesystem": False,
-                "exact_media_contents_consulted": bool(members),
-            },
-            "summary": {
-                "unit": "event_source_reference_items",
-                "eligible_events": timeline.matched_total,
-                "source_references": sum(i["source_reference"] is not None for i in items),
-                "undated_current_events": timeline.undated_current_events,
-                "matched_total": len(items),
-                "returned": min(limit, len(items)),
-                "truncated": len(items) > limit,
-                "status_counts_scope": "all_matched_items",
-                "status_counts": counts,
-            },
-            "items": items[:limit],
+                    if parent is None:
+                        raise EvidenceError("SOURCE_MEDIA_CONTAINER_INTEGRITY_ERROR")
+                    containers[member.evidence_file_id] = CatalogContainer(**parent)
+                    resolution["archive_member_id"] = member.id
+            items.append(
+                {
+                    "event": asdict(event),
+                    "source_reference": asdict(reference) if reference else None,
+                    "provenance": origin,
+                    "resolution": resolution,
+                    "limitations": list(LIMITATIONS),
+                }
+            )
+    if members:
+        originals = {
+            p.relative_to(paths.originals).as_posix(): p for p in discover(paths.originals)
         }
+        for member in members.values():
+            container = containers[member.evidence_file_id]
+            path = originals.get(container.relative_path)
+            if path is None:
+                raise EvidenceError("MISSING_SOURCE_MEDIA_CONTAINER")
+            verify_member(path, container, member)
+        # Reuse the existing scanner and exact-content algorithm within THIS read snapshot.
+        contents = project_contents(inventory_in_snapshot(paths, connection).items).contents
+        for item in items:
+            if "archive_member_id" in item["resolution"]:
+                item["resolution"] = content_projection(
+                    members[item["resolution"]["archive_member_id"]], contents
+                )
+    counts = dict(sorted(Counter(i["resolution"]["status"] for i in items).items()))
+    return {
+        "policy": {
+            "policy_id": POLICY_ID,
+            "policy_version": POLICY_VERSION,
+            "feature_class": "DERIVED",
+            "relation_kind": "source_media.exact_provenance_link",
+            "current_event_policy_id": CURRENT_POLICY_ID,
+            "current_event_policy_version": CURRENT_POLICY_VERSION,
+        },
+        "scope": {
+            "start": start_utc,
+            "end": end_utc,
+            "platform": platform,
+            "event_kind": event_kind,
+            "limit": limit,
+        },
+        "consistency": {
+            "database_consistency": "single_read_snapshot",
+            "database_scope": "events_references_provenance_members_and_media_inventory",
+            "filesystem_consistency": "verified_stable_reads",
+            "atomic_database_filesystem": False,
+            "exact_media_contents_consulted": bool(members),
+        },
+        "summary": {
+            "unit": "event_source_reference_items",
+            "eligible_events": timeline.matched_total,
+            "source_references": sum(i["source_reference"] is not None for i in items),
+            "undated_current_events": timeline.undated_current_events,
+            "matched_total": len(items),
+            "returned": min(limit, len(items)),
+            "truncated": len(items) > limit,
+            "status_counts_scope": "all_matched_items",
+            "status_counts": counts,
+        },
+        "items": items[:limit],
+    }

@@ -1,5 +1,21 @@
 # Arquitetura
 
+## Milestone 8A4.1 — integração source-media ao relatório
+
+Concluída sob ADR 0035. Fluxo: source_media.provenance_link/1.0.0 → report
+snapshot 1.1.0 → projeção explícita sem URI/path/payload → finding
+source_media_provenance_link → consolidated report 1.1.0.
+source_links_in_snapshot recebe a mesma Connection da janela; mantém verificações
+Foundation separadas de filesystem, sem atomicidade DB/filesystem. Anchor não
+executa a query. Limite de 1000 items preserva totais/status do universo completo.
+O renderer permanece snapshot-only, sem import/acesso a banco ou evidências.
+Novos findings positivos são apendados após os antigos; F/W-IDs e 20 seções
+permanecem estáveis. Gap D descreve cobertura estreita; message attachments
+continuam SOURCE_LIMITATION. WhatsApp condicional/não acionado; 8B futura,
+dependente de escopo separado.
+Conjuntos 1.0.0 mantêm report 1.0.0 e Markdown histórico; mistura de versões e
+versões desconhecidas falham explicitamente. Sem schema/persistência/dependências.
+
 ## Milestone 8A4 — exact source–media provenance link
 
 Concluída sob ADR 0034, com fechamento de integridade controlado em Linux.
@@ -18,7 +34,7 @@ com SQLite. Mesmo referências fora do prefixo são verificadas antes de limit.
 
 Fonte é OBSERVED, resolução DERIVED. Não é media similarity, inferência de
 message attachment nem evidence attribution. 8A1/8A2 continuam sem consumir essa
-query; integração fica para 8A4.1. 8A3 foi análise externa, sem feature tracked.
+query nos contratos 1.0.0; integração 1.1.0 está na 8A4.1. 8A3 foi análise externa.
 
 ## Milestone 8A2 — first consolidated technical report
 
@@ -406,7 +422,8 @@ distintos. Distribuições de overlap descrevem somente o prefixo.
 As 20 seções incluem gaps B/C/D sob regras explícitas; A/E/F não são automatizadas.
 WhatsApp permanece condicional. Templates não usam LLM, prosa livre pessoal,
 inferência nova ou integração externa. UTF-8/LF em stdout; sem persistência.
-Report policy 1.0.0 é separada do snapshot 1.0.0 e do evidence schema v5.
+Report policy é separada da policy de snapshot e do evidence schema v5.
+Os contratos históricos 1.0.0 permanecem suportados; a 8A4.1 amplia ambos para 1.1.0.
 Custódia/autenticidade dos JSONs não é demonstrada pela validação estrutural.
 
 ## Manifesto, verificação e logs
@@ -436,5 +453,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0034 documentam as decisões; os seis
+ADRs 0007–0035 documentam as decisões; os seis
 princípios originais continuam válidos.

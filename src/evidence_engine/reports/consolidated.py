@@ -14,7 +14,7 @@ from evidence_engine.errors import EvidenceError
 type Object = dict[str, Any]
 
 REPORT_ID = "report.consolidated"
-REPORT_VERSION = "1.0.0"
+REPORT_VERSION = "1.1.0"
 MAX_SNAPSHOTS = 20
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 TITLE = "Relatório Técnico Consolidado de Análise e Organização de Evidências Digitais"
@@ -46,7 +46,6 @@ GAP_FIELDS = (
     "undated_current_events",
     "unrecognized_media",
     "perceptual_status_counts",
-    "media_event_link_available",
     "whatsapp_parser_available",
     "known_capability_limits",
 )
@@ -97,6 +96,32 @@ TABLES = (
 LIMITATION = (
     "A inclusão decorre dos snapshots escolhidos pelo operador e do prefixo técnico retornado. "
     "Não estabelece identidade, autoria humana, sessão, causalidade ou conclusão jurídica."
+)
+SOURCE_MEDIA_POSITIVE = {"LINK_EXACT_MEDIA_CONTENT", "LINK_ARCHIVE_MEMBER_ONLY"}
+SOURCE_MEDIA_STATUSES = SOURCE_MEDIA_POSITIVE | {
+    "NO_CATALOG_MEMBER_MATCH",
+    "NO_SOURCE_MEDIA_REFERENCE",
+    "UNSUPPORTED_SOURCE_REFERENCE_TYPE",
+}
+SOURCE_MEDIA_LIMITATION = (
+    "Cobertura estreita do adapter/policy atual, sem generalização para todo evento/mídia. "
+    "Source-media provenance link não resolve communication.message attachments: "
+    "SOURCE_LIMITATION. "
+    "Ausência fora da cobertura não prova inexistência de mídia. "
+    "Occurrence count representa ocorrências catalogadas do mesmo conteúdo exato; "
+    "não número de envios, publicações, destinatários ou ações humanas. "
+    "Duplicatas entre exports não demonstram disseminação. "
+    "O vínculo não estabelece publicação, upload, envio ou exclusão. "
+    "O raio temporal não participa da consulta source-media. "
+    "WhatsApp permanece condicional/não acionado."
+)
+SOURCE_MEDIA_PARTIAL = (
+    "Há vínculo source-media aprovado nas referências cobertas pela policy dos snapshots "
+    "fornecidos; a cobertura de source-media linkage permanece parcial."
+)
+SOURCE_MEDIA_ABSENT = (
+    "Nenhum link source-media aplicável foi retornado no conjunto de snapshots fornecidos; "
+    "isso não afirma ausência global da capacidade no motor."
 )
 
 
@@ -353,7 +378,12 @@ def _findings(s: Object) -> None:
     findings = _object(s["finding_candidates"], {"global_limitations": list})
     _strings(findings["global_limitations"])
     kinds = ("exact_media_duplicate",) + (WINDOW_TYPES if s["analysis_window"] is not None else ())
-    _require(set(findings) == {"global_limitations", *kinds})
+    extra = (
+        {"source_media_provenance_link"}
+        if s["snapshot"]["snapshot_version"] == "1.1.0" and s["analysis_window"] is not None
+        else set()
+    )
+    _require(set(findings) == {"global_limitations", *kinds, *extra})
     for kind in kinds:
         section = _prefix(findings.get(kind))
         _require(section.get("unit") == "candidate_projections")
@@ -388,7 +418,7 @@ def _findings(s: Object) -> None:
                 basis = {
                     "relation": "verified_size_sha256_equality",
                     "projection_policy_id": "report.data_snapshot",
-                    "projection_policy_version": "1.0.0",
+                    "projection_policy_version": s["snapshot"]["snapshot_version"],
                 }
             elif kind == "window_exact_candidate":
                 expected = {
@@ -415,6 +445,246 @@ def _findings(s: Object) -> None:
             _require(finding["references"] == expected and finding["technical_basis"] == basis)
 
 
+def _source_media(s: Object) -> None:
+    """Validate the 1.1 report projection without importing evidence/query services."""
+    policy = {"policy_id": "source_media.provenance_link", "policy_version": "1.0.0"}
+    _require(s["policies"].get("source_media_links") == policy)
+    limit = _count(s["scope"]["limits"].get("source_media_items"))
+    _require(1 <= limit <= 5000)
+    index = s["provenance_index"]
+    _require(type(index.get("source_media_links")) is list)
+    window = s["analysis_window"]
+    executed = "source_media_links" in s["scope"]["executed_components"]
+    if window is None:
+        _require(not executed and index["source_media_links"] == [])
+        return
+    _require(executed)
+    links = _object(
+        window.get("source_media_links"),
+        {
+            "policy": dict,
+            "scope": dict,
+            "consistency": dict,
+            "summary": dict,
+            "items": list,
+        },
+    )
+    _require(set(links) == {"policy", "scope", "consistency", "summary", "items"})
+    _require(
+        links["policy"]
+        == policy
+        | {
+            "feature_class": "DERIVED",
+            "relation_kind": "source_media.exact_provenance_link",
+            "current_event_policy_id": s["policies"]["current_event_policy"]["policy_id"],
+            "current_event_policy_version": s["policies"]["current_event_policy"]["policy_version"],
+        }
+    )
+    _require(links["scope"] == window["window"] | {"limit": limit})
+    consistency = _object(links["consistency"], {"exact_media_contents_consulted": bool})
+    _require(
+        consistency
+        == {
+            "database_consistency": "single_read_snapshot",
+            "database_scope": "events_references_provenance_members_and_media_inventory",
+            "filesystem_consistency": "verified_stable_reads",
+            "atomic_database_filesystem": False,
+            "exact_media_contents_consulted": consistency["exact_media_contents_consulted"],
+        }
+    )
+    summary = _prefix(links["summary"] | {"items": links["items"]}, "matched_total")
+    _require(summary.get("unit") == "event_source_reference_items")
+    _require(summary.get("status_counts_scope") == "all_matched_items")
+    counts = _distribution(summary.get("status_counts"))
+    _require(
+        set(counts) <= SOURCE_MEDIA_STATUSES and sum(counts.values()) == summary["matched_total"]
+    )
+    _require(summary["returned"] == min(limit, summary["matched_total"]))
+    eligible = _count(summary.get("eligible_events"))
+    references = _count(summary.get("source_references"))
+    _require(eligible <= summary["matched_total"] and references <= summary["matched_total"])
+    _require(
+        references
+        == sum(
+            n
+            for k, n in counts.items()
+            if k not in {"NO_SOURCE_MEDIA_REFERENCE", "UNSUPPORTED_SOURCE_REFERENCE_TYPE"}
+        )
+    )
+    _count(summary.get("undated_current_events"))
+    _require(
+        consistency["exact_media_contents_consulted"]
+        == bool(sum(counts.get(k, 0) for k in SOURCE_MEDIA_POSITIVE))
+    )
+    expected_index: list[Object] = []
+    positives: list[Object] = []
+    observed: dict[str, int] = {}
+    for position, item in enumerate(links["items"]):
+        _require(set(item) == {"event", "source_reference", "resolution", "limitations"})
+        event = item["event"]
+        _event(event, index["parsed_records"])
+        _technical(event["platform"])
+        _technical(event["event_kind"])
+        bounds = window["window"]
+        _require(_utc(bounds["start"]) <= _utc(event["occurred_at_utc"]) < _utc(bounds["end"]))
+        _require(
+            all(bounds[k] is None or bounds[k] == event[k] for k in ("platform", "event_kind"))
+        )
+        reference = item["source_reference"]
+        resolution = _object(item["resolution"], {"classification": str, "status": str})
+        status = resolution["status"]
+        _require(resolution["classification"] == "DERIVED" and status in SOURCE_MEDIA_STATUSES)
+        observed[status] = observed.get(status, 0) + 1
+        has_reference = status not in {
+            "NO_SOURCE_MEDIA_REFERENCE",
+            "UNSUPPORTED_SOURCE_REFERENCE_TYPE",
+        }
+        _require((reference is not None) == has_reference)
+        if has_reference:
+            _object(
+                reference,
+                {
+                    key: str
+                    for key in (
+                        "classification",
+                        "parsed_record_id",
+                        "platform",
+                        "parser_id",
+                        "parser_version",
+                        "source_field_locator",
+                    )
+                },
+            )
+            _require(
+                set(reference)
+                == {
+                    "classification",
+                    "parsed_record_id",
+                    "platform",
+                    "parser_id",
+                    "parser_version",
+                    "source_field_locator",
+                }
+            )
+            _require(
+                reference["classification"] == "OBSERVED"
+                and reference["parsed_record_id"] == event["parsed_record_id"]
+            )
+            _require(reference["platform"] == event["platform"] == "meta")
+            _require(
+                (reference["parser_id"], reference["parser_version"])
+                == ("meta.recently_deleted_content", "1.1.0")
+            )
+            _require(
+                re.fullmatch(
+                    r"\$/\d+/label_values/\d+/media/\d+/uri", reference["source_field_locator"]
+                )
+                is not None
+            )
+        if status in SOURCE_MEDIA_POSITIVE:
+            _require(
+                set(resolution)
+                == {
+                    "classification",
+                    "status",
+                    "archive_member_id",
+                    "evidence_file_id",
+                    "size_bytes",
+                    "archive_member_sha256",
+                    "bytes_verified",
+                    "exact_media_content",
+                }
+            )
+            _object(
+                resolution,
+                {"archive_member_id": str, "evidence_file_id": str, "archive_member_sha256": str},
+            )
+            _require(resolution["bytes_verified"] is True)
+            _count(resolution["size_bytes"])
+            origin = index["parsed_records"][event["parsed_record_id"]]
+            _require(
+                resolution["evidence_file_id"] == origin["evidence_file_id"]
+                and resolution["evidence_file_id"] in index["evidence_files"]
+            )
+            content = resolution["exact_media_content"]
+            if status == "LINK_EXACT_MEDIA_CONTENT":
+                _object(content, {"content_sha256": str, "media_kind": str, "media_format": str})
+                _require(
+                    set(content)
+                    == {
+                        "content_sha256",
+                        "size_bytes",
+                        "media_kind",
+                        "media_format",
+                        "occurrence_count",
+                    }
+                )
+                _require(
+                    content["content_sha256"] == resolution["archive_member_sha256"]
+                    and _count(content.get("size_bytes")) == resolution["size_bytes"]
+                )
+                _require(_count(content.get("occurrence_count")) >= 1)
+                _require(
+                    content["media_kind"] in {"image", "video"}
+                    and content["media_format"]
+                    in {"jpeg", "png", "gif", "webp", "heif", "heic", "avif"}
+                )
+            else:
+                _require(content is None)
+            positives.append(
+                {
+                    "candidate_type": "source_media_provenance_link",
+                    "classification": "DERIVED",
+                    "technical_basis": links["policy"],
+                    "references": {
+                        "source_media_item_index": position,
+                        "event_id": event["event_id"],
+                    },
+                    "limitations_ref": "global_limitations",
+                }
+            )
+        else:
+            _require(set(resolution) == {"classification", "status"})
+        _strings(item["limitations"])
+        expected_index.append(
+            {
+                "pointer": f"analysis_window.source_media_links.items[{position}]",
+                "parsed_record_id": event["parsed_record_id"],
+                "archive_member_id": resolution.get("archive_member_id"),
+                "evidence_file_id": resolution.get("evidence_file_id"),
+            }
+        )
+    _require(all(count <= counts.get(status, 0) for status, count in observed.items()))
+    if not summary["truncated"]:
+        _require(
+            observed == counts and len({i["event"]["event_id"] for i in links["items"]}) == eligible
+        )
+    _require(index["source_media_links"] == expected_index)
+    section = _prefix(s["finding_candidates"].get("source_media_provenance_link"))
+    _require(section.get("unit") == "candidate_projections" and section["items"] == positives)
+    _require(section["total"] == sum(counts.get(k, 0) for k in SOURCE_MEDIA_POSITIVE))
+
+
+def _source_media_statement(item: Object, window_id: str) -> str:
+    event, resolution = item["event"], item["resolution"]
+    context = (
+        f"Na janela {window_id}, evento técnico UTC {_utc(event['occurred_at_utc'])}, "
+        f"{_technical(event['platform'])}/{_technical(event['event_kind'])}: "
+        f"{resolution['status']}. Referência OBSERVED; vínculo DERIVED. "
+    )
+    if resolution["status"] == "LINK_ARCHIVE_MEMBER_ONLY":
+        return (
+            context + "Membro de arquivo verificado, sem correspondência em ExactMediaContent "
+            "sob a policy atual."
+        )
+    content = resolution["exact_media_content"]
+    return context + (
+        f"Correspondência em ExactMediaContent, bytes verificados; "
+        f"occurrence_count={content['occurrence_count']}; "
+        f"{content['media_kind']}/{content['media_format']}."
+    )
+
+
 def validate_snapshot(value: Any) -> Object:
     s = _object(
         value,
@@ -435,11 +705,13 @@ def validate_snapshot(value: Any) -> Object:
     meta = _object(s["snapshot"], {"case_id": str, "engine_version": str})
     for name, expected in (
         ("snapshot_id", "report.data_snapshot"),
-        ("snapshot_version", "1.0.0"),
         ("feature_class", "DERIVED"),
         ("evidence_schema_version", 5),
     ):
         _require(type(meta.get(name)) is type(expected) and meta[name] == expected)
+    _require(
+        meta.get("snapshot_version") in ("1.0.0", "1.1.0"), "REPORT_UNSUPPORTED_SNAPSHOT_VERSION"
+    )
     _require(bool(meta["case_id"]))
     _version(meta["engine_version"])
     consistency = s["consistency"]
@@ -509,9 +781,14 @@ def validate_snapshot(value: Any) -> Object:
     if s["analysis_window"] is not None:
         _window(s["analysis_window"], index["parsed_records"])
     _findings(s)
-    gaps = _object(
-        s["gap_inputs"], {"media_event_link_available": bool, "whatsapp_parser_available": bool}
-    )
+    if meta["snapshot_version"] == "1.1.0":
+        _source_media(s)
+    else:
+        _require(
+            "source_media_links" not in s["policies"]
+            and (s["analysis_window"] is None or "source_media_links" not in s["analysis_window"])
+        )
+    gaps = _object(s["gap_inputs"], {"whatsapp_parser_available": bool})
     runs = _counts(gaps.get("parser_runs"), "physical_rows", ("UNSUPPORTED", "FAILED"))
     for status in ("UNSUPPORTED", "FAILED"):
         _require(
@@ -540,6 +817,15 @@ def validate_snapshot(value: Any) -> Object:
         if s["analysis_window"] is None
         else sorted(k for k in COMPONENTS if s["analysis_window"][k]["truncated"])
     )
+    if meta["snapshot_version"] == "1.0.0":
+        _object(gaps, {"media_event_link_available": bool})
+    else:
+        _require("media_event_link_available" not in gaps)
+        if (
+            s["analysis_window"] is not None
+            and s["analysis_window"]["source_media_links"]["summary"]["truncated"]
+        ):
+            expected_truncated = sorted([*expected_truncated, "source_media_links"])
     _require(truncated == expected_truncated)
     return s
 
@@ -672,7 +958,7 @@ def _statement(kind: str, refs: Object, window_id: str) -> str:
     return statement
 
 
-def _gaps(anchor: Object) -> tuple[TechnicalGap, ...]:
+def _gaps(anchor: Object, has_links: bool = False) -> tuple[TechnicalGap, ...]:
     inputs = anchor["gap_inputs"]
     rows = []
     if inputs["parser_runs"]["UNSUPPORTED"] > 0:
@@ -702,7 +988,7 @@ def _gaps(anchor: Object) -> tuple[TechnicalGap, ...]:
     if (
         anchor["media"]["contents"]["exact_content_count"] > 0
         and anchor["current_events"]["total"] > 0
-        and not inputs["media_event_link_available"]
+        and not inputs.get("media_event_link_available", False)
     ):
         rows.append(
             (
@@ -715,8 +1001,30 @@ def _gaps(anchor: Object) -> tuple[TechnicalGap, ...]:
                 "identifica uma fonte externa necessária.",
             )
         )
+    if anchor["snapshot"]["snapshot_version"] == "1.1.0":
+        rows = [row for row in rows if row[0] != "D"]
+        if has_links or (
+            anchor["media"]["contents"]["exact_content_count"] and anchor["current_events"]["total"]
+        ):
+            rows.append(
+                (
+                    "D",
+                    SOURCE_MEDIA_PARTIAL if has_links else SOURCE_MEDIA_ABSENT,
+                    "analysis_window.source_media_links",
+                    SOURCE_MEDIA_LIMITATION,
+                )
+            )
     return tuple(
-        TechnicalGap(f"G-{index:03d}", category, statement, basis, "Anchor / case-wide", limitation)
+        TechnicalGap(
+            f"G-{index:03d}",
+            category,
+            statement,
+            basis,
+            "Snapshots fornecidos"
+            if category == "D" and anchor["snapshot"]["snapshot_version"] == "1.1.0"
+            else "Anchor / case-wide",
+            limitation,
+        )
         for index, (category, statement, basis, limitation) in enumerate(rows, 1)
     )
 
@@ -724,9 +1032,14 @@ def _gaps(anchor: Object) -> tuple[TechnicalGap, ...]:
 def consolidate_snapshots(snapshots: Sequence[Object]) -> ConsolidatedReportModel:
     _require(1 <= len(snapshots) <= MAX_SNAPSHOTS, "REPORT_SNAPSHOT_COUNT")
     validated = [validate_snapshot(s) for s in snapshots]
+    _require(
+        len({s["snapshot"]["snapshot_version"] for s in validated}) == 1,
+        "REPORT_MIXED_SNAPSHOT_VERSIONS",
+    )
     anchors = [s for s in validated if s["analysis_window"] is None]
     _require(len(anchors) == 1, "REPORT_ANCHOR_COUNT")
     anchor = anchors[0]
+    version = anchor["snapshot"]["snapshot_version"]
     keys = set()
     ordered = []
     for s in validated:
@@ -744,7 +1057,11 @@ def consolidate_snapshots(snapshots: Sequence[Object]) -> ConsolidatedReportMode
         )
         _require(all(s[k] == anchor[k] for k in CASE_WIDE), "REPORT_SNAPSHOT_SET_CHANGED")
         _require(
-            all(s["gap_inputs"][k] == anchor["gap_inputs"][k] for k in GAP_FIELDS),
+            all(
+                s["gap_inputs"][k] == anchor["gap_inputs"][k]
+                for k in GAP_FIELDS
+                + (("media_event_link_available",) if version == "1.0.0" else ())
+            ),
             "REPORT_SNAPSHOT_SET_CHANGED",
         )
         _require(
@@ -844,8 +1161,48 @@ def consolidate_snapshots(snapshots: Sequence[Object]) -> ConsolidatedReportMode
                 label, scope, counts, distribution, tuple(s["gap_inputs"]["truncated_components"])
             )
         )
+        if version == "1.1.0":
+            summary = w["source_media_links"]["summary"]
+            counts["source_media_links"] = {
+                "unit": summary["unit"],
+                "total": summary["matched_total"],
+                "returned": summary["returned"],
+                "truncated": summary["truncated"],
+                "status_counts": deepcopy(summary["status_counts"]),
+            }
         for kind in WINDOW_TYPES:
             include(s, kind, label)
+    source_findings: list[ReportFinding] = []
+    if version == "1.1.0":
+        for index, (_, s) in enumerate(ordered, 1):
+            label = f"W-{index:03d}"
+            links = s["analysis_window"]["source_media_links"]
+            for candidate in s["finding_candidates"]["source_media_provenance_link"]["items"]:
+                item_index = candidate["references"]["source_media_item_index"]
+                item = links["items"][item_index]
+                finding_id = f"F-{len(findings) + len(source_findings) + 1:03d}"
+                limits = LIMITATION + " " + SOURCE_MEDIA_LIMITATION
+                if links["summary"]["truncated"]:
+                    limits += (
+                        " Projeção source-media truncada; "
+                        "achados limitados aos positivos do prefixo."
+                    )
+                source_findings.append(
+                    ReportFinding(
+                        finding_id,
+                        "source_media_provenance_link",
+                        "DERIVED",
+                        _source_media_statement(item, label),
+                        deepcopy(links["policy"]),
+                        TechnicalReference(
+                            finding_id,
+                            label,
+                            f"analysis_window.source_media_links.items[{item_index}]",
+                        ),
+                        limits,
+                    )
+                )
+        findings.extend(source_findings)
     media = deepcopy(anchor["media"])
     media["contents"].pop("duplicates")
     limitations = [
@@ -863,15 +1220,17 @@ def consolidate_snapshots(snapshots: Sequence[Object]) -> ConsolidatedReportMode
         "Ausência no snapshot ou no prefixo não demonstra inexistência de "
         "dados, atividade ou vínculo fora do escopo.",
     ]
+    if version == "1.1.0":
+        limitations.append(SOURCE_MEDIA_LIMITATION)
     if not anchor["gap_inputs"]["whatsapp_parser_available"]:
         limitations.append("Não há parser WhatsApp implementado nesta versão.")
     return ConsolidatedReportModel(
         metadata={
             "report_policy_id": REPORT_ID,
-            "report_policy_version": REPORT_VERSION,
+            "report_policy_version": version,
             "feature_class": "DERIVED",
             "snapshot_policy_id": "report.data_snapshot",
-            "snapshot_policy_version": "1.0.0",
+            "snapshot_policy_version": version,
             "evidence_schema_version": 5,
             "engine_version": anchor["snapshot"]["engine_version"],
         },
@@ -887,7 +1246,7 @@ def consolidate_snapshots(snapshots: Sequence[Object]) -> ConsolidatedReportMode
         windows=tuple(windows),
         findings=tuple(findings),
         limitations=tuple(limitations),
-        gaps=_gaps(anchor),
+        gaps=_gaps(anchor, bool(source_findings)),
         technical_reference_map=tuple(f.provenance_basis for f in findings),
     )
 
@@ -917,7 +1276,10 @@ def _coverage_table(model: ConsolidatedReportModel, name: str) -> str:
 
 def _basis(value: Object) -> str:
     if "projection_policy_id" in value:
-        return "Igualdade SHA-256/tamanho verificada na 8A1; report.data_snapshot / 1.0.0."
+        return (
+            "Igualdade SHA-256/tamanho verificada na 8A1; report.data_snapshot / "
+            f"{_version(value['projection_policy_version'])}."
+        )
     if "correlator_id" in value:
         return (
             f"{_technical(value['correlator_id'])} / {_version(value['correlator_version'])}; "
@@ -934,8 +1296,10 @@ def render_markdown(model: ConsolidatedReportModel) -> str:
     media = m.media_summary
     bodies: list[str] = []
     bodies.append(
-        f"Policy do relatório: {REPORT_ID} / {REPORT_VERSION}. Projeção DERIVED.\n\n"
-        f"Snapshot: report.data_snapshot / 1.0.0. Evidence schema: v5. Engine: "
+        f"Policy do relatório: {REPORT_ID} / {m.metadata['report_policy_version']}. "
+        "Projeção DERIVED.\n\n"
+        f"Snapshot: report.data_snapshot / {m.metadata['snapshot_policy_version']}. "
+        "Evidence schema: v5. Engine: "
         f"{m.metadata['engine_version']}."
     )
     bodies.append(
@@ -977,6 +1341,8 @@ def render_markdown(model: ConsolidatedReportModel) -> str:
         ("temporal_exact_overlap", "policy"),
     ):
         policy_rows.append((policies[name][prefix + "_id"], policies[name][prefix + "_version"]))
+    if "source_media_links" in policies:
+        policy_rows.append(("source_media.provenance_link", "1.0.0"))
     bodies.append(
         "Policies declaradas nos snapshots; disponibilidade não implica "
         "execução de componente sem janela. "
@@ -1125,6 +1491,20 @@ def render_markdown(model: ConsolidatedReportModel) -> str:
             [(r["status"], r["media_format"], r["count"]) for r in p["by_status_format"]],
         )
     )
+    if m.metadata["report_policy_version"] == "1.1.0":
+        bodies[-1] += (
+            "\n\nReferência de fonte OBSERVED; resolução/link DERIVED. " + SOURCE_MEDIA_LIMITATION
+        )
+        bodies[-1] += "\n\n" + _table(
+            ("Janela", "Status source-media", "Items no universo completo"),
+            [
+                (w.window_id, status, count)
+                for w in m.windows
+                for status, count in sorted(
+                    w.component_counts["source_media_links"]["status_counts"].items()
+                )
+            ],
+        )
     finding_text = []
     for f in m.findings:
         finding_text.append(

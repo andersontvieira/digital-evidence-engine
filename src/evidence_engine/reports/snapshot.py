@@ -22,9 +22,13 @@ from evidence_engine.correlation.temporal import (
     temporal_candidates_in_snapshot,
 )
 from evidence_engine.errors import EvidenceError
+from evidence_engine.ingest.generic.paths import CasePaths
 from evidence_engine.media.contents import project_contents
 from evidence_engine.media.inventory import inventory_media
 from evidence_engine.media.perceptual import perceptual_hashes
+from evidence_engine.media.source_links import POLICY_ID as SOURCE_MEDIA_POLICY_ID
+from evidence_engine.media.source_links import POLICY_VERSION as SOURCE_MEDIA_POLICY_VERSION
+from evidence_engine.media.source_links import source_links_in_snapshot
 from evidence_engine.models.entities import (
     Base,
     Case,
@@ -48,17 +52,19 @@ from evidence_engine.query.search import Projection
 from evidence_engine.storage.database import SCHEMA_VERSION
 
 SNAPSHOT_ID = "report.data_snapshot"
-SNAPSHOT_VERSION = "1.0.0"
+SNAPSHOT_VERSION = "1.1.0"
 INCIDENT_LIMIT = 500
 MATRIX_LIMIT = 100
 PAIR_LIMIT = 1000
+SOURCE_MEDIA_LIMIT = 1000
 LIMITATIONS = (
     "TECHNICAL_CANDIDATES_NOT_SELECTED_FINDINGS",
     "NO_IDENTITY_AUTHORSHIP_SESSION_OR_CAUSALITY",
     "COUNTS_ARE_NOT_EVIDENTIARY_STRENGTH",
     "ABSENCE_LIMITED_TO_QUERIED_CATALOG_POLICIES_AND_SCOPE",
     "COVERAGE_IS_NOT_REAL_WORLD_COMPLETENESS",
-    "NO_MEDIA_EVENT_LINK",
+    "SOURCE_MEDIA_COVERAGE_LIMITED",
+    "NO_MESSAGE_ATTACHMENT_INFERENCE",
     "NO_ATOMIC_DATABASE_FILESYSTEM_SNAPSHOT",
     "SAME_RECORD_CONTEXT_IS_NOT_INDEPENDENT_SUPPORT",
 )
@@ -280,6 +286,7 @@ def _media(case_root: Path) -> Projection:
 def _window(
     connection: Connection,
     *,
+    paths: CasePaths,
     start_utc: str,
     end_utc: str,
     max_delta_seconds: int,
@@ -307,7 +314,84 @@ def _window(
         "incident_candidates": matrix,
         "temporal_proximity": asdict(temporal),
         "temporal_exact_overlap": asdict(overlap),
+        "source_media_links": _source_media_projection(
+            source_links_in_snapshot(paths, connection, **scope, limit=SOURCE_MEDIA_LIMIT)
+        ),
     }
+
+
+def _source_media_projection(result: Projection) -> Projection:
+    """Explicit report allowlist; source URI/path/payload never enters the snapshot."""
+    items = []
+    for item in result["items"]:
+        reference = item["source_reference"]
+        resolution = item["resolution"]
+        projected = {
+            key: resolution[key]
+            for key in (
+                "classification",
+                "status",
+                "archive_member_id",
+                "evidence_file_id",
+                "size_bytes",
+                "archive_member_sha256",
+                "bytes_verified",
+            )
+            if key in resolution
+        }
+        if "exact_media_content" in resolution:
+            content = resolution["exact_media_content"]
+            projected["exact_media_content"] = (
+                {
+                    key: content[key]
+                    for key in (
+                        "content_sha256",
+                        "size_bytes",
+                        "media_kind",
+                        "media_format",
+                        "occurrence_count",
+                    )
+                }
+                if content is not None
+                else None
+            )
+        items.append(
+            {
+                "event": item["event"],
+                "source_reference": {
+                    key: reference[key]
+                    for key in (
+                        "parsed_record_id",
+                        "platform",
+                        "parser_id",
+                        "parser_version",
+                        "source_field_locator",
+                        "classification",
+                    )
+                }
+                if reference is not None
+                else None,
+                "resolution": projected,
+                "limitations": item["limitations"],
+            }
+        )
+    return {key: result[key] for key in ("policy", "scope", "consistency", "summary")} | {
+        "items": items
+    }
+
+
+def _source_media_index(window: Projection | None) -> list[Projection]:
+    if window is None:
+        return []
+    return [
+        {
+            "pointer": f"analysis_window.source_media_links.items[{i}]",
+            "parsed_record_id": item["event"]["parsed_record_id"],
+            "archive_member_id": item["resolution"].get("archive_member_id"),
+            "evidence_file_id": item["resolution"].get("evidence_file_id"),
+        }
+        for i, item in enumerate(window["source_media_links"]["items"])
+    ]
 
 
 def _record_references(window: Projection | None) -> set[str]:
@@ -322,6 +406,7 @@ def _record_references(window: Projection | None) -> set[str]:
         for p in window["temporal_proximity"]["items"]
         for e in (p["event_a"], p["event_b"])
     )
+    records.update(i["event"]["parsed_record_id"] for i in window["source_media_links"]["items"])
     return records
 
 
@@ -403,6 +488,20 @@ def _findings(media: Projection, window: Projection | None) -> Projection:
                 )
             items.append(finding(kind, source["policy"], references))
         result[kind] = section(items, source["matched_pairs"])
+    source = window["source_media_links"]
+    positive = {"LINK_EXACT_MEDIA_CONTENT", "LINK_ARCHIVE_MEMBER_ONLY"}
+    result["source_media_provenance_link"] = section(
+        [
+            finding(
+                "source_media_provenance_link",
+                source["policy"],
+                {"source_media_item_index": i, "event_id": item["event"]["event_id"]},
+            )
+            for i, item in enumerate(source["items"])
+            if item["resolution"]["status"] in positive
+        ],
+        sum(source["summary"]["status_counts"].get(status, 0) for status in positive),
+    )
     return result
 
 
@@ -441,6 +540,7 @@ def report_snapshot(
             assert max_delta_seconds is not None
             window = _window(
                 connection,
+                paths=CasePaths.load(case_root),
                 start_utc=bounds[0],
                 end_utc=bounds[1],
                 max_delta_seconds=max_delta_seconds,
@@ -484,6 +584,7 @@ def report_snapshot(
                 "incident_candidates",
                 "temporal_proximity",
                 "temporal_exact_overlap",
+                "source_media_links",
             )
         )
     truncated = (
@@ -506,6 +607,8 @@ def report_snapshot(
         )
         for status in ("UNSUPPORTED", "FAILED")
     }
+    if window is not None and window["source_media_links"]["summary"]["truncated"]:
+        truncated = sorted([*truncated, "source_media_links"])
     return ReportSnapshot(
         snapshot={
             "snapshot_id": SNAPSHOT_ID,
@@ -530,6 +633,7 @@ def report_snapshot(
                 "matrix_candidates": MATRIX_LIMIT,
                 "temporal_pairs": PAIR_LIMIT,
                 "overlap_pairs": PAIR_LIMIT,
+                "source_media_items": SOURCE_MEDIA_LIMIT,
             },
             "underlying_classifications": {
                 "parsed_records": "OBSERVED",
@@ -556,6 +660,10 @@ def report_snapshot(
             "perceptual_hash": media["perceptual"]["policy"],
             "temporal_proximity": temporal_policy,
             "temporal_exact_overlap": overlap_policy,
+            "source_media_links": {
+                "policy_id": SOURCE_MEDIA_POLICY_ID,
+                "policy_version": SOURCE_MEDIA_POLICY_VERSION,
+            },
         },
         inventory=inventory,
         coverage=coverage,
@@ -577,9 +685,12 @@ def report_snapshot(
                 "unsupported": media["perceptual"]["unsupported_count"],
             },
             "truncated_components": truncated,
-            "media_event_link_available": False,
             "whatsapp_parser_available": False,
             "known_capability_limits": list(LIMITATIONS),
         },
-        provenance_index={"parsed_records": origins, "evidence_files": evidence},
+        provenance_index={
+            "parsed_records": origins,
+            "evidence_files": evidence,
+            "source_media_links": _source_media_index(window),
+        },
     )

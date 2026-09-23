@@ -14,7 +14,8 @@ não comprovam autoria, autenticidade anterior à aquisição ou admissibilidade
 A 8A3 concluiu a revisão analítica externa, sem código de produto. A 8A4 está
 concluída e implementa [Exact Source–Media Provenance Link](docs/adr/0034-exact-source-media-provenance-link.md):
 referências aprovadas já persistidas até membros exatos verificados.
-Integração ao relatório humano permanece na futura 8A4.1.
+A integração ao relatório humano 8A4.1 está concluída sob
+[ADR 0035](docs/adr/0035-consolidated-report-media-link-integration.md).
 
 A 8A0 concluiu o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md).
 A 8A1 concluiu o [Read-only Report Data Snapshot](docs/adr/0032-read-only-report-data-snapshot.md):
@@ -34,6 +35,14 @@ F/W/G locais e ponteiros de provenance. Lacunas automáticas somente B/C/D sob
 regras explícitas; A/E/F e a necessidade de WhatsApp exigem contexto externo.
 stdout UTF-8/LF somente; relatório e snapshots reais permanecem fora do Git.
 
+Novos snapshots e consolidated usam policies 1.1.0. Conjuntos homogêneos 1.0.0
+continuam aceitos com o comportamento histórico; misturar versões gera erro.
+Na 1.1, janelas incluem source_media.provenance_link/1.0.0, com referência
+OBSERVED e vínculo DERIVED. Somente exact-content e member-only geram findings,
+apendados após todos os antigos, preservando F/W-IDs e as 20 seções.
+Gap D descreve cobertura parcial ou ausência limitada aos snapshots fornecidos.
+Message attachments permanecem SOURCE_LIMITATION; WhatsApp não é acionado.
+
 ```console
 dee report snapshot --case-root /case
 dee report snapshot --case-root /case --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z --max-delta-seconds 300 --platform meta --event-kind content.activity
@@ -44,7 +53,12 @@ platform/event-kind exigem a janela completa. Resumos case-wide usam um único
 snapshot DB read-only; mídia mantém leituras verificadas e catálogos separados,
 sem atomicidade global SQLite/filesystem. stdout somente, sem arquivo automático.
 Limites independentes: 500 eventos incident, 100 candidates matrix e 1000 pares
-temporais/overlap, com totais e truncamento explícitos. Schema v5 preservado.
+temporais/overlap e 1000 source-media items, com totais e truncamento explícitos.
+Source-media usa os mesmos bounds/filtros na mesma transação da janela, sem
+usar o raio temporal. Anchor não executa source-media. Projeção omite URI,
+reference_value, member_path e payload; IDs/hashes técnicos não são impressos
+no Markdown. Occurrence count conta ocorrências catalogadas do mesmo conteúdo,
+sem inferir envios, publicações ou disseminação. Schema v5 preservado.
 O snapshot estruturado não gera relatório em prosa, conclusão jurídica ou decisão
 de identidade/autoria. Dados e relatórios reais permanecem fora do Git.
 
@@ -702,7 +716,7 @@ existente também verifica outras ocorrências e suas materializações em worki
 Referência é OBSERVED e link é DERIVED. Nenhuma afirmação de publicação, envio,
 autoria, identidade, sessão ou causalidade. Sem fuzzy, pHash ou ligação de
 communication.message por tempo/thread. stdout somente; dados reais fora do Git.
-8A1/8A2 não mudam nesta etapa; integração humana exige a futura 8A4.1.
+A integração humana é versionada pela 8A4.1; contratos 1.0.0 permanecem históricos.
 
 ## Testes e qualidade
 
@@ -805,5 +819,5 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8A2       | First Consolidated Technical Report — concluído                      |
 | 8A3       | Directed Investigative Review — concluída; análise externa, sem produto |
 | 8A4       | Exact Source–Media Provenance Link — concluída                       |
-| 8A4.1     | Consolidated Report Media-Link Integration — futura                  |
+| 8A4.1     | Consolidated Report Media-Link Integration — concluída               |
 | 8B        | Dossier / final exports — futura                                     |

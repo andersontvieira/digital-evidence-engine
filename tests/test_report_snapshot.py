@@ -50,6 +50,7 @@ def test_no_window_policy_structure_and_no_temporal_execution(catalog, monkeypat
         "incident_candidates_in_snapshot",
         "temporal_candidates_in_snapshot",
         "overlap_in_snapshot",
+        "source_links_in_snapshot",
     ):
         monkeypatch.setattr(snapshot, name, forbidden)
     result = data(catalog.root)
@@ -70,7 +71,7 @@ def test_no_window_policy_structure_and_no_temporal_execution(catalog, monkeypat
         "provenance_index",
     }
     assert result["snapshot"]["snapshot_id"] == "report.data_snapshot"
-    assert result["snapshot"]["snapshot_version"] == "1.0.0"
+    assert result["snapshot"]["snapshot_version"] == "1.1.0"
     assert result["snapshot"]["evidence_schema_version"] == 5
     assert result["snapshot"]["feature_class"] == "DERIVED"
     assert "temporal_proximity" not in result["scope"]["executed_components"]
@@ -272,7 +273,7 @@ def test_window_findings_are_projections_without_selection(catalog):
                     finding["references"]["shared_exact_candidates"]
                     == pair["shared_exact_candidates"]
                 )
-    assert not result["gap_inputs"]["media_event_link_available"]
+    assert "media_event_link_available" not in result["gap_inputs"]
     assert not result["gap_inputs"]["whatsapp_parser_available"]
 
 
@@ -426,7 +427,9 @@ def test_privacy_explicit_columns_no_payload_or_interpretation(catalog):
         assert forbidden not in result.stdout
     for statement in statements:
         if statement.lstrip().startswith("select"):
-            assert "payload_json" not in statement and "annotations_json" not in statement
+            assert "annotations_json" not in statement
+            if "payload_json" in statement:
+                assert "parsed_records.id =" in statement
 
 
 def test_media_integrity_failure_does_not_emit_partial_json(image_case):
