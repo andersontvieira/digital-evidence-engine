@@ -38,11 +38,20 @@ Renderer consome somente JSONs de snapshot; não abre CASE_ROOT, DB, originals o
 Preservar schema v5; sem novas inferências ou prosa gerada por LLM.
 Message attachments permanecem SOURCE_LIMITATION. WhatsApp condicional/não acionado.
 Milestone 8B0 concluída sob ADR 0036: Final Legal-Technical Dossier & Export Contract,
-somente documentação/arquitetura. 8B1 é futura e não iniciada; exige escopo separado.
+somente documentação/arquitetura. Contrato de implementação 8B1.0 concluído sob
+ADR 0037 Accepted. Implementação 8B1 não iniciada; próximo slice autorizado após
+o commit documental é 8B1-A, não executado nesta promoção.
 Futura montagem consome apenas artefatos aprovados já gerados e explicitamente
 selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
-Originais excluídos do pacote v1. Visuais são anexos contextuais JPEG/PNG explícitos,
+Relatório selecionado deve coincidir byte a byte com o modelo/renderer puro dos
+snapshots compatíveis selecionados. Completude é interna ao pacote selecionado,
+não de todas as janelas possíveis do caso. Sem máximo semântico de janelas;
+budgets operacionais falham como RESOURCE_LIMIT. Projeção humana device/network
+não usa nem reparte supports.total global. JSON estrito limitado por bytes,
+hooks e travessia estrutural; sem autorização de parser JSON próprio/genérico ou
+dependência nova pelo ADR 0037.
+Originais e legacy excluídos do pacote v1. Visuais são anexos contextuais JPEG/PNG explícitos,
 sem criar relações com eventos/findings. WhatsApp fica fora do dataset representado,
 salvo futura aquisição/parser/análise separadamente aprovados. PDF pertence à 8B2;
 ZIP/archive exige escopo próprio. 8B2/8B3 permanecem futuras, sem execução autorizada

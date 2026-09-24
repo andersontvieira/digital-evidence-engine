@@ -9,7 +9,7 @@ consolidado; não investiga nem o substitui. 8B1 não está implementada ou inic
 dossier.selection/1.0.0 seleciona explicitamente um report.consolidated/1.1.0 e
 seu conjunto completo compatível de report.data_snapshot/1.1.0, com exatamente um
 anchor e zero ou mais janelas. Sem máximo numérico semântico de janelas no dossiê;
-limites operacionais da futura 8B1 exigem especificação e testes próprios.
+limites operacionais estão contratados no ADR 0037 e exigem testes na implementação.
 Somente CANONICAL_TECHNICAL origina narrativa técnica humana. Suplementos,
 validações e visuais ficam separados, sem novos findings, correlações ou mudanças
 em F/W/G. Sem varredura implícita de output, CASE_ROOT, DB, originals/working,
@@ -32,6 +32,56 @@ de renderer ficam para 8B2; ZIP/archive exige escopo separado. 8B3 será valida�
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 não há nova implementação, dependência ou persistência nesta etapa documental.
 
+## Milestone 8B1.0 — contrato aceito de montagem determinística
+
+Concluída sob [ADR 0037 Accepted](adr/0037-deterministic-dossier-assembly.md).
+Somente contrato de implementação: 8B1 e seus slices não foram iniciados.
+Próximo slice após o commit documental: 8B1-A. Fluxo contratado para futura execução:
+
+```text
+selection.json
+  → validação estrita da seleção
+  → captura estável dos artefatos explicitamente selecionados
+  → validação dos snapshots/modelo canônico
+      → renderer consolidado puro → comparação byte a byte com relatório selecionado
+  → projeção humana por allowlist, após comparação bem-sucedida
+  → dossiê/índice/metadata determinísticos
+  → cópias capturadas e layout do pacote
+  → manifesto + SHA256SUMS
+  → verificação de completude
+  → publicação do staging sem substituir destino
+```
+
+O relatório fornecido é copiado sem alteração. Completude significa o conjunto
+de suporte declarado/selecionado, com um anchor e zero ou mais janelas únicas
+compatíveis, sem omissão silenciosa. Não atesta inexistência de janelas externas
+ou geração de todas as janelas possíveis do caso; não há CASE_ROOT, DB ou
+descoberta de inputs. Não executa investigação, análise nova ou novos findings.
+Somente CANONICAL_TECHNICAL alimenta as 14 seções humanas aprovadas. O total global
+exact_candidates.supports.total fica fora da projeção humana, sem repartição por
+device/network; mantém-se nos artefatos técnicos.
+
+JSON usa caps de bytes antes do decode, primitives estritas compatíveis ou
+stdlib com hooks para duplicatas/não finitos/lexemas numéricos, seguida de
+travessia limitada de profundidade/nós. Exaustão resulta RESOURCE_LIMIT, sem
+exigir parser próprio ou dependência nova; não há garantia exata de memória.
+Paths relativos portáveis, containment, rejeição de links/reparse e leitura
+estável Foundation asseguram que os bytes conferidos sejam os copiados.
+directory-v1 mantém metadata/manifesto/sums determinísticos e acíclicos;
+completude é verificada antes do rename sem substituição. Sem PDF ou ZIP.
+
+Módulos futuros: selection, validation, projection, rendering, packaging,
+integrity e service, com adaptador cli/dossier. CLI → service → módulos explícitos;
+projeção/renderização não importam serviço/packaging. Reuso apenas de reports
+puros e utilitários nominais sem execução de caso, conforme ADR 0037; sem imports
+de storage/ORM/serviços de ingestão/query/análise no pacote dossier. Testes de
+imports do pacote e sentinelas de execução da CLI cobrirão a fronteira.
+
+Slices internos A–G: seleção/paths; compatibilidade canônica; projeção/rendering;
+cópia/layout/metadata; integridade; publicação/CLI; regressões/paridade e fechamento.
+Nenhum foi implementado. Schema permanece v5. Validação real fica para 8B3,
+PDF para 8B2 e ZIP/archive para escopo separado; sem acesso real nesta promoção.
+
 ## Milestone 8A4.1 — integração source-media ao relatório
 
 Concluída sob ADR 0035. Fluxo: source_media.provenance_link/1.0.0 → report
@@ -44,7 +94,7 @@ O renderer permanece snapshot-only, sem import/acesso a banco ou evidências.
 Novos findings positivos são apendados após os antigos; F/W-IDs e 20 seções
 permanecem estáveis. Gap D descreve cobertura estreita; message attachments
 continuam SOURCE_LIMITATION. WhatsApp condicional/não acionado; implementação
-8B1 futura, sob o contrato 8B0 aceito e dependente de escopo separado.
+8B1 futura, sob ADRs 0036/0037 aceitos, com 8B1-A como próximo slice não iniciado.
 Conjuntos 1.0.0 mantêm report 1.0.0 e Markdown histórico; mistura de versões e
 versões desconhecidas falham explicitamente. Sem schema/persistência/dependências.
 
@@ -487,5 +537,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0036 documentam as decisões; os seis
+ADRs 0007–0037 documentam as decisões; os seis
 princípios originais continuam válidos.
