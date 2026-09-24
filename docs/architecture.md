@@ -1,5 +1,37 @@
 # Arquitetura
 
+## Milestone 8B0 — contrato de dossiê e exportação
+
+Concluída sob ADR 0036 Accepted, somente arquitetura/contrato. A camada futura
+de dossiê/exportação organiza e apresenta artefatos aprovados acima do relatório
+consolidado; não investiga nem o substitui. 8B1 não está implementada ou iniciada.
+
+dossier.selection/1.0.0 seleciona explicitamente um report.consolidated/1.1.0 e
+seu conjunto completo compatível de report.data_snapshot/1.1.0, com exatamente um
+anchor e zero ou mais janelas. Sem máximo numérico semântico de janelas no dossiê;
+limites operacionais da futura 8B1 exigem especificação e testes próprios.
+Somente CANONICAL_TECHNICAL origina narrativa técnica humana. Suplementos,
+validações e visuais ficam separados, sem novos findings, correlações ou mudanças
+em F/W/G. Sem varredura implícita de output, CASE_ROOT, DB, originals/working,
+parsing, rede/cloud/API/LLM ou inferência de identidade/autoria.
+
+Duas camadas: HUMAN LEGAL-TECHNICAL DOSSIER, com 14 seções, e TECHNICAL SUPPORT
+PACKAGE auditável. Paths lógicos relativos POSIX e portáveis, com rejeição de
+escape, links, duplicatas e colisões; publicação fail-closed via staging, sem
+sobrescrever destino ou publicar pacote parcial. dossier.package_manifest/1.0.0
+registra path, papel, classe, tamanho e SHA-256 dos payloads, excluindo manifesto
+e SHA256SUMS. SHA256SUMS cobre payloads e manifesto, excluindo a si próprio:
+dependência acíclica, sem assinatura jurídica ou promessa de autenticidade.
+Textos/JSON, índice e mapping de paths são determinísticos sob inputs/configuração
+idênticos. O relatório canônico conserva suas 20 seções e contratos anteriores.
+
+Originais excluídos; visuais somente JPEG/PNG contextuais explicitamente selecionados,
+sem relações com eventos/findings. Attachments não resolvidos continuam
+SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF e escolha
+de renderer ficam para 8B2; ZIP/archive exige escopo separado. 8B3 será validação
+real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
+não há nova implementação, dependência ou persistência nesta etapa documental.
+
 ## Milestone 8A4.1 — integração source-media ao relatório
 
 Concluída sob ADR 0035. Fluxo: source_media.provenance_link/1.0.0 → report
@@ -11,8 +43,8 @@ executa a query. Limite de 1000 items preserva totais/status do universo complet
 O renderer permanece snapshot-only, sem import/acesso a banco ou evidências.
 Novos findings positivos são apendados após os antigos; F/W-IDs e 20 seções
 permanecem estáveis. Gap D descreve cobertura estreita; message attachments
-continuam SOURCE_LIMITATION. WhatsApp condicional/não acionado; 8B futura,
-dependente de escopo separado.
+continuam SOURCE_LIMITATION. WhatsApp condicional/não acionado; implementação
+8B1 futura, sob o contrato 8B0 aceito e dependente de escopo separado.
 Conjuntos 1.0.0 mantêm report 1.0.0 e Markdown histórico; mistura de versões e
 versões desconhecidas falham explicitamente. Sem schema/persistência/dependências.
 
@@ -376,8 +408,9 @@ Achados terão bases técnicas/provenance e limitações, com contagens por unid
 distinção current/historical e ausência limitada ao universo consultado.
 Não haverá conclusão automática de identidade, autoria, sessão, causalidade
 ou questão jurídica. O gap analysis obrigatório da 8A2 poderá orientar o escopo
-de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031;
-Milestone 8 e dossier final permanecem incompletos.
+de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031.
+Historicamente, a 8A0 não concluiu Milestone 8 nem o dossiê final. O contrato 8B0
+está agora aceito; implementação do dossiê e exports continuam futuras.
 
 ## Report data snapshot (8A1)
 
@@ -407,8 +440,9 @@ consumidora desses dados e do contrato 8A0.
 ## Consolidated technical report (8A2)
 
 Fluxo: JSONs 8A1 → validação do conjunto → ConsolidatedReportModel → Markdown
-pt-BR determinístico. `dee report consolidated --snapshot ...` aceita até 20
-arquivos e exige um anchor sem janela. Não possui case-root. O módulo depende
+pt-BR determinístico. `dee report consolidated --snapshot ...` aplica os limites
+operacionais do ADR 0033 e exige um anchor sem janela. Eles não definem máximo
+semântico de janelas no contrato 8B0. Não possui case-root. O módulo depende
 apenas de stdlib/EvidenceError: nenhuma consulta ao evidence DB, originals,
 working, mídia ou invocação de 8A1 durante rendering.
 
@@ -453,5 +487,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0035 documentam as decisões; os seis
+ADRs 0007–0036 documentam as decisões; os seis
 princípios originais continuam válidos.

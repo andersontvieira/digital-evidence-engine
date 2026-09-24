@@ -17,6 +17,30 @@ referências aprovadas já persistidas até membros exatos verificados.
 A integração ao relatório humano 8A4.1 está concluída sob
 [ADR 0035](docs/adr/0035-consolidated-report-media-link-integration.md).
 
+A 8B0 está concluída: [ADR 0036 — Final Legal-Technical Dossier & Export Contract](docs/adr/0036-final-legal-technical-dossier-export-contract.md)
+Accepted após revisão humana, somente arquitetura/contrato. A próxima milestone
+futura é 8B1 — Deterministic Dossier Assembly, ainda não iniciada. 8B2 — Human PDF
+Export e 8B3 — Final Package Integrity & Real-Case Validation permanecem futuras.
+
+O contrato organiza material técnico para advogado/revisor humano, sem advocacy
+ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
+HUMAN LEGAL-TECHNICAL DOSSIER e TECHNICAL SUPPORT PACKAGE. A seleção explícita
+dossier.selection/1.0.0 exige um report.consolidated/1.1.0 compatível e o conjunto
+completo compatível de report.data_snapshot/1.1.0: exatamente um anchor e zero ou
+mais janelas, sem máximo numérico semântico criado pelo dossiê ou omissão silenciosa.
+Só CANONICAL_TECHNICAL alimenta narrativa técnica humana; materiais suplementares,
+de validação e visuais são anexos separados. A montagem futura não consulta
+CASE_ROOT/DB/originals, não investiga nem produz findings novos.
+
+Originais ficam excluídos do pacote v1. Visuais são JPEG/PNG contextuais selecionados
+explicitamente, sem relações automáticas com eventos/findings. WhatsApp permanece
+fora do dataset técnico atual; message attachments não resolvidos continuam
+SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade serão
+determinísticos: manifesto cobre payloads; SHA256SUMS cobre payloads mais manifesto,
+sem incluir a si próprio. PDF fica para 8B2, sem renderer escolhido; ZIP/archive e
+sua reprodutibilidade exigem escopo separado. Aceitar 8B0 não autoriza implementar
+ou executar essas etapas, nem validar um caso real.
+
 A 8A0 concluiu o [contrato do relatório técnico consolidado](docs/adr/0031-consolidated-technical-report-contract.md).
 A 8A1 concluiu o [Read-only Report Data Snapshot](docs/adr/0032-read-only-report-data-snapshot.md):
 JSON técnico determinístico com contagens, coverage, policies, provenance,
@@ -28,8 +52,10 @@ templates Markdown pt-BR determinísticos nas 20 seções do contrato.
 dee report consolidated --snapshot /synthetic/anchor.json --snapshot /synthetic/window.json
 ```
 
-O renderer recebe de 1 a 20 JSONs 8A1, com exatamente um anchor sem janela;
-não recebe case-root nem acessa DB/originals/working. Confere igualdade das seções
+O renderer 8A2 recebe JSONs 8A1 sob os limites operacionais do ADR 0033,
+com exatamente um anchor sem janela; esses limites não são um máximo semântico
+de janelas do dossiê 8B0. Não recebe case-root nem acessa DB/originals/working.
+Confere igualdade das seções
 case-wide, ordena janelas e inclui todos os finding candidates retornados, com
 F/W/G locais e ponteiros de provenance. Lacunas automáticas somente B/C/D sob
 regras explícitas; A/E/F e a necessidade de WhatsApp exigem contexto externo.
@@ -820,4 +846,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8A3       | Directed Investigative Review — concluída; análise externa, sem produto |
 | 8A4       | Exact Source–Media Provenance Link — concluída                       |
 | 8A4.1     | Consolidated Report Media-Link Integration — concluída               |
-| 8B        | Dossier / final exports — futura                                     |
+| 8B0       | Final Legal-Technical Dossier & Export Contract — concluída; ADR 0036 Accepted |
+| 8B1       | Deterministic Dossier Assembly — próxima futura; não iniciada         |
+| 8B2       | Human PDF Export — futura                                           |
+| 8B3       | Final Package Integrity & Real-Case Validation — futura              |

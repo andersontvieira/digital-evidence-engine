@@ -37,8 +37,18 @@ Preservar compatibilidade dos contratos 1.0.0 e ADRs históricos 0031–0034.
 Renderer consome somente JSONs de snapshot; não abre CASE_ROOT, DB, originals ou working.
 Preservar schema v5; sem novas inferências ou prosa gerada por LLM.
 Message attachments permanecem SOURCE_LIMITATION. WhatsApp condicional/não acionado.
-8B permanece futura e exige escopo separado; não é autorizada pela integração.
-Validação real autorizada, com snapshots e relatório exclusivamente fora do Git.
+Milestone 8B0 concluída sob ADR 0036: Final Legal-Technical Dossier & Export Contract,
+somente documentação/arquitetura. 8B1 é futura e não iniciada; exige escopo separado.
+Futura montagem consome apenas artefatos aprovados já gerados e explicitamente
+selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
+findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
+Originais excluídos do pacote v1. Visuais são anexos contextuais JPEG/PNG explícitos,
+sem criar relações com eventos/findings. WhatsApp fica fora do dataset representado,
+salvo futura aquisição/parser/análise separadamente aprovados. PDF pertence à 8B2;
+ZIP/archive exige escopo próprio. 8B2/8B3 permanecem futuras, sem execução autorizada
+pela aceitação do contrato. Dados de caso continuam fora do Git.
+Validação real das etapas anteriores autorizada, com snapshots e relatório
+exclusivamente fora do Git; essa autorização não inicia a validação real 8B3.
 Sem WhatsApp, persistência ou inferência automática de identidade/autoria.
 Preservar OBSERVED, DERIVED, REPORTED e HYPOTHESIS e a provenance existente.
 Proibir conclusões automáticas de identity, authorship, session, causality
