@@ -22,11 +22,14 @@ from evidence_engine.dossier.selection import (
     SelectedInput,
     VisualExhibitInput,
     _input_reference,
-    _label,
     _selection,
 )
+from evidence_engine.dossier.selection import (
+    _label as _label,
+)
 from evidence_engine.errors import EvidenceError
-from evidence_engine.ingest.generic.hashing import file_identity, original_reader, read_stability
+from evidence_engine.ingest.generic.hashing import file_identity as file_identity
+from evidence_engine.ingest.generic.hashing import original_reader, read_stability
 from evidence_engine.ingest.generic.paths import check_path
 
 CHUNK_SIZE = 1024 * 1024
