@@ -208,7 +208,7 @@ def _read_payload(
     baseline: capture._Baseline,
     path: str,
     limit: int,
-    expected: ManifestEntry | None = None,
+    expected: IntegrityPayload | None = None,
     content: bytes | None = None,
 ) -> IntegrityPayload:
     require(baseline.info.st_size <= limit, "RESOURCE_LIMIT")
@@ -416,3 +416,35 @@ def finalize_integrity(
         raise EvidenceError("DOSSIER_STAGING_FAILURE") from None
     except (TypeError, ValueError, KeyError, AttributeError):
         raise EvidenceError("DOSSIER_INTERNAL_ERROR") from None
+
+
+def verify_integrity_result(work_root: Path, result: PackageIntegrityResult) -> None:
+    """Read-only pre-publication recheck using E's tree and stable-byte primitives."""
+    try:
+        root = capture._inspect(work_root, directory=True)
+        expected = {item.package_path: item for item in result.files}
+        require(len(expected) == len(result.files), "INTERNAL_ERROR")
+        baselines, directories = _tree(root, set(expected))
+        total = 0
+        for path in sorted(expected):
+            content = {MANIFEST_PATH: result.manifest_content, SUMS_PATH: result.sums_content}.get(
+                path
+            )
+            item = _read_payload(
+                baselines[path],
+                path,
+                min(MAX_GENERATED_FILE_BYTES, MAX_PACKAGE_BYTES - total),
+                expected[path],
+                content,
+            )
+            total += item.byte_size
+        require(total == result.total_byte_size, "INTERNAL_ERROR")
+        files_after, dirs_after = _tree(root, set(expected))
+        _check_baselines(baselines, files_after)
+        _check_baselines(directories, dirs_after, directories=True)
+    except (MemoryError, RecursionError):
+        raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None
+    except FileNotFoundError:
+        raise EvidenceError("DOSSIER_INTERNAL_ERROR") from None
+    except OSError:
+        raise EvidenceError("DOSSIER_STAGING_FAILURE") from None

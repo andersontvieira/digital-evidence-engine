@@ -225,6 +225,10 @@ def test_expected_hash(tmp_path, correct):
 
 def test_import_boundary():
     allowed = {
+        "ctypes",  # F: Linux renameat2(RENAME_NOREPLACE), no shell/dependency.
+        "errno",  # F: contracted fsync/publication error mapping.
+        "sys",  # F: platform dispatch, not native-platform emulation.
+        "tempfile",  # F: exclusive generic sibling staging.
         "hashlib",
         "os",
         "stat",

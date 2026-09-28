@@ -1,15 +1,20 @@
-"""Selected-artifact capture into a caller-owned work root, never publication.
+"""Selected-artifact capture plus explicit owned staging and safe publication.
 
 Visuals initially occupy a reserved .jpg work slot (no format assertion). Both
 possible destinations are checked before copying. The caller validates captured
 bytes, then resolves the slot; a PNG is copied exclusively from the verified
 capture, never from the source. Only that owned provisional file is removed.
-No discovery, root lifecycle, package integrity manifest or completeness here.
+The D capture API retains caller-owned root semantics. F lifecycle helpers are
+explicit and separate. No discovery or package manifest algorithm here.
 """
 
+import ctypes
+import errno
 import hashlib
 import os
 import stat
+import sys
+import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, replace
@@ -82,6 +87,32 @@ class CapturedInput:
 class CaptureBatch:
     capture_root: Path
     inputs: tuple[CapturedInput, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedCapture:
+    """Operational source baselines only; never serialized or rendered."""
+
+    selection: DossierSelection
+    selection_file: _Baseline
+    base: _Baseline
+    plans: tuple[_PlannedInput, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class OutputDestination:
+    path: Path
+    parent: _Baseline
+
+
+@dataclass(frozen=True, slots=True)
+class OwnedStaging:
+    root: _Baseline
+    destination: OutputDestination
+
+    @property
+    def path(self) -> Path:
+        return self.root.path
 
 
 def _limit(role: str) -> int:
@@ -368,13 +399,13 @@ def read_captured_bytes(item: CapturedInput) -> bytes:
         raise EvidenceError("DOSSIER_STAGING_FAILURE") from None
 
 
-def capture_selected_inputs(
-    *, selection_path: Path, selection: DossierSelection, capture_root: Path
-) -> CaptureBatch:
-    """Baseline the whole selection, stream exact copies, then revalidate all sources.
+def prepare_capture(
+    *, selection_path: Path, selection: DossierSelection, selection_content: bytes | None = None
+) -> PreparedCapture:
+    """Complete source/path/budget preflight without creating a work directory.
 
-    Sources are not an atomic multi-file snapshot and may change after this returns.
-    Format validation/resolution is a separate mandatory phase before metadata use.
+    The service supplies its stable-read selection bytes to bind parsing to this
+    baseline. Existing D callers may continue supplying their accepted DTO only.
     """
     try:
         selection = _validated_selection(selection)
@@ -389,14 +420,13 @@ def capture_selected_inputs(
         )
         selection_file = _inspect(selection_path)
         require(selection_file.info.st_size <= MAX_SELECTION_BYTES, "RESOURCE_LIMIT")
+        if selection_content is not None:
+            with _reader(selection_file) as stream:
+                require(
+                    b"".join(_chunks(stream, MAX_SELECTION_BYTES)) == selection_content,
+                    "INPUT_CHANGED",
+                )
         base = _inspect(selection_file.path.parent, directory=True)
-        root = _inspect(capture_root, directory=True)
-        require(
-            not root.path.is_relative_to(base.path)
-            and not base.path.is_relative_to(root.path)
-            and file_identity(root.info) != file_identity(base.info),
-            "INVALID_PATH",
-        )
         plans = []
         identities = {file_identity(selection_file.info)}
         for item in selected:
@@ -414,6 +444,33 @@ def capture_selected_inputs(
                 _PlannedInput(item, baseline, package_paths(item.role, item.local_label), limit)
             )
         validate_destination_set(tuple(d for plan in plans for d in plan.destinations))
+        require(
+            sum(p.baseline.info.st_size for p in plans) <= MAX_TOTAL_INPUT_BYTES, "RESOURCE_LIMIT"
+        )
+        require(
+            sum(p.baseline.info.st_size for p in plans if p.item.role == "report_snapshot")
+            <= MAX_TOTAL_SNAPSHOT_BYTES,
+            "RESOURCE_LIMIT",
+        )
+        return PreparedCapture(selection, selection_file, base, tuple(plans))
+    except (MemoryError, RecursionError):
+        raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None
+    except OSError:
+        raise EvidenceError("DOSSIER_INPUT_READ_ERROR") from None
+
+
+def capture_prepared_inputs(prepared: PreparedCapture, *, capture_root: Path) -> CaptureBatch:
+    """Copy against all pre-staging baselines, preserving D's stable-read checks."""
+    try:
+        root = _inspect(capture_root, directory=True)
+        base, plans = prepared.base, prepared.plans
+        _parents(base, include_self=True)
+        require(
+            not root.path.is_relative_to(base.path)
+            and not base.path.is_relative_to(root.path)
+            and file_identity(root.info) != file_identity(base.info),
+            "INVALID_PATH",
+        )
         # Check all reserved destinations before the first write. Existing parents
         # are checked without creating or enumerating anything.
         for plan in plans:
@@ -427,14 +484,6 @@ def capture_selected_inputs(
                         break
                     require(path != root.path / relative, "STAGING_FAILURE")
                     _safe_info(path, directory=True)
-        require(
-            sum(p.baseline.info.st_size for p in plans) <= MAX_TOTAL_INPUT_BYTES, "RESOURCE_LIMIT"
-        )
-        require(
-            sum(p.baseline.info.st_size for p in plans if p.item.role == "report_snapshot")
-            <= MAX_TOTAL_SNAPSHOT_BYTES,
-            "RESOURCE_LIMIT",
-        )
         captured = []
         total = snapshots = 0
         for plan in plans:
@@ -446,7 +495,7 @@ def capture_selected_inputs(
             total += result.byte_size
             if result.role == "report_snapshot":
                 snapshots += result.byte_size
-        for baseline in (selection_file, *(p.baseline for p in plans)):
+        for baseline in (prepared.selection_file, *(p.baseline for p in plans)):
             with _reader(baseline):
                 pass
         _parents(root, include_self=True)
@@ -455,6 +504,14 @@ def capture_selected_inputs(
         raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None
     except OSError:
         raise EvidenceError("DOSSIER_INPUT_READ_ERROR") from None
+
+
+def capture_selected_inputs(
+    *, selection_path: Path, selection: DossierSelection, capture_root: Path
+) -> CaptureBatch:
+    """Compatible D entry point. Sources are not an atomic multi-file snapshot."""
+    prepared = prepare_capture(selection_path=selection_path, selection=selection)
+    return capture_prepared_inputs(prepared, capture_root=capture_root)
 
 
 def resolve_captured_inputs(
@@ -570,3 +627,238 @@ def resolved_annex_entries(
             )
         )
     return tuple(sorted(result, key=lambda i: (i.role, i.local_label)))
+
+
+_PLATFORM = sys.platform
+STAGING_PREFIX = ".dee-dossier-staging-"
+MAX_GENERATED_FILE_BYTES = 64 * 1024 * 1024
+
+
+def prepare_output(prepared: PreparedCapture, output_dir: Path) -> OutputDestination:
+    """An existing safe parent and absent destination are required before staging."""
+    try:
+        require(str(output_dir) not in ("", ".", ".."), "INVALID_PATH")
+        require(not output_dir.drive or output_dir.is_absolute(), "INVALID_PATH")
+        _input_reference(output_dir.name)
+        output = _lexical(output_dir)
+        parent = _inspect(output.parent, directory=True)
+        try:
+            output.lstat()
+        except FileNotFoundError:
+            pass
+        else:
+            raise EvidenceError("DOSSIER_OUTPUT_EXISTS")
+        base = prepared.base
+        _parents(base, include_self=True)
+        require(
+            not output.is_relative_to(base.path)
+            and not base.path.is_relative_to(output)
+            and not parent.path.is_relative_to(base.path),
+            "PATH_ESCAPE",
+        )
+        return OutputDestination(output, parent)
+    except OSError:
+        raise EvidenceError("DOSSIER_STAGING_FAILURE") from None
+
+
+def create_staging(destination: OutputDestination) -> OwnedStaging:
+    try:
+        _parents(destination.parent, include_self=True)
+        path = Path(tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=destination.parent.path))
+        root = _inspect(path, directory=True)
+        require(root.path.parent == destination.parent.path, "STAGING_FAILURE")
+        require(root.info.st_dev == destination.parent.info.st_dev, "STAGING_FAILURE")
+        require(os.name != "posix" or root.info.st_mode & 0o077 == 0, "STAGING_FAILURE")
+        owned = OwnedStaging(root, destination)
+        revalidate_staging(owned)
+        return owned
+    except (OSError, EvidenceError):
+        # No pathname-only deletion if creation/ownership establishment failed.
+        raise EvidenceError("DOSSIER_STAGING_FAILURE") from None
+
+
+def revalidate_staging(staging: OwnedStaging) -> None:
+    require(
+        staging.path.parent == staging.destination.parent.path
+        and staging.path != staging.destination.path,
+        "STAGING_FAILURE",
+    )
+    _parents(staging.destination.parent, include_self=True)
+    _parents(staging.root, include_self=True)
+
+
+def staging_is_owned(staging: OwnedStaging) -> bool:
+    """Used only after failed publication; never inspect the potential final path."""
+    try:
+        revalidate_staging(staging)
+        return True
+    except (OSError, EvidenceError):
+        return False
+
+
+def write_generated_file(staging: OwnedStaging, package_path: str, content: bytes) -> None:
+    require(package_path in GENERATED_PATHS[:3], "INVALID_PATH")
+    require(type(content) is bytes, "INTERNAL_ERROR")
+    require(len(content) <= MAX_GENERATED_FILE_BYTES, "RESOURCE_LIMIT")
+    revalidate_staging(staging)
+    with _writer(staging.root, package_path) as output:
+        for offset in range(0, len(content), CHUNK_SIZE):
+            output.write(content[offset : offset + CHUNK_SIZE])
+
+
+@contextmanager
+def _directory_handle(baseline: _Baseline) -> Iterator[int]:
+    _parents(baseline, include_self=True)
+    fd = os.open(baseline.path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        require(file_identity(os.fstat(fd)) == file_identity(baseline.info), "STAGING_FAILURE")
+        _parents(baseline, include_self=True)
+        yield fd
+        _parents(baseline, include_self=True)
+    finally:
+        os.close(fd)
+
+
+def sync_staging_directories(staging: OwnedStaging, package_paths: Sequence[str]) -> None:
+    """Fixed bottom-up order, including root and output parent, before publication."""
+    try:
+        revalidate_staging(staging)
+        if os.name != "posix":
+            return
+        directories = {""}
+        for path in package_paths:
+            _input_reference(path)
+            directories.update(path[:i] for i, c in enumerate(path) if c == "/")
+        ordered = sorted(directories, key=lambda p: (-len(Path(p).parts), p))
+        baselines = [_inspect(staging.path / path, directory=True) for path in ordered]
+        baselines.append(staging.destination.parent)
+        for baseline in baselines:
+            revalidate_staging(staging)
+            with _directory_handle(baseline) as fd:
+                try:
+                    os.fsync(fd)
+                except OSError as error:
+                    if error.errno not in (errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP):
+                        raise
+        revalidate_staging(staging)
+    except (OSError, EvidenceError):
+        raise EvidenceError("DOSSIER_STAGING_FAILURE") from None
+
+
+def _remove_owned_contents(staging: OwnedStaging, directory: _Baseline) -> None:
+    """No following links; POSIX deletions are relative to verified descriptors."""
+    revalidate_staging(staging)
+    require(directory.path.is_relative_to(staging.path), "STAGING_FAILURE")
+    _parents(directory, include_self=True)
+    if os.name == "posix":
+        with _directory_handle(directory) as fd:
+            with os.scandir(fd) as entries:
+                names = sorted(entry.name for entry in entries)
+            for name in names:
+                revalidate_staging(staging)
+                _parents(directory, include_self=True)
+                path = directory.path / name
+                info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                is_dir = stat.S_ISDIR(info.st_mode)
+                baseline = _inspect(path, directory=is_dir)
+                require(file_identity(info) == file_identity(baseline.info), "STAGING_FAILURE")
+                if is_dir:
+                    _remove_owned_contents(staging, baseline)
+                revalidate_staging(staging)
+                _parents(directory, include_self=True)
+                current = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                require(file_identity(current) == file_identity(info), "STAGING_FAILURE")
+                _safe_info(path, directory=is_dir)
+                if is_dir:
+                    os.rmdir(name, dir_fd=fd)
+                else:
+                    os.unlink(name, dir_fd=fd)
+    else:
+        with os.scandir(directory.path) as entries:
+            names = sorted(entry.name for entry in entries)
+        for name in names:
+            revalidate_staging(staging)
+            _parents(directory, include_self=True)
+            path = directory.path / name
+            is_dir = stat.S_ISDIR(path.lstat().st_mode)
+            baseline = _inspect(path, directory=is_dir)
+            if is_dir:
+                _remove_owned_contents(staging, baseline)
+            revalidate_staging(staging)
+            _parents(directory, include_self=True)
+            require(
+                file_identity(_safe_info(path, directory=is_dir)) == file_identity(baseline.info),
+                "STAGING_FAILURE",
+            )
+            if is_dir:
+                path.rmdir()
+            else:
+                path.unlink()
+
+
+def cleanup_staging(staging: OwnedStaging) -> None:
+    """Remove only the proven execution-owned root. No retry or final-output access."""
+    try:
+        revalidate_staging(staging)
+        _remove_owned_contents(staging, staging.root)
+        revalidate_staging(staging)
+        if os.name == "posix":
+            with _directory_handle(staging.destination.parent) as fd:
+                revalidate_staging(staging)
+                require(
+                    file_identity(os.stat(staging.path.name, dir_fd=fd, follow_symlinks=False))
+                    == file_identity(staging.root.info),
+                    "STAGING_FAILURE",
+                )
+                os.rmdir(staging.path.name, dir_fd=fd)
+        else:
+            staging.path.rmdir()
+    except (OSError, EvidenceError, MemoryError, RecursionError):
+        raise EvidenceError("DOSSIER_STAGING_FAILURE") from None
+
+
+def _linux_rename_noreplace(source: Path, destination: Path) -> None:
+    """One kernel no-replace move; no plain-rename or copy fallback."""
+    try:
+        library = ctypes.CDLL(None, use_errno=True)
+        rename = library.renameat2
+        rename.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename.restype = ctypes.c_int
+        if rename(-100, os.fsencode(source), -100, os.fsencode(destination), 1) != 0:
+            error = ctypes.get_errno()
+            code = (
+                "OUTPUT_EXISTS"
+                if error in (errno.EEXIST, errno.ENOTEMPTY)
+                else "PUBLICATION_FAILURE"
+            )
+            raise EvidenceError(f"DOSSIER_{code}")
+    except (AttributeError, OSError):
+        raise EvidenceError("DOSSIER_PUBLICATION_FAILURE") from None
+
+
+def publish_staging(staging: OwnedStaging) -> None:
+    """Last filesystem operation on success: no checks, sync or cleanup after move."""
+    try:
+        revalidate_staging(staging)
+    except (EvidenceError, OSError):
+        raise EvidenceError("DOSSIER_PUBLICATION_FAILURE") from None
+    if _PLATFORM == "linux":
+        _linux_rename_noreplace(staging.path, staging.destination.path)
+    elif _PLATFORM == "win32":
+        try:
+            os.rename(staging.path, staging.destination.path)
+        except OSError as error:
+            exists = error.errno in (errno.EEXIST, errno.ENOTEMPTY) or getattr(
+                error, "winerror", None
+            ) in (80, 183)
+            raise EvidenceError(
+                "DOSSIER_OUTPUT_EXISTS" if exists else "DOSSIER_PUBLICATION_FAILURE"
+            ) from None
+    else:
+        raise EvidenceError("DOSSIER_PUBLICATION_FAILURE")
