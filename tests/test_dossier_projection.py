@@ -437,6 +437,7 @@ def test_import_boundary_and_runtime_no_io(canonical, monkeypatch):
         imports = [n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)]
         imports += [a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names]
         permitted = {
+            "json",
             "re",
             "dataclasses",
             "collections.abc",

@@ -257,6 +257,22 @@ class AnnexIndexEntry:
             require(self.display_caption is None, "PRIVACY_CONTRACT_VIOLATION")
 
 
+@dataclass(frozen=True, slots=True)
+class SelectionMetadata:
+    """Resolved administrative fields only; selection/capture paths never enter."""
+
+    items: tuple[AnnexIndexEntry, ...]
+    issued_date: str | None = None
+    case_reference: str | None = None
+
+    def __post_init__(self) -> None:
+        require(type(self.items) is tuple, "INVALID_SELECTION")
+        if self.issued_date is not None:
+            _issued_date(self.issued_date)
+        if self.case_reference is not None:
+            _label(self.case_reference)
+
+
 def _reference(value: TechnicalReference) -> ReferenceDisplay:
     require(re.fullmatch(r"F-[0-9]{3,}", value.local_id) is not None)
     require(re.fullmatch(r"Anchor|W-[0-9]{3,}", value.snapshot) is not None)

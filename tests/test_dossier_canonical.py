@@ -407,6 +407,13 @@ def test_duplicate_labels_are_not_silently_merged():
 def test_pure_import_boundary_and_no_filesystem(monkeypatch):
     source = ast.parse(inspect.getsource(dossier))
     allowed = {
+        "json",
+        "math",
+        "warnings",
+        "io",
+        "PIL",
+        "evidence_engine.dossier",
+        "evidence_engine.media.signatures",
         "collections.abc",
         "dataclasses",
         "evidence_engine.errors",

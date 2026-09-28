@@ -1,5 +1,6 @@
 """Deterministic bounded Markdown from presentation DTOs only; no I/O."""
 
+import json
 from collections.abc import Iterable, Sequence
 
 from evidence_engine.dossier.projection import (
@@ -10,6 +11,7 @@ from evidence_engine.dossier.projection import (
     EventCount,
     HumanDossierProjection,
     Measure,
+    SelectionMetadata,
     WindowDisplay,
     require,
     single_line,
@@ -437,5 +439,52 @@ def render_annex_index(entries: Sequence[AnnexIndexEntry]) -> bytes:
             "- integrity/SHA256SUMS.txt"
         )
         return b.finish()
+    except (MemoryError, RecursionError):
+        raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None
+
+
+def render_selection_metadata(metadata: SelectionMetadata) -> bytes:
+    """Exact administrative schema, streamed JSON encoding under the output cap."""
+    try:
+        items: list[dict[str, str | bool]] = []
+        labels: set[str] = set()
+        paths: set[str] = set()
+        for item in sorted(metadata.items, key=lambda i: (i.role, i.local_label)):
+            require(item.local_label not in labels, "INVALID_SELECTION")
+            require(item.package_path.casefold() not in paths, "INVALID_PATH")
+            labels.add(item.local_label)
+            paths.add(item.package_path.casefold())
+            row: dict[str, str | bool] = {
+                "local_label": item.local_label,
+                "source_class": item.source_class,
+                "role": item.role,
+                "package_path": item.package_path,
+            }
+            if item.role == "contextual_visual":
+                require(item.display_caption is not None, "PRIVACY_CONTRACT_VIOLATION")
+                row.update(
+                    display_caption=item.display_caption or "",
+                    operator_selected=True,
+                    display_approved=True,
+                )
+            items.append(row)
+        value: dict[str, object] = {
+            "policy_id": "dossier.selection",
+            "policy_version": "1.0.0",
+            "delivery_profile": "directory-v1",
+            "items": items,
+        }
+        if metadata.issued_date is not None:
+            value["issued_date"] = metadata.issued_date
+        if metadata.case_reference is not None:
+            value["case_reference"] = metadata.case_reference
+        builder = _Builder()
+        encoder = json.JSONEncoder(
+            ensure_ascii=True, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+        for chunk in encoder.iterencode(value):
+            builder.append(chunk)
+        builder.append("\n")
+        return builder.finish()
     except (MemoryError, RecursionError):
         raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None

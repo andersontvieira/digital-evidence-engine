@@ -1,14 +1,22 @@
 """Canonical compatibility over captured bytes only (8B1-B, ADR 0037).
 
 Completeness concerns only the supplied support set, never the real-world case.
-JSON depth/node aggregation belongs to future captured-input orchestration;
-this module shares the strict historical snapshot decoder, not selection's parser.
+The captured-format boundary also enforces selected JSON depth/node aggregation;
+canonical semantics keep their shared historical decoder and report behavior.
 """
 
-from collections.abc import Sequence
+import json
+import math
+import warnings
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from io import BytesIO
 
+from PIL import Image, ImageFile
+
+from evidence_engine.dossier import selection as selection_contract
 from evidence_engine.errors import EvidenceError
+from evidence_engine.media.signatures import PREFIX_LIMIT, identify
 from evidence_engine.reports.consolidated import (
     ConsolidatedReportModel,
     Object,
@@ -21,6 +29,139 @@ from evidence_engine.reports.consolidated import (
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 MAX_TOTAL_SNAPSHOT_BYTES = 128 * 1024 * 1024
 MAX_CONSOLIDATED_REPORT_BYTES = 64 * 1024 * 1024
+MAX_SUPPLEMENTAL_BYTES = 16 * 1024 * 1024
+MAX_VISUAL_BYTES = 32 * 1024 * 1024
+MAX_TOTAL_JSON_NODES = 2_000_000
+MAX_IMAGE_DIMENSION = 16384
+MAX_IMAGE_PIXELS = 16_000_000
+
+
+@dataclass(frozen=True, slots=True)
+class CapturedFormatInput:
+    """Caller supplies verified captured bytes, never reopens an input source."""
+
+    local_label: str
+    role: str
+    content: bytes
+
+
+@dataclass(frozen=True, slots=True)
+class ValidatedFormat:
+    local_label: str
+    role: str
+    image_format: str | None
+
+
+def _json_nodes(content: bytes, role: str) -> int:
+    invalid = "CANONICAL_SET_INVALID" if role == "report_snapshot" else "UNSUPPORTED_FORMAT"
+
+    def integer(text: str) -> int:
+        _require(len(text) <= selection_contract.MAX_NUMBER_CHARS, "RESOURCE_LIMIT")
+        return int(text)
+
+    def floating(text: str) -> float:
+        _require(len(text) <= selection_contract.MAX_NUMBER_CHARS, "RESOURCE_LIMIT")
+        value = float(text)
+        _require(math.isfinite(value), "RESOURCE_LIMIT")
+        return value
+
+    try:
+        _require(not content.startswith(b"\xef\xbb\xbf"), invalid)
+        value = json.loads(
+            content.decode("utf-8"),
+            object_pairs_hook=selection_contract._unique_object,
+            parse_constant=selection_contract._constant,
+            parse_int=integer,
+            parse_float=floating,
+        )
+        return selection_contract._check_structure(value, allow_null=True)
+    except EvidenceError as error:
+        if str(error) == "DOSSIER_RESOURCE_LIMIT":
+            raise
+        raise EvidenceError(f"DOSSIER_{invalid}") from None
+    except (UnicodeError, ValueError):
+        raise EvidenceError(f"DOSSIER_{invalid}") from None
+
+
+def _visual(content: bytes) -> str:
+    hint = identify(content[:PREFIX_LIMIT]).media_format
+    _require(hint in ("jpeg", "png"), "UNSUPPORTED_FORMAT")
+    expected = {"jpeg": "JPEG", "png": "PNG"}[hint]
+    # Do not silently honor a process-wide relaxation set by another caller.
+    _require(not ImageFile.LOAD_TRUNCATED_IMAGES, "UNSUPPORTED_FORMAT")
+    try:
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            for verify in (True, False):
+                with Image.open(BytesIO(content), formats=[expected]) as image:
+                    _require(image.format == expected, "UNSUPPORTED_FORMAT")
+                    width, height = image.size
+                    _require(width > 0 and height > 0, "UNSUPPORTED_FORMAT")
+                    _require(
+                        width <= MAX_IMAGE_DIMENSION
+                        and height <= MAX_IMAGE_DIMENSION
+                        and width * height <= MAX_IMAGE_PIXELS,
+                        "RESOURCE_LIMIT",
+                    )
+                    _require(
+                        getattr(image, "n_frames", 1) == 1
+                        and not getattr(image, "is_animated", False)
+                        and image.get_format_mimetype() != "image/apng",
+                        "UNSUPPORTED_FORMAT",
+                    )
+                    if verify:
+                        image.verify()
+                    else:
+                        image.load()
+        return hint
+    except (Image.DecompressionBombWarning, Image.DecompressionBombError):
+        raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None
+    except (OSError, ValueError, SyntaxError, TypeError, KeyError, OverflowError):
+        raise EvidenceError("DOSSIER_UNSUPPORTED_FORMAT") from None
+
+
+def validate_captured_formats(inputs: Iterable[CapturedFormatInput]) -> tuple[ValidatedFormat, ...]:
+    """Sequential format-only validation, including aggregate snapshot/support JSON nodes.
+
+    No canonical semantics, Markdown interpretation or image transformation.
+    A generator lets the caller release one captured payload before reading another.
+    """
+    result = []
+    labels: set[str] = set()
+    nodes = 0
+    try:
+        for item in inputs:
+            _require(item.local_label not in labels, "INVALID_SELECTION")
+            labels.add(item.local_label)
+            limits = {
+                "report_snapshot": MAX_SNAPSHOT_BYTES,
+                "consolidated_report": MAX_CONSOLIDATED_REPORT_BYTES,
+                "technical_review": MAX_SUPPLEMENTAL_BYTES,
+                "validation_report": MAX_SUPPLEMENTAL_BYTES,
+                "structured_support": MAX_SUPPLEMENTAL_BYTES,
+                "contextual_visual": MAX_VISUAL_BYTES,
+            }
+            _require(item.role in limits, "INVALID_ROLE_CLASS")
+            _require(type(item.content) is bytes, "UNSUPPORTED_FORMAT")
+            _require(len(item.content) <= limits[item.role], "RESOURCE_LIMIT")
+            image_format = None
+            if item.role in ("report_snapshot", "structured_support"):
+                nodes += _json_nodes(item.content, item.role)
+                _require(nodes <= MAX_TOTAL_JSON_NODES, "RESOURCE_LIMIT")
+            elif item.role in ("technical_review", "validation_report"):
+                _require(
+                    not item.content.startswith(b"\xef\xbb\xbf") and b"\0" not in item.content,
+                    "UNSUPPORTED_FORMAT",
+                )
+                item.content.decode("utf-8")
+            elif item.role == "contextual_visual":
+                image_format = _visual(item.content)
+            result.append(ValidatedFormat(item.local_label, item.role, image_format))
+        return tuple(result)
+    except (MemoryError, RecursionError):
+        raise EvidenceError("DOSSIER_RESOURCE_LIMIT") from None
+    except UnicodeError:
+        raise EvidenceError("DOSSIER_UNSUPPORTED_FORMAT") from None
 
 
 @dataclass(frozen=True, slots=True)

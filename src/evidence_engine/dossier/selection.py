@@ -126,7 +126,7 @@ def _float(value: str) -> float:
     return number
 
 
-def _check_structure(document: object) -> None:
+def _check_structure(document: object, *, allow_null: bool = False) -> int:
     """Count values (including containers) and keys without recursive traversal."""
     stack: list[tuple[Iterator[object], int]] = [(iter((document,)), 0)]
     nodes = 0
@@ -139,7 +139,7 @@ def _check_structure(document: object) -> None:
             continue
         nodes += 1
         _require(nodes <= MAX_JSON_NODES_PER_FILE, "RESOURCE_LIMIT")
-        _require(value is not None)
+        _require(allow_null or value is not None)
         if isinstance(value, (dict, list)):
             depth = parent_depth + 1
             _require(depth <= MAX_JSON_DEPTH, "RESOURCE_LIMIT")
@@ -149,6 +149,7 @@ def _check_structure(document: object) -> None:
                 stack.append((iter(value.values()), depth))
             else:
                 stack.append((iter(value), depth))
+    return nodes
 
 
 def _object(value: object) -> dict[str, object]:
