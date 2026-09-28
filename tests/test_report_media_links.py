@@ -69,6 +69,8 @@ def test_frozen_legacy_markdown_byte_identical():
 def test_version_dispatch_and_legacy_order(report_set):
     previous = report.consolidate_snapshots(legacy(report_set))
     current = report.consolidate_snapshots(report_set)
+    assert report.build_consolidated_model(report_set) == current
+    assert report.build_consolidated_model(legacy(report_set)) == previous
     assert current.metadata["report_policy_version"] == "1.1.0"
     assert [
         (f.finding_id, f.candidate_type, f.statement, f.provenance_basis)

@@ -842,6 +842,28 @@ def _invalid_constant(value: str) -> None:
     raise EvidenceError("REPORT_INVALID_JSON")
 
 
+def _decode_snapshot_json(content: bytes) -> Object:
+    """Shared strict JSON stage; policy dispatch may precede schema validation.
+
+    Resource exhaustion deliberately propagates to the caller: the historical
+    loader maps RecursionError to REPORT_INVALID_JSON, dossier maps it to a budget.
+    """
+    try:
+        value = json.loads(
+            content.decode("utf-8"),
+            object_pairs_hook=_unique_object,
+            parse_constant=_invalid_constant,
+        )
+    except (UnicodeError, json.JSONDecodeError):
+        raise EvidenceError("REPORT_INVALID_JSON") from None
+    return _object(value)
+
+
+def decode_snapshot(content: bytes) -> Object:
+    """Decode and validate captured bytes, without I/O or a snapshot count guard."""
+    return validate_snapshot(_decode_snapshot_json(content))
+
+
 def load_snapshots(paths: Sequence[Path]) -> list[Object]:
     _require(1 <= len(paths) <= MAX_SNAPSHOTS, "REPORT_SNAPSHOT_COUNT")
     result = []
@@ -850,12 +872,7 @@ def load_snapshots(paths: Sequence[Path]) -> list[Object]:
             with path.open("rb") as stream:
                 content = stream.read(MAX_SNAPSHOT_BYTES + 1)
             _require(len(content) <= MAX_SNAPSHOT_BYTES, "REPORT_SNAPSHOT_SIZE_LIMIT")
-            value = json.loads(
-                content.decode("utf-8"),
-                object_pairs_hook=_unique_object,
-                parse_constant=_invalid_constant,
-            )
-            result.append(validate_snapshot(value))
+            result.append(decode_snapshot(content))
         except (UnicodeError, json.JSONDecodeError, RecursionError):
             raise EvidenceError("REPORT_INVALID_JSON") from None
         except OSError:
@@ -1031,6 +1048,12 @@ def _gaps(anchor: Object, has_links: bool = False) -> tuple[TechnicalGap, ...]:
 
 def consolidate_snapshots(snapshots: Sequence[Object]) -> ConsolidatedReportModel:
     _require(1 <= len(snapshots) <= MAX_SNAPSHOTS, "REPORT_SNAPSHOT_COUNT")
+    return build_consolidated_model(snapshots)
+
+
+def build_consolidated_model(snapshots: Sequence[Object]) -> ConsolidatedReportModel:
+    """Pure semantic core; callers own operational count and byte budgets."""
+    _require(len(snapshots) >= 1, "REPORT_SNAPSHOT_COUNT")
     validated = [validate_snapshot(s) for s in snapshots]
     _require(
         len({s["snapshot"]["snapshot_version"] for s in validated}) == 1,
