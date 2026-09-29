@@ -29,8 +29,9 @@ idênticos. O relatório canônico conserva suas 20 seções e contratos anterio
 Originais excluídos; visuais somente JPEG/PNG contextuais explicitamente selecionados,
 sem relações com eventos/findings. Attachments não resolvidos continuam
 SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF tem contrato
-aceito no ADR 0038, implementação ainda não iniciada e toolchain pendente de
-qualificação em 8B2-A; ZIP/archive exige escopo separado. 8B3 será validação
+aceito no ADR 0038 e acoplamento privado restrito aceito no ADR 0039; 8B2-A
+permanece incompleta, com retomada de qualificação/implementação como próximo passo.
+ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
 
@@ -100,17 +101,34 @@ PDF para 8B2 e ZIP/archive para escopo separado; sem acesso real nesta promoçã
 ## Milestone 8B2.0 — contrato de exportação PDF aceito
 
 Concluída após revisão humana sob [ADR 0038 Accepted](adr/0038-human-pdf-export-contract.md).
-8B1-A–G permanece concluída; implementação 8B2 não iniciada. O primeiro slice é
-8B2-A, qualificação de toolchain/fundação, obrigatória antes de 8B2-B. A arquitetura
+8B1-A–G permanece concluída; 8B2-A continua incompleta e 8B2-B não iniciada. A arquitetura
 prevê saída separada pdf-presentation-v1, consumindo os dois Markdown aprovados,
 sem mutar directory-v1 ou reconstruir narrativa/snapshots. ReportLab/pypdf/pypdfium2
 e fontes empacotadas são propostas sujeitas à aprovação e qualificação explícita
 de versões, licenças e capacidades em A; nenhuma dependência instalada ou
 qualificada nesta promoção. Render canônico proposto em Linux/amd64 fixado,
-não render nativo multiplataforma. Nenhum PDF gerado ou validado; sem alegação
+não render nativo multiplataforma. Nenhum PDF gerado ou validado nesta promoção; sem alegação
 PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
 responsável pela execução real controlada; nenhum caso real acessado nesta promoção.
-Os últimos gates funcionais continuam sendo os de 8B1-G; não há testes PDF executados.
+Os últimos gates funcionais de produto continuam sendo os de 8B1-G; os probes
+anteriores são evidência sintética de viabilidade, não qualificação PDF completa.
+
+## Milestone 8B2-A.1.1 — contrato de adaptador ReportLab aceito
+
+A API pública ReportLab 5.0.1 falhou na ausência de metadata/trailer exigida pelo
+ADR 0038. 8B2-A.1 investigou o bloqueio e demonstrou viabilidade sintética limitada.
+8B2-A.1.1 concluída sob [ADR 0039 Accepted](adr/0039-controlled-reportlab-adapter-private-coupling.md):
+revisão humana aceitou o risco de manutenção apenas do acoplamento privado exato
+enumerado, restrito ao ReportLab 5.0.1. Artefatos/hashes ainda exigem qualificação.
+Serialização central permanece no ReportLab; pypdf é validador somente leitura.
+Sem pós-processamento, monkeypatch, fork/modificação do vendor ou uso arbitrário
+de internals. Divergências de versão/shape falham fechadas; upgrades exigem revisão
+e requalificação. Nenhuma decisão do ADR 0038 foi alterada.
+
+Próximo passo é retomar 8B2-A sob ADRs 0038/0039, sem implementação do adaptador
+ou retomada nesta promoção. Fontes, ToUnicode/subsets, PDFium, build/inventário
+canônico e demais gates de A continuam pendentes; renderer/CLI PDF finais não
+implementados. 8B2-B não iniciada; 8B3 permanece futura, sem acesso real.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
@@ -183,7 +201,7 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | reports/snapshot.py            | Projeção técnica read-only para relatório, sem persistência                              |
 | reports/consolidated.py        | Validação de JSONs 8A1, modelo consolidado e templates Markdown determinísticos          |
 | cli/report.py                  | Snapshot JSON ASCII/LF e consolidated Markdown UTF-8/LF; ambos stdout/read-only          |
-| dossier/ e cli/dossier.py       | Seleção explícita, captura, projeção, integridade e montagem directory-v1 sem DB/caso   |
+| dossier/ e cli/dossier.py      | Seleção explícita, captura, projeção, integridade e montagem directory-v1 sem DB/caso    |
 | media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
 Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
@@ -492,7 +510,8 @@ ou questão jurídica. O gap analysis obrigatório da 8A2 poderá orientar o esc
 de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031.
 Historicamente, a 8A0 não concluiu Milestone 8 nem o dossiê final. O contrato 8B0
 está aceito e 8B1-A–G foi implementada. O contrato PDF 8B2.0 está aceito sob
-ADR 0038; implementação PDF e execução real 8B3 permanecem futuras.
+ADR 0038, complementado pelo acoplamento privado aceito no ADR 0039. 8B2-A
+continua incompleta; execução real 8B3 permanece futura.
 
 ## Report data snapshot (8A1)
 
@@ -569,5 +588,5 @@ python-dateutil continuam adiados até uso concreto.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0037 documentam as decisões; os seis
+ADRs 0007–0039 documentam as decisões as decisões; os seis
 princípios originais continuam válidos.
