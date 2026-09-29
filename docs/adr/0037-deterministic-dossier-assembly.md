@@ -3,17 +3,17 @@
 Status: Accepted.
 
 Milestone: 8B1 implementation contract (8B1.0, somente documentação).
-Base revisada: c39a757. Nenhuma implementação foi iniciada. Este ADR traduz o
-[ADR 0036 aceito](0036-final-legal-technical-dossier-export-contract.md) em contrato
+Base do contrato: c39a757; implementação A–G concluída e validada sinteticamente.
+Este ADR traduz o [ADR 0036 aceito](0036-final-legal-technical-dossier-export-contract.md) em contrato
 de implementação aceito após revisão humana; não altera esse contrato nem autoriza
 acesso a caso real. A fase contratual 8B1.0 está concluída, com promoção de README,
-AGENTS e architecture. Nenhum slice de implementação foi iniciado; 8B1-A é o próximo
-após o commit documental. Execução real permanece reservada à futura 8B3, PDF à
+AGENTS e architecture. O fechamento de implementação 8B1-G e seus gates estão
+registrados na seção 20. Execução real permanece reservada à futura 8B3, PDF à
 8B2 e ZIP/archive a escopo separado. Esta tarefa não executa commit.
 
 ## 1. Escopo e auditoria do reuso
 
-A futura 8B1 monta localmente human/dossier.md, human/annex-index.md,
+A 8B1 implementada monta localmente human/dossier.md, human/annex-index.md,
 technical/selection-metadata.json, cópias de artefatos selecionados, JPEG/PNG
 contextuais, integrity/manifest.json e integrity/SHA256SUMS.txt. As camadas
 HUMAN LEGAL-TECHNICAL DOSSIER e TECHNICAL SUPPORT PACKAGE são organização e
@@ -24,9 +24,10 @@ Foram inspecionados AGENTS.md, README.md, docs/architecture.md, ADRs
 [0033](0033-first-consolidated-technical-report.md),
 [0034](0034-exact-source-media-provenance-link.md),
 [0035](0035-consolidated-report-media-link-integration.md) e 0036, além dos módulos
-abaixo. As adaptações descritas são futuras, não mudanças efetuadas em 8B1.0.
+abaixo. A tabela preserva a auditoria histórica do contrato 8B1.0; as adaptações
+foram implementadas nos slices A–F, com fechamento sintético em G.
 
-| Implementação atual | Decisão para futura 8B1 |
+| Implementação na base contratual | Decisão de implementação 8B1 |
 | --- | --- |
 | reports/consolidated.py: validate_snapshot, ConsolidatedReportModel, ReportWindow/Finding/Gap, render_markdown | Reusar validação e renderer puros; somente stdlib/EvidenceError. Não reconstruir fatos a partir de Markdown. |
 | load_snapshots e consolidate_snapshots | Ambos aplicam MAX_SNAPSHOTS=20; loader também limita 64 MiB por arquivo. Separar guard operacional e núcleo puro conforme seção 5, sem copiar algoritmo nem alterar bytes legados. |
@@ -51,7 +52,7 @@ integridade. Não se consulta provenance externa para completar dado ausente.
 
 ## 2. CLI e resultado operacional
 
-Comando futuro congelado:
+Comando contratado e implementado:
 
 ```console
 dee dossier assemble --selection <selection.json> --output-dir <new-output-directory>
@@ -221,7 +222,7 @@ canônica start/end/platform/event_kind/max_delta_seconds. Não avaliar igualdad
 pelo nome do arquivo. Versão 1.0.0 ou futura é rejeitada no dossiê, sem alterar
 suporte histórico dos outros comandos. Ausência de capacidade não é fallback.
 
-Adaptação futura mínima em reports/consolidated.py: extrair
+Adaptação implementada em reports/consolidated.py, conforme contrato: extrair
 build_consolidated_model(snapshots) com o corpo atual de validação/modelagem,
 sem o guard MAX_SNAPSHOTS; validar não vazio e todo o restante integralmente.
 consolidate_snapshots mantém o guard operacional público atual e delega ao
@@ -230,8 +231,8 @@ limites e bytes legados. Extrair também decode_snapshot(content: bytes), que
 reutiliza JSON estrito/validate_snapshot; loader antigo e dossiê compartilham
 essa primitive. Dossiê usa leitura estável própria de artefatos e budgets da
 seção 8, nunca o loader de paths limitado a 20 nem monkeypatch de constantes.
-Essa separação ainda não existe; é trabalho futuro de 8B1-B sob este contrato aceito, não realizado
-neste ADR. Testes de paridade do núcleo antigo/novo são obrigatórios.
+Essa separação foi implementada em 8B1-B sob este contrato aceito.
+Testes de paridade do núcleo antigo/novo permanecem obrigatórios.
 
 Pipeline obrigatório: carregar bytes estáveis → decodificar/validar snapshots →
 build_consolidated_model → render_markdown(model).encode("utf-8") → comparar com
@@ -354,7 +355,7 @@ streaming/customizado de propósito geral somente para impor esses guards.
 Um visual é decodificado por vez; snapshots/modelo podem ficar em memória somente
 sob os budgets, liberando buffers redundantes. Limites de geração são verificados
 durante montagem de linhas/saída, antes de formar um string ilimitado. Reutilização
-do renderer requer guard de saída compartilhado no núcleo puro futuro, preservando
+do renderer requer guard de saída compartilhado no núcleo puro, preservando
 bytes e comportamento público legado quando dentro dos limites.
 
 Esses valores delimitam uma primeira execução local revisável: seleção pequena,
@@ -703,7 +704,7 @@ UUID, paths absolutos ou metadata do host. Copiados são byte-idênticos aos inp
 Não se promete metadata filesystem igual, determinismo PDF/ZIP, assinatura ou
 autenticidade externa. Novas versões exigem comparação/revisão própria.
 
-## 16. Módulos futuros e dependências testáveis
+## 16. Módulos implementados e dependências testáveis
 
 Layout mínimo decidido, sem framework/plugin ou classe genérica de exportação:
 
@@ -753,10 +754,10 @@ Teste separado do comando instrumenta DB/open/query/network para falhar caso
 sejam executados, mesmo que já importados. Isolamento é dependência do pacote
 mais ausência de execução proibida, sem refactor geral do bootstrap nesta etapa.
 
-## 17. Matriz concreta de testes sintéticos futuros
+## 17. Matriz contratada de testes sintéticos
 
-Nenhum teste/fixture é implementado por este ADR. Futuramente, os módulos de
-teste abaixo cobrem contratos com materiais inteiramente sintéticos, sem rede
+Este ADR não implementa testes. A matriz abaixo orientou os slices A–G;
+as suítes implementadas cobrem os contratos com materiais inteiramente sintéticos, sem rede
 nem fixture real, usando diretórios temporários separados da fonte do projeto.
 
 | Área / arquivo de teste proposto | Casos e resultado obrigatório |
@@ -777,14 +778,14 @@ nem fixture real, usando diretórios temporários separados da fonte do projeto.
 | test_dossier_determinism.py | Repetição, permutação de seleção/enumeração, opcionais ausentes, clock/UUID/locale sentinelas, roots absolutos distintos com mesmos labels/bytes; paridade Windows/Linux para cinco outputs gerados e conjunto de paths. Metadata filesystem fora da comparação. |
 | test_dossier_architecture.py e integração CLI | Import-boundary nominal/transitivo, comando sem --case-root/CASE_ROOT/stdin/stdout-package, sem DB/open evidence.db/originals/working/services/network/cloud/API/LLM; exits e mensagens sem payload/path/traceback; zero fixtures reais. |
 
-Validar também que extração futura do núcleo de reports não muda o comportamento
+Validar também que a extração do núcleo de reports não muda o comportamento
 de snapshot/report antigos nem enfraquece SOURCE_MEDIA ou Foundation. Gates
 funcionais de implementação só poderão ser declarados após execução, separados
 de validação real futura 8B3.
 
 ## 18. Sequência de implementação e consequências
 
-Slices dentro de 8B1, não milestones novas; nenhum começa nesta tarefa:
+Slices dentro de 8B1, não milestones novas; todos implementados e validados:
 
 1. 8B1-A: DTO/shape de seleção, JSON estrito sob cap de bytes com hooks e travessia
    estrutural limitada, class/role, paths e testes puros; sem parser customizado.
@@ -813,15 +814,84 @@ identity resolution, WhatsApp ingestion, pacote de originais e execução real.
 
 ## 19. Validação deste contrato documental
 
-Revisão limitada a este ADR novo, código/documentação existentes e exemplos
-sintéticos. Nenhum CASE_ROOT ou artefato real foi acessado. Nenhum comando, DTO,
+Registro histórico da revisão 8B1.0, limitada a este ADR, código/documentação
+existentes e exemplos sintéticos. Nenhum CASE_ROOT ou artefato real foi acessado. Nenhum comando, DTO,
 schema, teste, fixture ou helper de produto foi implementado. Não houve mudança
 de dependências/lockfiles. No fechamento formal, README, AGENTS e architecture
 foram promovidos junto com Status: Accepted. O contrato está concluído; a
-implementação continua não iniciada, com 8B1-A como próximo slice após o commit
-documental. Nenhuma aceitação autoriza execução real nesta etapa.
+implementação ainda não havia começado naquele fechamento documental.
+O estado implementado posterior consta na seção 20. Nenhuma aceitação autoriza
+execução real nesta etapa.
 
-Os últimos gates funcionais continuam: pytest 1093 PASS; Ruff check PASS; Ruff
-format PASS; mypy PASS em 70 módulos. Não são reexecutados por prosa documental
-com estado executável/test/config intacto. Whitespace/diff e revisão de privacidade,
-compatibilidade e escopo são os gates desta entrega; sem staging, commit ou push.
+Os gates funcionais de referência naquela entrega eram: pytest 1093 PASS;
+Ruff check PASS; Ruff format PASS; mypy PASS em 70 módulos. Não foram reexecutados
+por prosa documental com estado executável/test/config intacto. Whitespace/diff e
+revisão de privacidade, compatibilidade e escopo foram os gates daquela entrega;
+sem staging, commit ou push.
+
+## 20. Fechamento sintético 8B1-G
+
+Slices A–G implementados. Base de G: 9a06b53, árvore inicialmente limpa.
+Sem alteração das decisões, versões de policy/seleção/manifesto, schema v5,
+dependências ou lockfile. Status deste contrato permanece Accepted.
+
+| Ambiente | Suíte completa | Tempo | Exit |
+| --- | --- | --- | --- |
+| Docker/Linux Python 3.12.14 | 1885 passed, 3 skipped | 664.37 s | 0 |
+| Windows nativo Python 3.12.11 | 1864 passed, 24 skipped | 666.33 s | 0 |
+
+Gates dirigidos: Linux 233 passed / 3 skipped; Windows 219 passed / 17 skipped.
+Ruff check PASS; Ruff format PASS (180 arquivos); mypy PASS (79 arquivos fonte);
+git diff --check PASS. Ambiente Windows existente, auditado por uv 0.8.22 contra
+o lockfile sem mudanças necessárias; nenhum Python/software de sistema instalado.
+
+Os três skips Linux são os dois testes reais de junction (paths e integrity) e
+o teste real de publicação Windows. No Windows, os 24 skips são: seis em
+test_case_paths (quatro symlinks sem permissão e dois FIFOs POSIX); cinco em
+test_dossier_integrity (dois symlinks sem permissão, FIFO, UNIX socket e traversal
+por descritor); cinco em test_dossier_paths (dois symlinks sem permissão, FIFO,
+writer e unlink relativos a descritor); sete em test_dossier_publication
+(renameat2 Linux, dois symlinks sem permissão, três fsync POSIX e corrida de
+cleanup por descritor); um em test_foundation (backslash é separador Windows).
+Os dois gates reais de junction Windows executaram e passaram, preservando o
+alvo externo sintético. Os casos de symlink sem permissão executaram no Linux;
+não se atribui execução nativa Windows a esses skips.
+
+Publicação real Linux renameat2(RENAME_NOREPLACE) e Windows os.rename PASS,
+incluindo destino existente preservado e staging movido somente no sucesso.
+Não há fallback de replace/cópia. Testes de corrida, ownership/cleanup,
+confirmação ambígua, precedência de falhas e ausência de I/O após publicação
+permanecem aprovados. Sem promessa de atomicidade da captura ou durabilidade
+do rename contra perda de energia.
+
+A fixture de tests/test_dossier_cross_platform.py inclui um relatório, um anchor,
+20 janelas, revisão Markdown com CRLF, suporte JSON, validação, PNG sintético de
+bytes fixos, issued_date/case_reference explícitos e listas fora da ordem canônica.
+São 31 arquivos: 26 payloads copiados e cinco gerados. Comparação independente
+Windows/Linux PASS para todo o mapping relativo POSIX → SHA-256, congelado no teste.
+Os cinco gerados, todos os payloads e o conjunto de paths coincidem; CRLF copiado
+e PNG são preservados, gerados usam UTF-8/LF sem BOM. As 14 seções permanecem fixas.
+O mapping não inclui paths do host, metadata de filesystem ou nomes de staging.
+
+O gate nativo revelou CRLF na saída textual da CLI. A correção mínima em
+cli/dossier.py emite bytes ASCII/LF tanto em sucesso quanto em erro, preservando
+os códigos e exits. Help, montagem completa com 21 snapshots e erros seguros de
+seleção inválida/destino existente passaram nas duas plataformas. O primeiro
+comparativo também detectou PNGs diferentes gerados pelo encoder da fixture;
+fixaram-se os bytes sintéticos de entrada, sem normalizar ou alterar o produto.
+
+Imports nominais/testados e sentinelas de execução preservam a fronteira do
+dossiê sem CASE_ROOT, descoberta, DB, queries, rede ou análise nova. O agregador
+CLI mantém imports legados, sem executá-los no comando dossier. Saídas humanas
+e metadata não expõem paths do host, nomes de origem ou hashes; hashes contratados ficam
+na integridade técnica. Payloads selecionados são cópias exatas, não anonimizadas.
+Sem inferência automática de identidade/autoria ou conclusão jurídica; nenhuma
+alegação de software pericial certificado. A integração aceita
+source_media.provenance_link/1.0.0 permanece via report.consolidated/1.1.0 e
+report.data_snapshot/1.1.0. Não há máximo semântico de snapshots; budgets continuam.
+
+README, AGENTS e architecture promovidos somente após os gates das duas plataformas.
+Nenhum caso real foi acessado; 8B3 continua futura e exclusivamente responsável
+pela execução/validação real controlada. 8B2 continua futura para PDF; ZIP,
+assinatura e transporte exigem escopo separado. WhatsApp permanece condicional,
+não acionado. Sem stage, commit ou push neste fechamento para revisão humana.

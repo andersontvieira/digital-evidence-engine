@@ -39,10 +39,14 @@ Preservar schema v5; sem novas inferências ou prosa gerada por LLM.
 Message attachments permanecem SOURCE_LIMITATION. WhatsApp condicional/não acionado.
 Milestone 8B0 concluída sob ADR 0036: Final Legal-Technical Dossier & Export Contract,
 somente documentação/arquitetura. Contrato de implementação 8B1.0 concluído sob
-ADR 0037 Accepted. Implementação 8B1 não iniciada; próximo slice autorizado após
-o commit documental é 8B1-A, não executado nesta promoção.
-Futura montagem consome apenas artefatos aprovados já gerados e explicitamente
-selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
+ADR 0037 Accepted. Implementação 8B1-A–G concluída e validada sinteticamente em
+Docker/Linux Python 3.12.14 e Windows nativo Python 3.12.11. CLI disponível:
+`dee dossier assemble --selection ... --output-dir ...`. Pacote directory-v1 com
+cinco arquivos gerados determinísticos; paridade byte a byte e publicação real
+sem substituição validadas nas duas plataformas. Gates e skips no ADR 0037, seção 20.
+8B2 (PDF) e 8B3 (execução real controlada) permanecem futuras; nenhum caso real foi
+usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
+e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
 Relatório selecionado deve coincidir byte a byte com o modelo/renderer puro dos
 snapshots compatíveis selecionados. Completude é interna ao pacote selecionado,

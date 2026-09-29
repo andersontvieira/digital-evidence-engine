@@ -39,6 +39,7 @@ def assemble(
             selection_path=_explicit_path(selection), output_dir=_explicit_path(output_dir)
         )
     except Exception as error:
-        typer.echo("ERROR: " + safe_error_code(error), err=True)
+        # Bytes preserve the contracted LF even on native Windows text streams.
+        typer.echo(("ERROR: " + safe_error_code(error) + "\n").encode("ascii"), err=True, nl=False)
         raise typer.Exit(2) from None
-    typer.echo("DOSSIER_ASSEMBLY_OK")
+    typer.echo(b"DOSSIER_ASSEMBLY_OK\n", nl=False)

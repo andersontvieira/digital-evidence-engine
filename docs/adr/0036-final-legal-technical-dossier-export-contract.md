@@ -3,10 +3,10 @@
 Status: Accepted.
 
 Milestone: 8B0 concluída, exclusivamente contrato/documentação, após aprovação
-humana. A aceitação autoriza somente a arquitetura e o contrato. 8B1 permanece
-milestone futura de implementação, não iniciada; esta aceitação não autoriza
-implementar PDF/ZIP nem executar validação real. README, architecture e AGENTS
-registram o fechamento documental.
+humana. A aceitação autorizou somente a arquitetura e o contrato. Posteriormente,
+8B1-A–G foram implementados sob ADR 0037 e validados sinteticamente em Windows/Linux.
+PDF/ZIP e validação real não integram esse fechamento; 8B2/8B3 permanecem futuras.
+README, architecture e AGENTS registram o estado atual de implementação.
 
 ## 1. Contexto e finalidade
 
@@ -18,8 +18,8 @@ Base de design: AGENTS.md, README.md, docs/architecture.md e ADRs
 [0035](0035-consolidated-report-media-link-integration.md).
 Schema de evidências permanece v5; report.data_snapshot/1.1.0,
 report.consolidated/1.1.0 e source_media.provenance_link/1.0.0 estão aceitos.
-8A4.1 e o contrato 8B0 estão concluídos; 8B1/8B2/8B3 permanecem etapas futuras
-com escopo próprio.
+8A4.1 e o contrato 8B0 estão concluídos; 8B1 foi implementada e validada
+sinteticamente sob ADR 0037. 8B2/8B3 permanecem futuras com escopo próprio.
 
 O dossiê organiza resultados técnicos já aprovados para leitura por advogado ou
 outro revisor humano autorizado e revisão por profissional técnico. Não realiza
@@ -109,17 +109,17 @@ e janelas dos ADRs 0033/0035. A montagem não omite silenciosamente nenhuma jane
 do conjunto canônico selecionado. Este ADR não estabelece máximo numérico de
 snapshots ou janelas no nível semântico do dossiê.
 
-Limites operacionais de recursos pertencem à futura implementação 8B1 e devem
-ser especificados e testados independentemente. Esses limites de implementação
+Limites operacionais de recursos foram posteriormente especificados e testados
+independentemente pela 8B1 sob ADR 0037. Esses limites de implementação
 não redefinem a validade semântica de um conjunto canônico que seja compatível.
 
 O relatório deve corresponder byte a byte à renderização aprovada desses JSONs.
-A futura montagem pode conferir essa correspondência com o renderer puro 8A2;
+A montagem implementada na 8B1 confere essa correspondência com o renderer puro 8A2;
 isso valida apresentação de dados já existentes, sem executar 8A1, queries ou
 gerar findings adicionais. Divergência falha, sem substituir o relatório recebido.
 Nenhum conjunto alternativo de findings é criado pelo dossiê.
 
-Fronteira normativa da narrativa humana em dossier v1 / futura 8B1: somente
+Fronteira normativa da narrativa humana em dossier v1 / 8B1: somente
 CANONICAL_TECHNICAL pode originar afirmações técnicas em dossier.md, descrições
 de eventos/findings, linhas de cronologia, contagens, tabelas técnicas, afirmações
 sobre o que os dados estabelecem ou não estabelecem e declarações de provenance
@@ -142,7 +142,8 @@ canônico pela seleção, cópia, indexação ou referência no dossiê.
 
 ## 4. Seleção explícita: dossier.selection/1.0.0
 
-Contrato conceitual de documento estruturado local, ainda não implementado.
+Contrato de documento estruturado local, posteriormente implementado pela 8B1
+sob ADR 0037 como dossier.selection/1.0.0.
 Não depende de schema do banco. O identificador de policy e a versão são
 obrigatórios; não há UUID aleatório, identificador baseado em relógio nem
 datetime.now(). Não é necessário um identificador pessoal ou global da seleção.
@@ -372,7 +373,7 @@ plataforma continuam válidas. Nenhuma checagem autoriza abrir originals/working
 
 ## 9. Manifesto e SHA256SUMS: dependência acíclica
 
-Contrato conceitual dossier.package_manifest/1.0.0, ainda não implementado.
+Contrato dossier.package_manifest/1.0.0, implementado em 8B1-E e validado em 8B1-G.
 Envelope com policy_id, policy_version e entries ordenadas por package_path.
 Cada entrada de payload exige:
 
@@ -428,7 +429,7 @@ issued_date explícita é metadata documental, não timestamp de evidência e n�
 atesta aquisição; ausência não recebe default. Não há promessa de bytes iguais
 entre versões de renderer nem de PDF/ZIP reprodutível nesta etapa.
 
-A montagem futura recebe somente artefatos já gerados, locais e selecionados.
+A montagem implementada na 8B1 recebe somente artefatos já gerados, locais e selecionados.
 Não aceita --case-root, não abre evidence.db, não consulta SQLite, originals ou
 working, não parseia fontes, normaliza eventos, observa device/network, correlaciona,
 executa análise temporal ou source-media query, calcula pHash, faz OCR, infere
@@ -449,7 +450,7 @@ Campos desconhecidos que alterem seleção/exposição não são ignorados silen
 Não fazer fallback para scanner, contrato antigo, fonte real ou rede.
 
 Erros são técnicos e não reproduzem payload, identificadores sensíveis ou paths
-absolutos. A implementação futura definirá códigos estáveis e limites de recursos
+absolutos. A implementação 8B1 define códigos estáveis e limites de recursos sob ADR 0037
 antes de aceitar arquivos; ausência de regra de formato/validação é rejeição,
 não permissão genérica. Documentos suplementares não são executados ou tratados
 como instruções. A validação não garante detectar todo dado sensível em prosa
@@ -479,7 +480,7 @@ Revisão jurídica e revisão de privacidade não são substituídas pelo hash.
 | Milestone | Entrega e fronteira |
 | --- | --- |
 | 8B0 — Final Legal-Technical Dossier & Export Contract | Concluída; este ADR Accepted após revisão humana, somente arquitetura/contrato. |
-| 8B1 — Deterministic Dossier Assembly | Dossiê Markdown, índice, metadata de seleção, estrutura de diretórios, manifesto e SHA256SUMS; sem biblioteca PDF ou ZIP obrigatório. Não iniciada por esta ADR. |
+| 8B1 — Deterministic Dossier Assembly | Dossiê Markdown, índice, metadata de seleção, estrutura de diretórios, manifesto e SHA256SUMS; sem biblioteca PDF ou ZIP obrigatório. A–G posteriormente implementados sob ADR 0037 e validados sinteticamente; não implementados por este ADR 8B0. |
 | 8B2 — Human PDF Export | PDFs do dossiê e relatório consolidado; decidir renderer/toolchain, fontes, página, cabeçalhos/rodapés, paginação, overflow de tabelas, bookmarks/TOC, metadata, determinismo, imagens, privacidade e acessibilidade aplicável. Nenhum renderer escolhido em 8B0. |
 | 8B3 — Final Package Integrity & Real-Case Validation | Validação real controlada fora do Git, conteúdos permitidos/proibidos, privacidade, integridade, determinismo, revisão final e paridade entre plataformas quando aplicável. Não autorizada como execução real pela 8B0. |
 
@@ -488,10 +489,11 @@ decisão separada sobre layout, metadata e reprodutibilidade; não se promete ZI
 byte-idêntico. PDF exige contrato de renderer da 8B2; não se promete PDF byte-idêntico
 agora. Assinatura permanece fora dessas autorizações e depende de escopo próprio.
 
-## 13. Matriz mínima de testes futuros, não implementada em 8B0
+## 13. Matriz mínima de testes contratada em 8B0 e posteriormente implementada em 8B1
 
 Todos os materiais de teste devem ser inteiramente sintéticos. Esta matriz
-documenta exigências de 8B1; nenhum teste ou fixture é criado nesta etapa.
+documenta exigências posteriormente implementadas e validadas sinteticamente em
+8B1-A–G sob ADR 0037; a etapa contratual 8B0 não criou testes ou fixtures.
 
 | Cenário | Resultado exigido |
 | --- | --- |
@@ -549,6 +551,7 @@ As 14 seções do dossiê não alteram as 20 seções do relatório consolidado.
 
 Este contrato é genérico; exemplos de labels, modelo e paths são sintéticos.
 A revisão 8B0 utilizou somente documentação e regressões sintéticas do repositório,
-sem CASE_ROOT, evidências ou artefatos reais. O fechamento formal promove este ADR,
-AGENTS.md, README.md e docs/architecture.md. A aceitação está concluída; qualquer
-implementação ou execução real exige escopo futuro separado.
+sem CASE_ROOT, evidências ou artefatos reais. O fechamento formal promoveu este ADR,
+AGENTS.md, README.md e docs/architecture.md. A aceitação contratual não implementou
+8B1; os slices A–G foram posteriormente implementados sob ADR 0037 e validados
+sinteticamente. Execução real permanece na futura 8B3, com escopo separado.

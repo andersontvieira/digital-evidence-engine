@@ -2,14 +2,15 @@
 
 ## Milestone 8B0 — contrato de dossiê e exportação
 
-Concluída sob ADR 0036 Accepted, somente arquitetura/contrato. A camada futura
+Concluída sob ADR 0036 Accepted, somente arquitetura/contrato. A camada
 de dossiê/exportação organiza e apresenta artefatos aprovados acima do relatório
-consolidado; não investiga nem o substitui. 8B1 não está implementada ou iniciada.
+consolidado; não investiga nem o substitui. 8B1-A–G estão implementados e validados
+sinteticamente em Windows nativo e Docker/Linux Python 3.12, sob ADR 0037 Accepted.
 
 dossier.selection/1.0.0 seleciona explicitamente um report.consolidated/1.1.0 e
 seu conjunto completo compatível de report.data_snapshot/1.1.0, com exatamente um
 anchor e zero ou mais janelas. Sem máximo numérico semântico de janelas no dossiê;
-limites operacionais estão contratados no ADR 0037 e exigem testes na implementação.
+limites operacionais do ADR 0037 são aplicados e cobertos por testes sintéticos.
 Somente CANONICAL_TECHNICAL origina narrativa técnica humana. Suplementos,
 validações e visuais ficam separados, sem novos findings, correlações ou mudanças
 em F/W/G. Sem varredura implícita de output, CASE_ROOT, DB, originals/working,
@@ -30,25 +31,30 @@ sem relações com eventos/findings. Attachments não resolvidos continuam
 SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF e escolha
 de renderer ficam para 8B2; ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
-não há nova implementação, dependência ou persistência nesta etapa documental.
+8B1 não adiciona dependência ou persistência de análise.
 
-## Milestone 8B1.0 — contrato aceito de montagem determinística
+## Milestone 8B1 — montagem determinística implementada
 
 Concluída sob [ADR 0037 Accepted](adr/0037-deterministic-dossier-assembly.md).
-Somente contrato de implementação: 8B1 e seus slices não foram iniciados.
-Próximo slice após o commit documental: 8B1-A. Fluxo contratado para futura execução:
+O contrato permanece Accepted; a implementação A–G foi concluída e validada.
+CLI: `dee dossier assemble --selection ... --output-dir ...`. Fluxo implementado:
 
 ```text
 selection.json
   → validação estrita da seleção
+  → preflight de todos os inputs/budgets e ausência do destino
+  → staging exclusivo no mesmo parent/filesystem
   → captura estável dos artefatos explicitamente selecionados
+  → validação dos formatos das cópias capturadas
   → validação dos snapshots/modelo canônico
       → renderer consolidado puro → comparação byte a byte com relatório selecionado
+  → resolução dos destinos visuais e anexos
   → projeção humana por allowlist, após comparação bem-sucedida
   → dossiê/índice/metadata determinísticos
-  → cópias capturadas e layout do pacote
+  → escrita exclusiva dos três arquivos gerados de apresentação/metadata
   → manifesto + SHA256SUMS
   → verificação de completude
+  → sincronização de diretórios quando suportada e revalidação das identidades
   → publicação do staging sem substituir destino
 ```
 
@@ -70,16 +76,24 @@ estável Foundation asseguram que os bytes conferidos sejam os copiados.
 directory-v1 mantém metadata/manifesto/sums determinísticos e acíclicos;
 completude é verificada antes do rename sem substituição. Sem PDF ou ZIP.
 
-Módulos futuros: selection, validation, projection, rendering, packaging,
+Módulos implementados: selection, validation, projection, rendering, packaging,
 integrity e service, com adaptador cli/dossier. CLI → service → módulos explícitos;
 projeção/renderização não importam serviço/packaging. Reuso apenas de reports
 puros e utilitários nominais sem execução de caso, conforme ADR 0037; sem imports
 de storage/ORM/serviços de ingestão/query/análise no pacote dossier. Testes de
-imports do pacote e sentinelas de execução da CLI cobrirão a fronteira.
+imports do pacote e sentinelas de execução da CLI cobrem a fronteira.
 
 Slices internos A–G: seleção/paths; compatibilidade canônica; projeção/rendering;
 cópia/layout/metadata; integridade; publicação/CLI; regressões/paridade e fechamento.
-Nenhum foi implementado. Schema permanece v5. Validação real fica para 8B3,
+Todos implementados. O pacote directory-v1 contém cópias exatas e cinco arquivos
+gerados: human/dossier.md, human/annex-index.md, technical/selection-metadata.json,
+integrity/manifest.json e integrity/SHA256SUMS.txt. Paridade de bytes Windows/Linux
+validada para todos os 31 arquivos sintéticos, incluindo 21 snapshots. Publicação
+real Linux renameat2(RENAME_NOREPLACE) e Windows os.rename validada; staging por
+identidade, sem substituição/retry nem I/O após publicação confirmada. Isso não
+promete snapshot atômico dos inputs ou durabilidade após perda de energia.
+Gates completos e skips registrados no ADR 0037, seção 20.
+Schema permanece v5. Validação real fica para 8B3,
 PDF para 8B2 e ZIP/archive para escopo separado; sem acesso real nesta promoção.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
@@ -94,7 +108,7 @@ O renderer permanece snapshot-only, sem import/acesso a banco ou evidências.
 Novos findings positivos são apendados após os antigos; F/W-IDs e 20 seções
 permanecem estáveis. Gap D descreve cobertura estreita; message attachments
 continuam SOURCE_LIMITATION. WhatsApp condicional/não acionado; implementação
-8B1 futura, sob ADRs 0036/0037 aceitos, com 8B1-A como próximo slice não iniciado.
+8B1 implementada sob ADRs 0036/0037 aceitos, com fechamento exclusivamente sintético.
 Conjuntos 1.0.0 mantêm report 1.0.0 e Markdown histórico; mistura de versões e
 versões desconhecidas falham explicitamente. Sem schema/persistência/dependências.
 
@@ -153,11 +167,12 @@ de ZIP e DTOs de manifesto, sem duplicar cada entidade ORM.
 | reports/snapshot.py            | Projeção técnica read-only para relatório, sem persistência                              |
 | reports/consolidated.py        | Validação de JSONs 8A1, modelo consolidado e templates Markdown determinísticos          |
 | cli/report.py                  | Snapshot JSON ASCII/LF e consolidated Markdown UTF-8/LF; ambos stdout/read-only          |
+| dossier/ e cli/dossier.py       | Seleção explícita, captura, projeção, integridade e montagem directory-v1 sem DB/caso   |
 | media/                         | Assinaturas limitadas, verificação Foundation e grupos SHA-256 read-only                 |
 
 Outros adaptadores, engine completo de correlação e busca textual ficam futuros.
 Normalização canônica de eventos está implementada na 3A. Renderização em timezone
-local, ampliação da correlação multissinal, resolução de identidade, busca textual e dossier permanecem futuros.
+local, ampliação da correlação multissinal, resolução de identidade e busca textual permanecem futuros.
 
 ## Fluxo e transações
 

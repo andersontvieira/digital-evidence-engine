@@ -113,6 +113,8 @@ def test_real_windows_junction(tmp_path):
     parent = path.parent / "inputs"
     moved = tmp_path / "junction-target"
     parent.rename(moved)
+    sentinel = moved / "external-sentinel"
+    sentinel.write_bytes(b"synthetic external target untouched")
     result = subprocess.run(
         ["cmd", "/c", "mklink", "/J", str(parent), str(moved)], capture_output=True
     )
@@ -121,6 +123,8 @@ def test_real_windows_junction(tmp_path):
     assert parent.is_junction()
     with pytest.raises(EvidenceError, match="^DOSSIER_UNSAFE_FILE_TYPE$"):
         capture((path, selected, root))
+
+    assert sentinel.read_bytes() == b"synthetic external target untouched"
 
 
 @pytest.mark.parametrize("mode", ["same", "inside", "outside"])

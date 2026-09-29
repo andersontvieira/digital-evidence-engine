@@ -292,6 +292,8 @@ def test_real_windows_junction(tmp_path):
     parent = batch.capture_root / "human"
     target = tmp_path / "junction-target"
     parent.rename(target)
+    sentinel = target / "external-sentinel"
+    sentinel.write_bytes(b"synthetic external target untouched")
     result = subprocess.run(
         ["cmd", "/c", "mklink", "/J", str(parent), str(target)], capture_output=True
     )
@@ -300,6 +302,8 @@ def test_real_windows_junction(tmp_path):
     assert parent.is_junction()
     with pytest.raises(EvidenceError, match="^DOSSIER_UNSAFE_FILE_TYPE$"):
         finalize(batch, contents)
+
+    assert sentinel.read_bytes() == b"synthetic external target untouched"
 
 
 def test_reparse_flag_precedes_resolve_and_open(tmp_path, monkeypatch):

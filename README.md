@@ -20,8 +20,8 @@ A integração ao relatório humano 8A4.1 está concluída sob
 A 8B0 está concluída: [ADR 0036 — Final Legal-Technical Dossier & Export Contract](docs/adr/0036-final-legal-technical-dossier-export-contract.md)
 Accepted após revisão humana, somente arquitetura/contrato. A 8B1.0 também está
 concluída: [ADR 0037 — Deterministic Dossier Assembly](docs/adr/0037-deterministic-dossier-assembly.md)
-Accepted, contrato de implementação. A implementação 8B1 ainda não começou;
-o próximo slice após o commit documental é 8B1-A. 8B2 — Human PDF
+Accepted, contrato de implementação. Os slices 8B1-A–G estão implementados e
+validados sinteticamente em Windows nativo e Docker/Linux Python 3.12. 8B2 — Human PDF
 Export e 8B3 — Final Package Integrity & Real-Case Validation permanecem futuras.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
@@ -31,10 +31,10 @@ dossier.selection/1.0.0 exige um report.consolidated/1.1.0 compatível e o conju
 completo compatível de report.data_snapshot/1.1.0: exatamente um anchor e zero ou
 mais janelas, sem máximo numérico semântico criado pelo dossiê ou omissão silenciosa.
 Só CANONICAL_TECHNICAL alimenta narrativa técnica humana; materiais suplementares,
-de validação e visuais são anexos separados. A montagem futura não consulta
+de validação e visuais são anexos separados. A montagem não consulta
 CASE_ROOT/DB/originals, não investiga nem produz findings novos.
 
-CLI contratada para implementação futura, ainda indisponível:
+CLI disponível para montagem de artefatos explicitamente selecionados:
 
 ```console
 dee dossier assemble --selection <selection.json> --output-dir <new-output-directory>
@@ -42,16 +42,28 @@ dee dossier assemble --selection <selection.json> --output-dir <new-output-direc
 
 O renderer puro deve reproduzir byte a byte o relatório selecionado a partir dos
 snapshots selecionados, preservando os bytes fornecidos. Completude refere-se
-somente ao pacote selecionado, não ao caso real. directory-v1 terá 14 seções
+somente ao pacote selecionado, não ao caso real. directory-v1 tem 14 seções
 pt-BR determinísticas, índice e metadata de seleção, manifesto e SHA256SUMS.
 Staging e publicação sem substituição falham sem publicar pacote parcial;
 budgets operacionais do ADR 0037 geram RESOURCE_LIMIT, sem descartar janelas.
-Não há implementação ou validação real de dossiê nesta etapa.
+Os cinco arquivos gerados são human/dossier.md, human/annex-index.md,
+technical/selection-metadata.json, integrity/manifest.json e integrity/SHA256SUMS.txt.
+Não houve validação real de dossiê: ela permanece exclusivamente na futura 8B3.
+
+Fechamento sintético 8B1-G: Linux Python 3.12.14, pytest **1885 passed / 3 skipped**;
+Windows nativo Python 3.12.11, **1864 passed / 24 skipped**, ambos exit 0.
+Paridade do pacote completo de 31 arquivos (21 snapshots) PASS; publicação real
+Linux renameat2(RENAME_NOREPLACE) e Windows os.rename PASS. Os dois gates de
+junction Windows executaram e passaram. Skips Linux são os três gates exclusivos
+Windows; skips Windows cobrem operações POSIX, symlinks sem permissão no host e
+semântica de backslash. Ruff check/format e mypy PASS. Detalhes no
+[ADR 0037, seção 20](docs/adr/0037-deterministic-dossier-assembly.md#20-fechamento-sintético-8b1-g).
+Schema continua v5, sem alteração de dependências, lockfile ou policies.
 
 Originais ficam excluídos do pacote v1. Visuais são JPEG/PNG contextuais selecionados
 explicitamente, sem relações automáticas com eventos/findings. WhatsApp permanece
 fora do dataset técnico atual; message attachments não resolvidos continuam
-SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade serão
+SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade são
 determinísticos: manifesto cobre payloads; SHA256SUMS cobre payloads mais manifesto,
 sem incluir a si próprio. PDF fica para 8B2, sem renderer escolhido; ZIP/archive e
 sua reprodutibilidade exigem escopo separado. Aceitar 8B0 não autoriza implementar
@@ -864,6 +876,6 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8A4.1     | Consolidated Report Media-Link Integration — concluída               |
 | 8B0       | Final Legal-Technical Dossier & Export Contract — concluída; ADR 0036 Accepted |
 | 8B1.0     | Deterministic Dossier Assembly implementation contract — concluída; ADR 0037 Accepted |
-| 8B1       | Deterministic Dossier Assembly — implementação não iniciada; próximo slice 8B1-A |
+| 8B1       | Deterministic Dossier Assembly — A–G implementados; fechamento sintético Windows/Linux concluído |
 | 8B2       | Human PDF Export — futura                                           |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |

@@ -20,6 +20,25 @@ def stage_for(config):
     return p.create_staging(p.prepare_output(prepared, config[1]))
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Real Windows no-replace publication requires Windows")
+def test_real_windows_noreplace_preserves_existing_and_publishes_new(tmp_path):
+    stage = stage_for(inputs(tmp_path))
+    destination = stage.destination.path
+    (stage.path / "owned").write_bytes(b"synthetic staged bytes")
+    destination.mkdir()
+    (destination / "sentinel").write_bytes(b"existing")
+    with pytest.raises(EvidenceError, match="^DOSSIER_OUTPUT_EXISTS$"):
+        p.publish_staging(stage)  # Actual os.rename, never monkeypatched.
+    assert (destination / "sentinel").read_bytes() == b"existing"
+    assert (stage.path / "owned").read_bytes() == b"synthetic staged bytes"
+    assert sorted(path.name for path in destination.iterdir()) == ["sentinel"]
+    (destination / "sentinel").unlink()
+    destination.rmdir()
+    p.publish_staging(stage)
+    assert not stage.path.exists()
+    assert (destination / "owned").read_bytes() == b"synthetic staged bytes"
+
+
 @pytest.mark.skipif(p._PLATFORM != "linux", reason="Real Linux renameat2 gate")
 def test_real_linux_noreplace_preserves_existing_and_publishes_new(tmp_path):
     config = inputs(tmp_path)
