@@ -21,8 +21,18 @@ A 8B0 está concluída: [ADR 0036 — Final Legal-Technical Dossier & Export Con
 Accepted após revisão humana, somente arquitetura/contrato. A 8B1.0 também está
 concluída: [ADR 0037 — Deterministic Dossier Assembly](docs/adr/0037-deterministic-dossier-assembly.md)
 Accepted, contrato de implementação. Os slices 8B1-A–G estão implementados e
-validados sinteticamente em Windows nativo e Docker/Linux Python 3.12. 8B2 — Human PDF
-Export e 8B3 — Final Package Integrity & Real-Case Validation permanecem futuras.
+validados sinteticamente em Windows nativo e Docker/Linux Python 3.12.
+A 8B2.0 está concluída: [ADR 0038 — Human PDF Export Contract](docs/adr/0038-human-pdf-export-contract.md)
+Accepted após revisão humana. Implementação 8B2 não iniciada; primeiro slice é
+8B2-A, qualificação de toolchain/fundação, obrigatória antes de 8B2-B.
+A arquitetura prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
+ReportLab/pypdf/pypdfium2 e fontes empacotadas são propostas sujeitas à aprovação
+e qualificação explícita de versões, licenças e capacidades em 8B2-A. Nenhuma
+dependência foi instalada ou qualificada nesta promoção. Render canônico proposto
+em Linux/amd64 fixado, não render nativo multiplataforma. Nenhum PDF foi gerado
+ou validado; sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
+futura e exclusivamente responsável pela execução real controlada; nenhum caso
+real foi acessado nesta promoção documental.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -65,7 +75,8 @@ explicitamente, sem relações automáticas com eventos/findings. WhatsApp perma
 fora do dataset técnico atual; message attachments não resolvidos continuam
 SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade são
 determinísticos: manifesto cobre payloads; SHA256SUMS cobre payloads mais manifesto,
-sem incluir a si próprio. PDF fica para 8B2, sem renderer escolhido; ZIP/archive e
+sem incluir a si próprio. PDF será implementado sob ADR 0038, com toolchain ainda
+pendente de qualificação em 8B2-A; ZIP/archive e
 sua reprodutibilidade exigem escopo separado. Aceitar 8B0 não autoriza implementar
 ou executar essas etapas, nem validar um caso real.
 
@@ -877,5 +888,6 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B0       | Final Legal-Technical Dossier & Export Contract — concluída; ADR 0036 Accepted |
 | 8B1.0     | Deterministic Dossier Assembly implementation contract — concluída; ADR 0037 Accepted |
 | 8B1       | Deterministic Dossier Assembly — A–G implementados; fechamento sintético Windows/Linux concluído |
-| 8B2       | Human PDF Export — futura                                           |
+| 8B2.0     | Human PDF Export Contract — concluída; ADR 0038 Accepted             |
+| 8B2       | Human PDF Export — implementação não iniciada; primeiro slice 8B2-A, qualificação de toolchain/fundação |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |

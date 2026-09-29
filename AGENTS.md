@@ -44,8 +44,16 @@ Docker/Linux Python 3.12.14 e Windows nativo Python 3.12.11. CLI disponível:
 `dee dossier assemble --selection ... --output-dir ...`. Pacote directory-v1 com
 cinco arquivos gerados determinísticos; paridade byte a byte e publicação real
 sem substituição validadas nas duas plataformas. Gates e skips no ADR 0037, seção 20.
-8B2 (PDF) e 8B3 (execução real controlada) permanecem futuras; nenhum caso real foi
-usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
+8B2.0 concluída após revisão humana: ADR 0038 Accepted. Implementação 8B2 não
+iniciada; primeiro slice é 8B2-A, qualificação de toolchain/fundação, antes de 8B2-B.
+Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
+ReportLab/pypdf/pypdfium2 e fontes empacotadas são propostas sujeitas à aprovação
+e qualificação explícita de versões/licenças/capacidades em 8B2-A; nenhuma instalada
+ou qualificada nesta promoção. Render canônico proposto: Linux/amd64 fixado,
+não render nativo multiplataforma. Nenhum PDF gerado/validado; sem alegação de
+PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
+responsável pela execução real controlada. Nenhum caso real acessado nesta promoção
+ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
 e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
 Relatório selecionado deve coincidir byte a byte com o modelo/renderer puro dos
@@ -58,8 +66,9 @@ dependência nova pelo ADR 0037.
 Originais e legacy excluídos do pacote v1. Visuais são anexos contextuais JPEG/PNG explícitos,
 sem criar relações com eventos/findings. WhatsApp fica fora do dataset representado,
 salvo futura aquisição/parser/análise separadamente aprovados. PDF pertence à 8B2;
-ZIP/archive exige escopo próprio. 8B2/8B3 permanecem futuras, sem execução autorizada
-pela aceitação do contrato. Dados de caso continuam fora do Git.
+ZIP/archive exige escopo próprio. Aceitação do ADR 0038 autoriza implementação
+8B2 a partir de A, não executada nesta promoção; não autoriza 8B3 ou acesso real.
+Dados de caso continuam fora do Git.
 Validação real das etapas anteriores autorizada, com snapshots e relatório
 exclusivamente fora do Git; essa autorização não inicia a validação real 8B3.
 Sem WhatsApp, persistência ou inferência automática de identidade/autoria.

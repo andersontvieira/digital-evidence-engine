@@ -28,8 +28,9 @@ idênticos. O relatório canônico conserva suas 20 seções e contratos anterio
 
 Originais excluídos; visuais somente JPEG/PNG contextuais explicitamente selecionados,
 sem relações com eventos/findings. Attachments não resolvidos continuam
-SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF e escolha
-de renderer ficam para 8B2; ZIP/archive exige escopo separado. 8B3 será validação
+SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF tem contrato
+aceito no ADR 0038, implementação ainda não iniciada e toolchain pendente de
+qualificação em 8B2-A; ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
 
@@ -95,6 +96,21 @@ promete snapshot atômico dos inputs ou durabilidade após perda de energia.
 Gates completos e skips registrados no ADR 0037, seção 20.
 Schema permanece v5. Validação real fica para 8B3,
 PDF para 8B2 e ZIP/archive para escopo separado; sem acesso real nesta promoção.
+
+## Milestone 8B2.0 — contrato de exportação PDF aceito
+
+Concluída após revisão humana sob [ADR 0038 Accepted](adr/0038-human-pdf-export-contract.md).
+8B1-A–G permanece concluída; implementação 8B2 não iniciada. O primeiro slice é
+8B2-A, qualificação de toolchain/fundação, obrigatória antes de 8B2-B. A arquitetura
+prevê saída separada pdf-presentation-v1, consumindo os dois Markdown aprovados,
+sem mutar directory-v1 ou reconstruir narrativa/snapshots. ReportLab/pypdf/pypdfium2
+e fontes empacotadas são propostas sujeitas à aprovação e qualificação explícita
+de versões, licenças e capacidades em A; nenhuma dependência instalada ou
+qualificada nesta promoção. Render canônico proposto em Linux/amd64 fixado,
+não render nativo multiplataforma. Nenhum PDF gerado ou validado; sem alegação
+PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
+responsável pela execução real controlada; nenhum caso real acessado nesta promoção.
+Os últimos gates funcionais continuam sendo os de 8B1-G; não há testes PDF executados.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
@@ -475,7 +491,8 @@ Não haverá conclusão automática de identidade, autoria, sessão, causalidade
 ou questão jurídica. O gap analysis obrigatório da 8A2 poderá orientar o escopo
 de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031.
 Historicamente, a 8A0 não concluiu Milestone 8 nem o dossiê final. O contrato 8B0
-está agora aceito; implementação do dossiê e exports continuam futuras.
+está aceito e 8B1-A–G foi implementada. O contrato PDF 8B2.0 está aceito sob
+ADR 0038; implementação PDF e execução real 8B3 permanecem futuras.
 
 ## Report data snapshot (8A1)
 
