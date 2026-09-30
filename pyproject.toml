@@ -11,6 +11,7 @@ requires-python = ">=3.12"
 dependencies = [
     "typer>=0.12,<1", "sqlalchemy>=2.0,<3", "pydantic>=2.10,<3",
     "Pillow==12.3.0", "ImageHash==4.3.2",
+    "reportlab==5.0.1", "pypdf==6.19.0",
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -22,7 +23,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9", "ruff>=0.9,<1", "mypy>=1.14,<2"]
+dev = ["pytest>=8,<9", "ruff>=0.9,<1", "mypy>=1.14,<2", "pypdfium2==5.13.0"]
 
 [project.scripts]
 dee = "evidence_engine.cli:app"

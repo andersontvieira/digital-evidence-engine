@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC PYTHONHASHSEED=0 \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON_DOWNLOADS=never \
+    UV_NO_CACHE=1 PIP_NO_CACHE_DIR=1 PATH="/opt/venv/bin:$PATH"
+WORKDIR /app
+COPY pyproject.toml uv.lock README.md ./
+COPY src/ ./src/
+COPY tools/pdf_build.py tools/pdf-qualified-inputs.json ./tools/
+RUN test "$(uname -m)" = x86_64 \
+    && python -c 'import platform; assert platform.python_version() == "3.12.14"' \
+    && python tools/pdf_build.py bootstrap \
+    && uv sync --locked --extra dev --no-editable --python /usr/local/bin/python \
+    && /opt/venv/bin/python tools/pdf_build.py finalize
+USER 1000:1000
+CMD ["python", "-m", "evidence_engine.dossier.pdf_probe"]

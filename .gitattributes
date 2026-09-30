@@ -1,0 +1,7 @@
+# Exact bytes are part of the qualified PDF implementation/build inventory.
+/src/evidence_engine/dossier/pdf_*.py text eol=lf
+/tools/pdf_build.py text eol=lf
+/tools/pdf-qualified-inputs.json text eol=lf
+/docs/pdf-render-environment.json text eol=lf
+/Dockerfile.pdf text eol=lf
+/Dockerfile.pdf.dockerignore text eol=lf

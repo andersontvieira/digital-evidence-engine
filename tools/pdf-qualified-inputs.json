@@ -1,0 +1,90 @@
+{
+  "base_image": "python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea",
+  "font_packages": {
+    "fonts-dejavu-core_2.37-8_all.deb": "86635b3d25b3655fc11cb3ecc3af59f0bf19643b02b94f2de48bd10253cdba12",
+    "fonts-dejavu-extra_2.37-8_all.deb": "83128d00e5d7db412fe5a7a4e2ee32aebbf8d9ed560ad611202fb43078f80323",
+    "fonts-dejavu-mono_2.37-8_all.deb": "3003e98a5debfdeadc7040a7f715fe9fe6fb67f68deacf6049b54e30f07fc014"
+  },
+  "fonts": [
+    {
+      "file": "DejaVuSans.ttf",
+      "role": "sans",
+      "sha256": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+      "size": 759720
+    },
+    {
+      "file": "DejaVuSans-Bold.ttf",
+      "role": "sans-bold",
+      "sha256": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890",
+      "size": 708920
+    },
+    {
+      "file": "DejaVuSans-Oblique.ttf",
+      "role": "sans-oblique",
+      "sha256": "e2f09289f4276309a36b9a93e5a0ac64957ef3eb7158151b243d41f667151ee4",
+      "size": 637648
+    },
+    {
+      "file": "DejaVuSans-BoldOblique.ttf",
+      "role": "sans-bold-oblique",
+      "sha256": "c35383d5e56add5cc9cdc9f4e4a899f9e540f7c7e49f1901074c2d03af194eff",
+      "size": 645600
+    },
+    {
+      "file": "DejaVuSansMono.ttf",
+      "role": "mono",
+      "sha256": "54bf827eb99404e8f430c330ad30f063334f637eba0109b6a18d4f566a8e9dd8",
+      "size": 343140
+    },
+    {
+      "file": "DejaVuSansMono-Bold.ttf",
+      "role": "mono-bold",
+      "sha256": "0d3c03d1b667192f91223660a3163325cf83132662fe4d9f7d6e596bf7a995c2",
+      "size": 334268
+    }
+  ],
+  "wheels": [
+    {
+      "file": "charset_normalizer-3.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "name": "charset-normalizer",
+      "sha256": "b9af956078716df40d985fb0dfeb2c2120c5ca92ba4ff4b388acfd01cdc14d08",
+      "size": 248801,
+      "version": "3.5.1"
+    },
+    {
+      "file": "pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "name": "pillow",
+      "sha256": "78cb2c6865a35ab8ff8b75fd122f6033b92a62c82801110e48ddd6c936a45d91",
+      "size": 6940830,
+      "version": "12.3.0"
+    },
+    {
+      "file": "pypdf-6.19.0-py3-none-any.whl",
+      "name": "pypdf",
+      "sha256": "7e5d6e730e7dae87d560a2cee218b852f6498c8be61966f3cd02ead971e48d14",
+      "size": 395480,
+      "version": "6.19.0"
+    },
+    {
+      "file": "pypdfium2-5.13.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "name": "pypdfium2",
+      "sha256": "81df25c1ab4c13ff773102d3cbea1967511d079123b067fc077bd0c4d57d91d8",
+      "size": 3730077,
+      "version": "5.13.0"
+    },
+    {
+      "file": "reportlab-5.0.1-py3-none-any.whl",
+      "name": "reportlab",
+      "sha256": "1c36e6bb0e71780c72331eba60da7f602e8d4389a8723825af71342e49d791e8",
+      "size": 1957258,
+      "version": "5.0.1"
+    },
+    {
+      "file": "uv-0.8.22-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "name": "uv",
+      "sha256": "8efec4ef5acddc35f0867998c44e0b15fc4dace1e4c26d01443871a2fbb04bf6",
+      "size": 21252972,
+      "version": "0.8.22"
+    }
+  ]
+}

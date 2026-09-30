@@ -1,0 +1,15 @@
+# Closed context: no case material, local credentials, test outputs or host fonts.
+**
+!Dockerfile.pdf
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+!src/**/
+!src/**/*.py
+!src/**/py.typed
+!tools/
+!tools/pdf_build.py
+!tools/pdf-qualified-inputs.json
+src/**/__pycache__/
+src/**/*.egg-info/

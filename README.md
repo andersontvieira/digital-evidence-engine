@@ -28,19 +28,19 @@ na ausência de metadata/trailer. 8B2-A.1 demonstrou viabilidade sintética limi
 de adaptador privado controlado. 8B2-A.1.1 está concluída:
 [ADR 0039 — Controlled ReportLab Adapter Private Coupling](docs/adr/0039-controlled-reportlab-adapter-private-coupling.md)
 Accepted, com acoplamento restrito à superfície enumerada e versão 5.0.1.
-8B2-A permanece incompleta; próximo passo é retomar qualificação/implementação
-sob ADRs 0038 + 0039, sem retomada nesta promoção. 8B2-B não iniciada.
+8B2-A está concluída, com revisão técnica humana aprovada: fundação e adaptador controlado
+implementados e qualificados sob ADRs 0038/0039. Toolchain canônica Linux/amd64,
+seis fontes DejaVu, ToUnicode/subsets, PDFium para validação visual de desenvolvimento,
+materiais de licença e inventário qualificados/preservados tecnicamente.
+[Qualificação, hashes e gates finais](docs/pdf-toolchain-qualification.md).
+8B2-B é o próximo slice e não foi iniciado.
 A arquitetura prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
-ReportLab/pypdf/pypdfium2 e fontes empacotadas são propostas sujeitas à aprovação
-e qualificação explícita de versões, licenças e capacidades em 8B2-A. Nenhuma
-dependência foi instalada ou qualificada nesta promoção. Render canônico proposto
-em Linux/amd64 fixado, não render nativo multiplataforma. A aceitação arquitetural
-não qualifica integralmente ReportLab, fontes, ToUnicode/subsets ou PDFium, nem
-conclui a imagem canônica. Renderer/CLI PDF finais não implementados; nenhum PDF
-gerado ou validado nesta promoção. O protótipo anterior é evidência de viabilidade,
-não gate funcional de produto. Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
+Render canônico em Linux/amd64 fixado, não render nativo multiplataforma.
+Somente probes sintéticos gerados/validados: renderer de produção, CLI PDF,
+PDF final de dossiê/relatório consolidado e publicação PDF não implementados.
+Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
 futura e exclusivamente responsável pela execução real controlada; nenhum caso
-real foi acessado nesta promoção documental.
+real foi acessado na qualificação 8B2-A.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -83,8 +83,8 @@ explicitamente, sem relações automáticas com eventos/findings. WhatsApp perma
 fora do dataset técnico atual; message attachments não resolvidos continuam
 SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade são
 determinísticos: manifesto cobre payloads; SHA256SUMS cobre payloads mais manifesto,
-sem incluir a si próprio. PDF será implementado sob ADRs 0038/0039, com toolchain ainda
-pendente de qualificação em 8B2-A; ZIP/archive e
+sem incluir a si próprio. Renderers PDF finais serão implementados sob ADRs 0038/0039,
+com fundação/toolchain qualificada em 8B2-A; ZIP/archive e
 sua reprodutibilidade exigem escopo separado. Aceitar 8B0 não autoriza implementar
 ou executar essas etapas, nem validar um caso real.
 
@@ -215,7 +215,9 @@ O aplicativo não usa rede, telemetria, upload ou APIs externas. Consulte
 ## Instalação reproduzível
 
 Requer Python 3.12+; a baseline validada é Python 3.12. Dependências de execução:
-Typer, SQLAlchemy 2.x e Pydantic 2.x. pytest, Ruff e mypy são de desenvolvimento.
+Typer, SQLAlchemy 2.x, Pydantic 2.x, ReportLab 5.0.1 e pypdf 6.19.0.
+pytest, Ruff e mypy são de desenvolvimento, assim como pypdfium2 5.13.0,
+usado somente para validação visual PDF, não para rendering de produção.
 uv.lock fixa versões transitivas e hashes, incluindo marcadores Windows/Linux.
 uv 0.8.22 sincroniza o ambiente; setuptools e o layout src são mantidos.
 
@@ -897,7 +899,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B1.0     | Deterministic Dossier Assembly implementation contract — concluída; ADR 0037 Accepted |
 | 8B1       | Deterministic Dossier Assembly — A–G implementados; fechamento sintético Windows/Linux concluído |
 | 8B2.0     | Human PDF Export Contract — concluída; ADR 0038 Accepted             |
-| 8B2-A     | PDF Toolchain Qualification & Foundation — incompleta; API pública falhou em metadata/trailer; próxima etapa: retomada sob ADRs 0038/0039 |
+| 8B2-A     | PDF Toolchain Qualification & Foundation — concluída, revisão técnica humana aprovada; gates sintéticos em docs/pdf-toolchain-qualification.md |
 | 8B2-A.1   | Controlled Adapter Feasibility — viabilidade sintética limitada demonstrada |
 | 8B2-A.1.1 | Controlled ReportLab Adapter Contract — concluída; ADR 0039 Accepted |
 | 8B2-B     | Human Dossier PDF — não iniciada |

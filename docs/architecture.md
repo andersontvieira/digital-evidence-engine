@@ -29,8 +29,8 @@ idênticos. O relatório canônico conserva suas 20 seções e contratos anterio
 Originais excluídos; visuais somente JPEG/PNG contextuais explicitamente selecionados,
 sem relações com eventos/findings. Attachments não resolvidos continuam
 SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF tem contrato
-aceito no ADR 0038 e acoplamento privado restrito aceito no ADR 0039; 8B2-A
-permanece incompleta, com retomada de qualificação/implementação como próximo passo.
+aceito no ADR 0038 e acoplamento privado restrito aceito no ADR 0039; fundação 8B2-A
+concluída/qualificada, com revisão técnica humana aprovada. 8B2-B é o próximo slice, não iniciado.
 ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
@@ -101,17 +101,18 @@ PDF para 8B2 e ZIP/archive para escopo separado; sem acesso real nesta promoçã
 ## Milestone 8B2.0 — contrato de exportação PDF aceito
 
 Concluída após revisão humana sob [ADR 0038 Accepted](adr/0038-human-pdf-export-contract.md).
-8B1-A–G permanece concluída; 8B2-A continua incompleta e 8B2-B não iniciada. A arquitetura
+8B1-A–G permanece concluída; a qualificação posterior 8B2-A está registrada abaixo.
+A arquitetura
 prevê saída separada pdf-presentation-v1, consumindo os dois Markdown aprovados,
 sem mutar directory-v1 ou reconstruir narrativa/snapshots. ReportLab/pypdf/pypdfium2
-e fontes empacotadas são propostas sujeitas à aprovação e qualificação explícita
-de versões, licenças e capacidades em A; nenhuma dependência instalada ou
-qualificada nesta promoção. Render canônico proposto em Linux/amd64 fixado,
+e fontes empacotadas foram propostas para qualificação explícita em A;
+nenhuma dependência foi instalada ou qualificada na promoção documental 8B2.0.
+Render canônico definido em Linux/amd64 fixado,
 não render nativo multiplataforma. Nenhum PDF gerado ou validado nesta promoção; sem alegação
 PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
 responsável pela execução real controlada; nenhum caso real acessado nesta promoção.
-Os últimos gates funcionais de produto continuam sendo os de 8B1-G; os probes
-anteriores são evidência sintética de viabilidade, não qualificação PDF completa.
+Na promoção 8B2.0, os últimos gates eram os de 8B1-G; os probes então disponíveis
+demonstravam viabilidade. Os gates posteriores da fundação estão documentados abaixo.
 
 ## Milestone 8B2-A.1.1 — contrato de adaptador ReportLab aceito
 
@@ -119,16 +120,28 @@ A API pública ReportLab 5.0.1 falhou na ausência de metadata/trailer exigida p
 ADR 0038. 8B2-A.1 investigou o bloqueio e demonstrou viabilidade sintética limitada.
 8B2-A.1.1 concluída sob [ADR 0039 Accepted](adr/0039-controlled-reportlab-adapter-private-coupling.md):
 revisão humana aceitou o risco de manutenção apenas do acoplamento privado exato
-enumerado, restrito ao ReportLab 5.0.1. Artefatos/hashes ainda exigem qualificação.
+enumerado, restrito ao ReportLab 5.0.1. Artefatos/hashes foram qualificados na retomada de A.
 Serialização central permanece no ReportLab; pypdf é validador somente leitura.
 Sem pós-processamento, monkeypatch, fork/modificação do vendor ou uso arbitrário
 de internals. Divergências de versão/shape falham fechadas; upgrades exigem revisão
 e requalificação. Nenhuma decisão do ADR 0038 foi alterada.
 
-Próximo passo é retomar 8B2-A sob ADRs 0038/0039, sem implementação do adaptador
-ou retomada nesta promoção. Fontes, ToUnicode/subsets, PDFium, build/inventário
-canônico e demais gates de A continuam pendentes; renderer/CLI PDF finais não
-implementados. 8B2-B não iniciada; 8B3 permanece futura, sem acesso real.
+A promoção 8B2-A.1.1 foi exclusivamente documental; a implementação e qualificação
+posteriores de A estão registradas a seguir, sem ampliar a superfície privada.
+
+## Milestone 8B2-A — fundação PDF qualificada
+
+Concluída, com revisão técnica humana aprovada, sob ADRs 0038/0039 Accepted.
+Adaptador controlado implementado/qualificado; toolchain canônica Linux/amd64,
+seis fontes DejaVu, embedding/ToUnicode/subsets, PDFium para validação visual de
+desenvolvimento, materiais de licença preservados e inventário canônico qualificados.
+DTOs imutáveis/parser Markdown fechado, budgets e validador read-only pypdf;
+somente probe PDF sintético de duas páginas, sem acesso a caso.
+Gates, versões, hashes e limites em [pdf-toolchain-qualification.md](pdf-toolchain-qualification.md).
+Sem renderer final de produção, CLI PDF, PDF final de dossiê/relatório consolidado
+ou publicação de pdf-presentation-v1. directory-v1 permanece intacto.
+8B2-B é o próximo slice, não iniciado; 8B3 permanece futura e exclusivamente real.
+Sem alegações PDF/A, PDF/UA, assinatura ou certificação.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
@@ -511,7 +524,7 @@ de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031.
 Historicamente, a 8A0 não concluiu Milestone 8 nem o dossiê final. O contrato 8B0
 está aceito e 8B1-A–G foi implementada. O contrato PDF 8B2.0 está aceito sob
 ADR 0038, complementado pelo acoplamento privado aceito no ADR 0039. 8B2-A
-continua incompleta; execução real 8B3 permanece futura.
+está concluída/qualificada, com revisão técnica humana aprovada; 8B2-B não iniciada e execução real 8B3 futura.
 
 ## Report data snapshot (8A1)
 
@@ -585,8 +598,12 @@ Docker fixa base por digest. Windows/Linux usam o mesmo lockfile; Python 3.12 é
 baseline validada. Downloads servem às ferramentas, não à execução do motor.
 Pillow/ImageHash entram na 5B, com transitivas no lock; BeautifulSoup/lxml e
 python-dateutil continuam adiados até uso concreto.
+ReportLab 5.0.1 integra o runtime como fundação do renderer PDF; pypdf 6.19.0
+integra o runtime como validador estrutural somente leitura. pypdfium2 5.13.0 /
+PDFium 153.0.7999.0 é exclusivo de desenvolvimento para validação visual,
+sem rendering de produção por PDFium. Os renderers PDF finais permanecem futuros.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
-ADRs 0007–0039 documentam as decisões as decisões; os seis
+ADRs 0007–0039 documentam as decisões; os seis
 princípios originais continuam válidos.

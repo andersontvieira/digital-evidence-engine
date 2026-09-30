@@ -44,24 +44,21 @@ Docker/Linux Python 3.12.14 e Windows nativo Python 3.12.11. CLI disponível:
 `dee dossier assemble --selection ... --output-dir ...`. Pacote directory-v1 com
 cinco arquivos gerados determinísticos; paridade byte a byte e publicação real
 sem substituição validadas nas duas plataformas. Gates e skips no ADR 0037, seção 20.
-8B2.0 concluída: ADR 0038 permanece Accepted. 8B2-A permanece incompleta: a API
-pública ReportLab 5.0.1 falhou na ausência de metadata/trailer; 8B2-A.1 demonstrou
-viabilidade sintética por acoplamento privado estreito. 8B2-A.1.1 concluída:
-ADR 0039 Accepted após revisão arquitetural humana, somente para a superfície
-privada exata nele enumerada. Pin contratual ReportLab 5.0.1; artefatos/hashes
-exatos ainda exigem qualificação na retomada de A. Divergência de versão/shape
-deve falhar fechada; upgrades exigem revisão/requalificação. Sem monkeypatch,
-pós-processamento ou modificação do vendor. Próximo passo: retomar 8B2-A sob
-ADRs 0038/0039; nenhuma implementação retomada nesta promoção. 8B2-B não iniciada.
+8B2.0 e 8B2-A.1.1 concluídas: ADRs 0038/0039 permanecem Accepted. 8B2-A concluída,
+com revisão técnica humana aprovada: fundação e adaptador controlado ReportLab 5.0.1
+implementados e qualificados somente na superfície privada enumerada no ADR 0039.
+Divergência de versão/shape falha fechada; upgrades exigem revisão/requalificação.
+Sem monkeypatch, pós-processamento ou modificação do vendor. Toolchain Linux/amd64,
+seis fontes DejaVu, ToUnicode/subsets, PDFium para validação visual de desenvolvimento,
+materiais de licença e inventário canônico qualificados/preservados tecnicamente.
+Gates e hashes: [docs/pdf-toolchain-qualification.md](docs/pdf-toolchain-qualification.md).
+8B2-B é o próximo slice, não iniciado; sem renderer final de produção, CLI PDF,
+PDF final de dossiê/relatório consolidado ou publicação de pacote PDF.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
-ReportLab/pypdf/pypdfium2 e fontes empacotadas são propostas sujeitas à aprovação
-e qualificação explícita de versões/licenças/capacidades em 8B2-A; nenhuma instalada
-ou qualificada nesta promoção. Render canônico proposto: Linux/amd64 fixado,
-não render nativo multiplataforma. Nenhum adaptador implementado ou PDF gerado/
-validado nesta promoção; protótipo anterior é evidência de viabilidade limitada,
-não qualificação completa. Sem alegação de
+Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
+Somente probes PDF sintéticos gerados/validados na fundação. Sem alegação de
 PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
-responsável pela execução real controlada. Nenhum caso real acessado nesta promoção
+responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A
 ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
 e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
@@ -75,8 +72,8 @@ dependência nova pelo ADR 0037.
 Originais e legacy excluídos do pacote v1. Visuais são anexos contextuais JPEG/PNG explícitos,
 sem criar relações com eventos/findings. WhatsApp fica fora do dataset representado,
 salvo futura aquisição/parser/análise separadamente aprovados. PDF pertence à 8B2;
-ZIP/archive exige escopo próprio. A retomada de 8B2-A segue ADRs 0038/0039,
-sem execução nesta promoção; suas aceitações não autorizam 8B3 ou acesso real.
+ZIP/archive exige escopo próprio. A fundação 8B2-A segue ADRs 0038/0039;
+sua conclusão não autoriza 8B3 ou acesso real.
 Dados de caso continuam fora do Git.
 Validação real das etapas anteriores autorizada, com snapshots e relatório
 exclusivamente fora do Git; essa autorização não inicia a validação real 8B3.

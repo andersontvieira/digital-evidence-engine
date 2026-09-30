@@ -34,6 +34,10 @@ output/
 *.htm
 *.txt
 *.pdf
+# Reviewed PDF build recipe and public toolchain inventories (not evidence/PDF output).
+!/Dockerfile.pdf
+!/tools/pdf-qualified-inputs.json
+!/docs/pdf-render-environment.json
 *.doc
 *.docx
 *.xls
