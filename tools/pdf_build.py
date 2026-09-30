@@ -221,8 +221,8 @@ def finalize():
     implementation = implementation_inventory(pathlib.Path("/app"))
     inventory = {
         "contract": "dossier.pdf_export/1.0.0",
-        "implementation": "foundation/1.0.0",
-        "style": "qualification-probe/1.0.0",
+        "implementation": "human-dossier/1.0.0",
+        "style": "dossier-v1/1.0.0",
         "python": "3.12.14",
         "base_image": inputs["base_image"],
         "architecture": "x86_64",

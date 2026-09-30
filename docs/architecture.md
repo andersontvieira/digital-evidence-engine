@@ -30,7 +30,8 @@ Originais excluídos; visuais somente JPEG/PNG contextuais explicitamente seleci
 sem relações com eventos/findings. Attachments não resolvidos continuam
 SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF tem contrato
 aceito no ADR 0038 e acoplamento privado restrito aceito no ADR 0039; fundação 8B2-A
-concluída/qualificada, com revisão técnica humana aprovada. 8B2-B é o próximo slice, não iniciado.
+concluída/qualificada, com revisão técnica humana aprovada. 8B2-B implementada e
+qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
@@ -138,10 +139,28 @@ desenvolvimento, materiais de licença preservados e inventário canônico quali
 DTOs imutáveis/parser Markdown fechado, budgets e validador read-only pypdf;
 somente probe PDF sintético de duas páginas, sem acesso a caso.
 Gates, versões, hashes e limites em [pdf-toolchain-qualification.md](pdf-toolchain-qualification.md).
-Sem renderer final de produção, CLI PDF, PDF final de dossiê/relatório consolidado
-ou publicação de pdf-presentation-v1. directory-v1 permanece intacto.
-8B2-B é o próximo slice, não iniciado; 8B3 permanece futura e exclusivamente real.
+O fechamento de A não implementou renderer final, CLI ou publicação PDF;
+o renderer de dossiê posterior está descrito abaixo. directory-v1 permanece intacto.
+8B3 permanece futura e exclusivamente real.
 Sem alegações PDF/A, PDF/UA, assinatura ou certificação.
+
+## Milestone 8B2-B — renderer de dossiê PDF
+
+COMPLETE — HUMAN REVIEW APPROVED, implementada e qualificada sinteticamente.
+`dossier/pdf_renderer.py:render_dossier_pdf(data: bytes) -> bytes` consome somente
+Markdown fornecido: parser fechado → medição/paginação → comparação de duas
+passagens → ControlledCanvas → validação independente antes de retornar bytes.
+Preserva as 14 seções, H3 e conteúdo original; TOC somente H2, bookmarks com raiz
+H1 e filhos H2, destinos ordinais internos e índice de anexos como texto inerte.
+Tabelas de largura fixa repetem headers e conservam linhas lógicas inteiras;
+layout impossível falha UNSUPPORTED_LAYOUT. Fontes, mínimos e margens do ADR 0038
+permanecem fixos. O validador confere cada fragmento com o DTO original, posições,
+repetições e destinos, além das restrições da fundação. Nenhuma nova superfície
+privada ReportLab, dependência, schema ou decisão de ADR.
+Determinismo, PDFium e inventário: [qualificação](pdf-toolchain-qualification.md).
+8B2-A permanece COMPLETE — HUMAN REVIEW APPROVED. 8B2-C NOT STARTED;
+consolidated-report.pdf, CLI/serviço, descoberta,
+manifesto/publicação PDF não implementados; 8B3 futura. Nenhum caso real acessado.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
@@ -524,7 +543,8 @@ de WhatsApp, sem pressupor sua necessidade. Contrato completo no ADR 0031.
 Historicamente, a 8A0 não concluiu Milestone 8 nem o dossiê final. O contrato 8B0
 está aceito e 8B1-A–G foi implementada. O contrato PDF 8B2.0 está aceito sob
 ADR 0038, complementado pelo acoplamento privado aceito no ADR 0039. 8B2-A
-está concluída/qualificada, com revisão técnica humana aprovada; 8B2-B não iniciada e execução real 8B3 futura.
+está concluída/qualificada, com revisão técnica humana aprovada; 8B2-B implementada
+e qualificada sinteticamente, COMPLETE — HUMAN REVIEW APPROVED; execução real 8B3 futura.
 
 ## Report data snapshot (8A1)
 
@@ -601,7 +621,8 @@ python-dateutil continuam adiados até uso concreto.
 ReportLab 5.0.1 integra o runtime como fundação do renderer PDF; pypdf 6.19.0
 integra o runtime como validador estrutural somente leitura. pypdfium2 5.13.0 /
 PDFium 153.0.7999.0 é exclusivo de desenvolvimento para validação visual,
-sem rendering de produção por PDFium. Os renderers PDF finais permanecem futuros.
+sem rendering de produção por PDFium. O renderer de dossiê PDF da 8B2-B está
+concluído e aprovado; o renderer de consolidated-report.pdf permanece futuro.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.

@@ -1,4 +1,4 @@
-"""Independent read-only validator for the foundation's closed synthetic PDF profile."""
+"""Independent read-only validation of the closed foundation and dossier profiles."""
 
 import logging
 import re
@@ -18,6 +18,15 @@ from pypdf.generic import (
 )
 
 from evidence_engine.dossier import pdf_limits as limits
+from evidence_engine.dossier.pdf_model import (
+    DOSSIER_SECTIONS,
+    DOSSIER_TITLE,
+    BulletList,
+    Heading,
+    Paragraph,
+    PresentationDocument,
+    Table,
+)
 from evidence_engine.errors import EvidenceError
 
 _INFO = {
@@ -59,12 +68,31 @@ _FORBIDDEN = frozenset(
 
 
 @dataclass(frozen=True)
+class PdfTextRun:
+    text: str
+    x: float
+    y: float
+    font: str
+    size: float
+    role: str = "body"
+    source: tuple[int, int, int] | None = None
+    start: int = 0
+    end: int = 0
+    toc_entry: int = 0
+
+
+@dataclass(frozen=True)
 class PdfExpectation:
     title: str
     page_text: tuple[str, ...]
     # Fixed ordinal destinations: (title, page index, parent depth).
     outlines: tuple[tuple[str, int, int], ...]
     links: tuple[tuple[int, int], ...]
+    presentation: PresentationDocument | None = None
+    text_runs: tuple[tuple[PdfTextRun, ...], ...] = ()
+    destinations: tuple[tuple[int, float, float], ...] = ()
+    link_destinations: tuple[tuple[int, float, float], ...] = ()
+    link_boxes: tuple[tuple[float, float, float, float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -91,6 +119,221 @@ def _require(condition: bool) -> None:
 
 def _layout(text: str) -> str:
     return re.sub(r"[ \n]+", " ", text).strip(" ")
+
+
+def _check_presentation(expected: PdfExpectation) -> None:
+    """Account for every source code point independently of the painting loop."""
+    document = expected.presentation
+    assert document is not None
+    _require(document.kind == "dossier" and document.title == DOSSIER_TITLE)
+    sources: dict[tuple[int, int, int], str] = {}
+    headings: list[tuple[int, str]] = []
+    tables: dict[int, Table] = {}
+    for index, block in enumerate(document.blocks):
+        if isinstance(block, (Heading, Paragraph)):
+            text = "".join(s.text for s in block.spans)
+            sources[index, -1, -1] = text
+            if isinstance(block, Heading) and block.level in (1, 2):
+                headings.append((index, text))
+        elif isinstance(block, BulletList):
+            for item_index, item in enumerate(block.items):
+                sources[index, item_index, -1] = "".join(s.text for s in item.spans)
+        elif isinstance(block, Table):
+            tables[index] = block
+            for row_index, row in enumerate((block.header, *block.rows)):
+                for column, cell in enumerate(row.cells):
+                    sources[index, row_index, column] = "".join(s.text for s in cell.spans)
+    _require(
+        [text for _, text in headings]
+        == [DOSSIER_TITLE, *(f"{i}. {title}" for i, title in enumerate(DOSSIER_SECTIONS, 1))]
+    )
+    _require(len(expected.text_runs) == len(expected.page_text))
+    _require(len(expected.destinations) == 15 and len(expected.links) == 14)
+    _require(len(expected.link_boxes) == len(expected.link_destinations) == 14)
+    ranks = {key: i for i, key in enumerate(sources)}
+    offsets = dict.fromkeys(sources, 0)
+    seen_sources: set[tuple[int, int, int]] = set()
+    source_pages: dict[tuple[int, int, int], set[int]] = {}
+    repeats: dict[tuple[int, tuple[int, int, int]], int] = {}
+    toc_labels: dict[int, str] = {}
+    toc_numbers: dict[int, str] = {}
+    toc_pages: set[int] = set()
+    toc_titles = 0
+    bullets: list[tuple[int, int, int] | None] = []
+    last_rank = -1
+    for page, runs in enumerate(expected.text_runs):
+        _require(bool(runs))
+        chrome: list[str] = []
+        page_sources: list[tuple[int, tuple[int, int, int], str]] = []
+        for position, run in enumerate(runs):
+            _require(
+                run.font
+                in (
+                    "DejaVuSans",
+                    "DejaVuSans-Bold",
+                    "DejaVuSans-Oblique",
+                    "DejaVuSans-BoldOblique",
+                    "DejaVuSansMono",
+                    "DejaVuSansMono-Bold",
+                )
+                and run.size >= 9
+            )
+            if run.role in ("body", "repeat"):
+                _require(run.source in sources)
+                assert run.source is not None
+                source = sources[run.source]
+                _require(0 <= run.start <= run.end <= len(source))
+                _require(run.text == source[run.start : run.end].removesuffix("\n"))
+                _require(56.68 <= run.x <= 538.60 and 70.85 <= run.y <= 771.03)
+                page_sources.append((position, run.source, run.role))
+                source_pages.setdefault(run.source, set()).add(page)
+                if run.role == "body":
+                    _require(ranks[run.source] >= last_rank and run.start == offsets[run.source])
+                    offsets[run.source] = run.end
+                    seen_sources.add(run.source)
+                    last_rank = ranks[run.source]
+                else:
+                    _require(run.source[0] in tables and run.source[1] == 0)
+                    _require(run.source in seen_sources)
+                    key = (page, run.source)
+                    _require(run.start == repeats.get(key, 0))
+                    repeats[key] = run.end
+            elif run.role in ("header", "footer"):
+                _require(run.source is None and run.size == 9 and run.font == "DejaVuSans")
+                _require(
+                    run.text == ("Dossiê técnico" if run.role == "header" else f"Página {page + 1}")
+                )
+                _require(abs(run.y - (807.874 if run.role == "header" else 34.016)) <= 0.01)
+                chrome.append(run.role)
+            elif run.role == "toc_title":
+                _require(run.text == "Sumário" and run.source is None and page == 0)
+                toc_titles += 1
+                toc_pages.add(page)
+            elif run.role in ("toc_label", "toc_page"):
+                _require(run.source is None and 1 <= run.toc_entry <= 14 and page < 2)
+                _require(run.size == 9 and run.font == "DejaVuSans")
+                toc_pages.add(page)
+                target = toc_labels if run.role == "toc_label" else toc_numbers
+                target[run.toc_entry] = target.get(run.toc_entry, "") + run.text
+            elif run.role == "bullet":
+                _require(run.text == "•" and run.source in sources)
+                assert run.source is not None
+                _require(isinstance(document.blocks[run.source[0]], BulletList))
+                bullets.append(run.source)
+            else:
+                _require(False)
+        _require(chrome == ["header", "footer"])
+        # Every page carrying a logical table row carries precisely its header.
+        for table_index, table in tables.items():
+            row_positions = [
+                p for p, key, _ in page_sources if key[0] == table_index and key[1] > 0
+            ]
+            header_positions = [
+                p for p, key, _ in page_sources if key[0] == table_index and key[1] == 0
+            ]
+            if row_positions:
+                _require(bool(header_positions) and max(header_positions) < min(row_positions))
+                header_keys = {
+                    key for _, key, _ in page_sources if key[0] == table_index and key[1] == 0
+                }
+                _require(
+                    header_keys == {(table_index, 0, col) for col in range(len(table.header.cells))}
+                )
+            if header_positions and table.rows:
+                _require(bool(row_positions))
+        _require(any(r.role in ("body", "toc_label") for r in runs))
+    _require(seen_sources == set(sources))
+    _require(all(offsets[key] == len(text) for key, text in sources.items()))
+    _require(all(end == len(sources[key]) for (_, key), end in repeats.items()))
+    for index, table in tables.items():
+        for row_index, row in enumerate(table.rows, 1):
+            # A logical row (including all wrapped cells) must stay on one page.
+            pages = set().union(
+                *(source_pages[index, row_index, col] for col in range(len(row.cells)))
+            )
+            _require(len(pages) == 1)
+    expected_bullets = [key for key in sources if isinstance(document.blocks[key[0]], BulletList)]
+    _require(bullets == expected_bullets)
+    _require(toc_titles == 1 and set(toc_labels) == set(toc_numbers) == set(range(1, 15)))
+    _require(expected.destinations[1][0] == max(toc_pages) + 1)
+    for ordinal, (index, text) in enumerate(headings):
+        page, _, _ = expected.destinations[ordinal]
+        _require(source_pages[index, -1, -1] == {page})
+        _require(expected.outlines[ordinal] == (text, page, 0 if ordinal == 0 else 1))
+        if ordinal:
+            _require(toc_labels[ordinal] == text and toc_numbers[ordinal] == str(page + 1))
+            _require(expected.link_destinations[ordinal - 1] == expected.destinations[ordinal])
+
+
+def _check_page_text(page: Any, runs: tuple[PdfTextRun, ...]) -> None:
+    observed: list[tuple[str, float, float, str, float]] = []
+    has_text_operator = False
+
+    def before(operator: bytes, operands: Any, cm: Any, tm: Any) -> None:
+        nonlocal has_text_operator
+        if operator == b"BT":
+            has_text_operator = False
+        elif operator == b"Tj":
+            has_text_operator = True
+
+    def visit(text: str, cm: list[float], tm: list[float], font: Any, size: float) -> None:
+        if not text:
+            return
+        # pypdf may infer a separator at Tm/Tf before any string was drawn.
+        # It is not PDF text. Whitespace from actual Tj operators is retained.
+        if not has_text_operator and text.strip(" \n") == "":
+            return
+        _require(font is not None and list(cm) == [1, 0, 0, 1, 0, 0])
+        base_font = str(font.get("/BaseFont"))
+        _require(re.match(r"/[A-Z]{6}\+", base_font) is not None)
+        logical_font = base_font[8:]
+        position = (float(tm[4]), float(tm[5]), logical_font, size)
+        # A public drawString may switch dynamic subsets inside one text matrix.
+        # Join only contiguous fragments at that exact matrix/font/size, never
+        # across cells, lines or pages and never by stripping source whitespace.
+        if observed and observed[-1][1:] == position and not observed[-1][0].endswith("\n"):
+            observed[-1] = (observed[-1][0] + text, *position)
+        else:
+            observed.append((text, *position))
+
+    page.extract_text(visitor_text=visit, visitor_operand_before=before)
+    visible = [run for run in runs if run.text]
+    _require(len(observed) == len(visible))
+    for actual, run in zip(observed, visible, strict=True):
+        text, x, y, font, size = actual
+        if "\x00" in text or "\ufffd" in text and "\ufffd" not in run.text:
+            limits.fail("FONT_UNSUPPORTED")
+        _require(text in (run.text, run.text + "\n"))
+        _require(abs(x - run.x) <= 0.01 and abs(y - run.y) <= 0.01)
+        _require(abs(size - run.size) <= 0.001)
+        _require(font == run.font)
+
+
+def _check_drawing(content: ContentStream) -> None:
+    """Permit only the renderer's black text and pre-text table rectangles."""
+    fill = 0.0
+    painted_text = False
+    for operands, operator in content.operations:
+        if operator == b"cm":
+            _require(list(operands) == [1, 0, 0, 1, 0, 0])
+        elif operator in (b"q", b"Q"):
+            _require(False)
+        elif operator in (b"w", b"G"):
+            _require(list(operands) == [0.5])
+        elif operator == b"g":
+            _require(len(operands) == 1 and float(operands[0]) in (0, 0.9, 1))
+            fill = float(operands[0])
+        elif operator == b"Tj":
+            _require(fill == 0)
+            painted_text = True
+        elif operator == b"re":
+            _require(not painted_text and fill in (0.9, 1) and len(operands) == 4)
+            x, y, width, height = (float(v) for v in operands)
+            _require(width > 0 and height > 0)
+            _require(56.68 <= x < x + width <= 538.60)
+            _require(70.85 <= y < y + height <= 771.03)
+        elif operator == b"B*":
+            _require(not painted_text and fill in (0.9, 1))
 
 
 def _known_dictionary(value: DictionaryObject) -> bool:
@@ -166,6 +409,8 @@ def _known_dictionary(value: DictionaryObject) -> bool:
 
 
 def _validate(data: bytes, expected: PdfExpectation) -> PdfValidation:
+    if expected.presentation is not None:
+        _check_presentation(expected)
     _require(data.startswith(b"%PDF-1.4\n"))
     end = re.search(rb"startxref\s+(\d+)\s+%%EOF\n?\Z", data)
     _require(end is not None)
@@ -256,15 +501,16 @@ def _validate(data: bytes, expected: PdfExpectation) -> PdfValidation:
     }
     _require(len(page_ids) == len(pages))
     links: list[tuple[int, int]] = []
+    link_destinations: list[tuple[int, float, float]] = []
+    link_boxes: list[tuple[float, float, float, float]] = []
     texts = []
     for i, page in enumerate(pages):
         content = ContentStream(page.get_contents(), reader)
-        _require(
-            all(
-                op in (b"cm", b"BT", b"ET", b"Tf", b"TL", b"Tm", b"Tj", b"T*", b"q", b"Q")
-                for _, op in content.operations
-            )
-        )
+        operators = {b"cm", b"BT", b"ET", b"Tf", b"TL", b"Tm", b"Tj", b"T*", b"q", b"Q"}
+        if expected.presentation is not None:
+            operators |= {b"w", b"g", b"G", b"n", b"re", b"B*"}
+            _check_drawing(content)
+        _require(all(op in operators for _, op in content.operations))
         _require(not page.get("/Trans"))
         _require(page.get("/Rotate", 0) == 0)
         for box in (page.mediabox, page.cropbox):
@@ -298,11 +544,26 @@ def _validate(data: bytes, expected: PdfExpectation) -> PdfValidation:
                 isinstance(destination, ArrayObject) and isinstance(destination[0], IndirectObject)
             )
             links.append((i, page_ids[destination[0].idnum]))
+            if expected.presentation is not None:
+                _require(len(destination) == 5 and destination[1] == "/XYZ")
+                link_destinations.append(
+                    (page_ids[destination[0].idnum], float(destination[2]), float(destination[3]))
+                )
+                rect = annotation["/Rect"]
+                _require(len(rect) == 4)
+                link_boxes.append((float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3])))
         extracted = page.extract_text()
-        _require(_layout(extracted) == _layout(expected.page_text[i]))
+        if expected.presentation is None:
+            _require(_layout(extracted) == _layout(expected.page_text[i]))
+        else:
+            _check_page_text(page, expected.text_runs[i])
         texts.append(extracted)
     _require(tuple(links) == expected.links)
+    if expected.presentation is not None:
+        _require(tuple(link_destinations) == expected.link_destinations)
+        _require(tuple(link_boxes) == expected.link_boxes)
     outlines: list[tuple[str, int, int]] = []
+    destinations: list[tuple[int, float, float]] = []
 
     def walk(items: list[Any], depth: int) -> None:
         if depth > limits.MAX_DEPTH:
@@ -315,9 +576,16 @@ def _validate(data: bytes, expected: PdfExpectation) -> PdfValidation:
                 _require(page_number is not None)
                 assert page_number is not None
                 outlines.append((item.title, int(page_number), depth))
+                if expected.presentation is not None:
+                    _require(item["/Type"] == "/XYZ")
+                    destinations.append(
+                        (int(page_number), float(item["/Left"]), float(item["/Top"]))
+                    )
 
     walk(reader.outline, 0)
     _require(tuple(outlines) == expected.outlines)
+    if expected.presentation is not None:
+        _require(tuple(destinations) == expected.destinations)
     return PdfValidation(len(pages), len(seen), tuple(texts))
 
 

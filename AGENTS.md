@@ -52,13 +52,15 @@ Sem monkeypatch, pós-processamento ou modificação do vendor. Toolchain Linux/
 seis fontes DejaVu, ToUnicode/subsets, PDFium para validação visual de desenvolvimento,
 materiais de licença e inventário canônico qualificados/preservados tecnicamente.
 Gates e hashes: [docs/pdf-toolchain-qualification.md](docs/pdf-toolchain-qualification.md).
-8B2-B é o próximo slice, não iniciado; sem renderer final de produção, CLI PDF,
-PDF final de dossiê/relatório consolidado ou publicação de pacote PDF.
+8B2-B COMPLETE — HUMAN REVIEW APPROVED, implementada e qualificada sinteticamente:
+`render_dossier_pdf(data: bytes) -> bytes` consome somente Markdown fornecido,
+preserva as 14 seções e valida texto/layout/TOC/links internos independentemente.
+8B2-C NOT STARTED, não implementada; sem PDF de relatório consolidado, CLI, serviço ou publicação PDF.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
-Somente probes PDF sintéticos gerados/validados na fundação. Sem alegação de
+Probes da fundação e PDFs de dossiê exclusivamente sintéticos gerados/validados. Sem alegação de
 PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
-responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A
+responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A/B
 ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
 e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.

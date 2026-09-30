@@ -20,6 +20,7 @@ PDF_MODULES = (
     "pdf_limits.py",
     "pdf_model.py",
     "pdf_probe.py",
+    "pdf_renderer.py",
     "pdf_reportlab_adapter.py",
     "pdf_validation.py",
 )

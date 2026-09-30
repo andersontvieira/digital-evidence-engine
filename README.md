@@ -33,14 +33,15 @@ implementados e qualificados sob ADRs 0038/0039. Toolchain canônica Linux/amd64
 seis fontes DejaVu, ToUnicode/subsets, PDFium para validação visual de desenvolvimento,
 materiais de licença e inventário qualificados/preservados tecnicamente.
 [Qualificação, hashes e gates finais](docs/pdf-toolchain-qualification.md).
-8B2-B é o próximo slice e não foi iniciado.
+8B2-B COMPLETE — HUMAN REVIEW APPROVED, implementada e qualificada sinteticamente:
+`render_dossier_pdf(data: bytes) -> bytes` apresenta somente o Markdown de dossiê fornecido.
 A arquitetura prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico em Linux/amd64 fixado, não render nativo multiplataforma.
-Somente probes sintéticos gerados/validados: renderer de produção, CLI PDF,
-PDF final de dossiê/relatório consolidado e publicação PDF não implementados.
+Probes e PDFs de dossiê gerados/validados exclusivamente com dados sintéticos.
+8B2-C NOT STARTED; PDF do relatório consolidado, CLI/serviço PDF e publicação PDF não implementados.
 Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
 futura e exclusivamente responsável pela execução real controlada; nenhum caso
-real foi acessado na qualificação 8B2-A.
+real foi acessado na qualificação 8B2-A/B.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -83,8 +84,8 @@ explicitamente, sem relações automáticas com eventos/findings. WhatsApp perma
 fora do dataset técnico atual; message attachments não resolvidos continuam
 SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade são
 determinísticos: manifesto cobre payloads; SHA256SUMS cobre payloads mais manifesto,
-sem incluir a si próprio. Renderers PDF finais serão implementados sob ADRs 0038/0039,
-com fundação/toolchain qualificada em 8B2-A; ZIP/archive e
+sem incluir a si próprio. O renderer de dossiê PDF 8B2-B usa ADRs 0038/0039 e a
+fundação/toolchain qualificada em 8B2-A; relatório consolidado PDF permanece futuro. ZIP/archive e
 sua reprodutibilidade exigem escopo separado. Aceitar 8B0 não autoriza implementar
 ou executar essas etapas, nem validar um caso real.
 
@@ -902,5 +903,6 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B2-A     | PDF Toolchain Qualification & Foundation — concluída, revisão técnica humana aprovada; gates sintéticos em docs/pdf-toolchain-qualification.md |
 | 8B2-A.1   | Controlled Adapter Feasibility — viabilidade sintética limitada demonstrada |
 | 8B2-A.1.1 | Controlled ReportLab Adapter Contract — concluída; ADR 0039 Accepted |
-| 8B2-B     | Human Dossier PDF — não iniciada |
+| 8B2-B     | Human Dossier PDF — COMPLETE — HUMAN REVIEW APPROVED |
+| 8B2-C     | Consolidated Technical Report PDF — não iniciada |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |
