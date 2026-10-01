@@ -41,10 +41,15 @@ Probes e PDFs de dossiê/relatório gerados/validados exclusivamente com dados s
 8B2-C COMPLETE — HUMAN REVIEW APPROVED: `render_consolidated_report_pdf(data: bytes) -> bytes`
 apresenta os bytes de `technical/canonical/consolidated-report.md` como
 `human/consolidated-report.pdf`, com 20 seções e sem regenerar a narrativa.
-CLI/serviço PDF, descoberta de pacote e publicação PDF não implementados.
+8B2-D COMPLETE — HUMAN REVIEW APPROVED: captura read-only de directory-v1,
+binding dos dois Markdown a PDFs já produzidos, manifesto técnico de duas entradas
+e SHA256SUMS de três entradas. Recheck de identidade/árvore/bytes, sem snapshot
+atômico, nova narrativa ou rendering durante o binding. Contratos, limites e gates
+em [qualificação](docs/pdf-toolchain-qualification.md).
+8B2-E NOT STARTED: staging/publicação, CLI/serviço PDF e descoberta não implementados.
 Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
 futura e exclusivamente responsável pela execução real controlada; nenhum caso
-real foi acessado na qualificação 8B2-A/B/C.
+real foi acessado na qualificação 8B2-A/B/C/D.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -909,4 +914,6 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B2-A.1.1 | Controlled ReportLab Adapter Contract — concluída; ADR 0039 Accepted |
 | 8B2-B     | Human Dossier PDF — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B2-C     | Consolidated Technical Report PDF — COMPLETE — HUMAN REVIEW APPROVED |
+| 8B2-D     | PDF Export Source Binding & Integrity — COMPLETE — HUMAN REVIEW APPROVED |
+| 8B2-E     | PDF Export Service & CLI — NOT STARTED |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |

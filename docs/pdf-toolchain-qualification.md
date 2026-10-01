@@ -6,6 +6,8 @@ Estado: COMPLETE — HUMAN REVIEW APPROVED. Qualificação sintética sob
 sem alterar suas decisões. A extensão 8B2-B foi implementada e qualificada
 sinteticamente: COMPLETE — HUMAN REVIEW APPROVED; ver seu fechamento abaixo.
 8B2-C: COMPLETE — HUMAN REVIEW APPROVED, qualificação sintética registrada abaixo.
+8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade qualificados abaixo.
+8B2-E: NOT STARTED.
 8B3 permanece futura.
 
 Revisão técnica humana final: PASS. Foram verificados o inventário do ambiente
@@ -510,6 +512,155 @@ os hashes PDF/pixels de B/C e o render_environment_id
 A revisão humana a 200 DPI não altera os goldens automatizados a 144 DPI.
 Sem mudança de código, testes, dependências, ADRs ou inventário; nenhum caso real
 acessado. A aprovação de C não conclui toda a 8B2 nem inicia a futura 8B3.
+
+## Fechamento sintético 8B2-D — revisão humana aprovada
+
+8B2-A/B/C permanecem **COMPLETE — HUMAN REVIEW APPROVED**.
+8B2-D: **COMPLETE — HUMAN REVIEW APPROVED**. 8B2-E: **NOT STARTED**. 8B3: **FUTURE**.
+A revisão técnica/de integridade humana foi concluída e aprovada; sem execução real.
+
+### Captura e binding
+
+`pdf_package.py` captura explicitamente um directory-v1 publicado, somente leitura.
+Valida dossier.selection/1.0.0, dossier.package_manifest/1.0.0, sums, campos fechados,
+ordenação, papéis/classes/paths, cardinalidades e árvore exata. Faz streaming de
+todos os arquivos para conferir tamanho/SHA-256, reutilizando checks 8B1/Foundation
+de path/handle, links/reparse/hardlinks e arquivos regulares. Retém bytes imutáveis
+somente dos dois Markdown, metadata de seleção, manifesto e sums. Snapshot/media
+são opacos: sem semântica de snapshot, regeneração de relatório, assembly ou decode.
+
+`capture_source_package` conserva baselines de identidade/estabilidade. Recheck
+verifica novamente toda a árvore, tipos, identidade, tamanho e hash; o binding
+revalida a origem antes e depois. Detecta mudanças observáveis, **sem promessa de
+snapshot atômico**. A futura orquestração E deve usar essa fronteira de recheck.
+
+Bindings fixos, sem mapping/profile/expectativa do caller:
+
+- human/dossier.md → human/dossier.pdf;
+- technical/canonical/consolidated-report.md → human/consolidated-report.pdf.
+
+`bind_pdf_export` recebe PDFs já produzidos. Deriva a expectativa com parser/layout
+existentes sobre os bytes Markdown capturados, valida cada PDF independentemente
+e obtém page_count do resultado. Tamanho/hash vêm dos bytes reais; não renderiza
+outro PDF, não modifica PDFs nem amplia superfície privada ReportLab.
+
+### Manifesto, sums e limites
+
+Manifesto: policy_id dossier.pdf_export_manifest, policy_version 1.0.0,
+export_policy_id dossier.pdf_export, export_policy_version 1.0.0,
+delivery_profile pdf-presentation-v1, render_environment_id verificado,
+source_package exatamente manifest_sha256/sha256sums_sha256 dos bytes originais,
+entries exatamente duas, ordenadas por package_path ASCII. Cada entrada contém
+somente package_path, source_package_path, source_byte_size, source_sha256,
+byte_size, sha256 e page_count. Inteiros exatos (não bool), tamanhos não negativos,
+páginas positivas; hashes lowercase de 64 hex. JSON UTF-8 sem BOM, ensure_ascii=True,
+sort_keys=True, separators=(",", ":"), allow_nan=False e exatamente um LF final.
+
+SHA256SUMS contém exatamente três linhas, nesta ordem:
+
+1. human/consolidated-report.pdf;
+2. human/dossier.pdf;
+3. integrity/pdf-export-manifest.json.
+
+Formato: hash lowercase, dois espaços ASCII, path POSIX e LF, sem CRLF ou
+self-entry. Dependência acíclica PDFs → manifesto → sums. `verify_pdf_export`
+confere exatamente quatro paths/bytes lógicos e refaz o binding independente.
+Mesmos inputs em roots distintos e permutação interna de entradas produzem bytes
+iguais; ordem serializada fora do contrato é rejeitada. Nenhum path absoluto,
+data, label, case_reference ou metadata de host é acrescentado ao manifesto.
+
+Limites preservados: origem 1 GiB/261 arquivos; Markdown 64 MiB cada/128 MiB total;
+administrativos 64 MiB cada; JSON depth 64, 1.000.000 nodes, lexema numérico 128;
+PDF 64 MiB cada/128 MiB total/1000 páginas cada; manifesto e sums novos 1 MiB cada;
+output de quatro arquivos 130 MiB. Paths: 1024 bytes/32 componentes/255 bytes por
+componente. Limites de papel/classe/contagem de 8B1 preservados, sem máximo
+semântico de 20 snapshots. Erros sanitizados DOSSIER_PDF_INVALID_PACKAGE,
+INTEGRITY_MISMATCH, INPUT_CHANGED, RESOURCE_LIMIT e INTERNAL_ERROR; erros existentes
+de parser/ambiente/validador conservados quando aplicáveis. Sem novos códigos.
+
+### Inventário e regressão
+
+render_environment_id de D:
+
+```text
+ca80ae373d0edcb42d6616abd5043e45e7b96ec5f7d3dc0ad391d4b71f12fe97
+```
+
+Comparação com C: somente implementation_files mudou, pela inclusão de
+src/evidence_engine/dossier/pdf_package.py. Hashes de todos os arquivos anteriores,
+dependências, fonts, licenças, base e ferramentas permaneceram iguais.
+implementation=human-documents/1.0.0 e style=dossier-v1/1.0.0 preservados.
+Nenhum renderer/validador/model/limits/adapter existente foi alterado.
+
+SHA dossier B: c2365cdf93c11e9ce55347b3a8126036c393befb030e3aa2ce0b7e12cede67f2.
+SHA consolidado representativo C:
+81a2e238ddde30ab435e2069decf55a973e08058c37f92958489ce1836344227.
+Todos os fingerprints PDF/PDFium existentes de B/C, inclusive extremos, passaram
+inalterados nos 82 testes e na suíte completa. As quatro sequências RGB permanecem:
+
+```text
+B representative: a3b521279af0383c0593ca11e7ea105aefe35757b5da084090b5b56b20627779
+B extreme:        4415bc9ea298319c3508bceee51eda0e775a306065247d5b3fc91d87f3528a49
+C representative: 194bf73adb3e4111d2a063e6fb2001791957e8bbce5e6c0e2dc6ee340d24e852
+C extreme:        31495af761544f820fdd2da81de3125665a22a1cb9ba170025854d3f64d60c4b
+```
+
+### Gates finais de D
+
+Imagem digital-evidence-engine:pdf-integrity, Dockerfile.pdf sem alteração,
+Python 3.12.14 Linux/amd64. Runtime sem rede, root/check-out read-only, usuário
+não root, cap-drop ALL/no-new-privileges, tmpfs, memória 2 GiB e 2 CPUs; sem mounts
+de caso. Pytest com `-p no:cacheprovider`; Ruff sem cache; mypy cache em /tmp.
+
+| Gate | Resultado | Tempo | Exit |
+| --- | --- | ---: | ---: |
+| 8B2-D dirigido | 156 passed | 60.69 s | 0 |
+| B/C renderers, PDFs e PDFium | 82 passed | 191.22 s | 0 |
+| Fundação/parser/inventário | 110 passed | 43.31 s | 0 |
+| 8B1 completo, incluindo package/integrity/stability | 792 passed, 3 skipped | 35.72 s | 0 |
+| Pytest completo | 2236 coletados; 2233 passed, 3 skipped, 0 failures/errors | 501.41 s | 0 |
+| Ruff check --no-cache . (retomada) | PASS | — | 0 |
+| Ruff format --check --no-cache . (retomada) | PASS, 198 arquivos | — | 0 |
+| mypy --cache-dir=/tmp/dee-mypy src (retomada) | PASS, 87 arquivos | — | 0 |
+| git diff --check | PASS | — | 0 |
+
+Saída final íntegra do processo pytest anterior recuperada com exit 0 na retomada;
+não se repetiu a suíte completa nem os gates dirigidos. Checks Ruff/format/mypy
+foram repetidos uma vez, conforme solicitado, após confirmar o pytest completo.
+Os três skips são os testes existentes de junctions e publicação nativa Windows;
+nenhum teste PDF dispensado. Não se declara validação nativa Windows de D.
+
+Sem caso real, CASE_ROOT/DB/originals/working na camada nova; testes exclusivamente
+sintéticos. Sem mudança de dependência, lockfile, Dockerfile, schema/migration,
+ADRs ou superfície privada. pypdf somente leitura, sem pós-processamento.
+D retorna DTOs/bytes: staging/publicação, ownership/fsync, workers/timeouts e
+CLI/serviço PDF pertencem a E, ainda não iniciada. Não conclui toda a 8B2.
+
+### Aprovação humana final de integridade 8B2-D
+
+Revisão humana concluída e aprovada: CODE REVIEW, STRUCTURAL REVIEW,
+AUTOMATED QUALIFICATION e INTEGRITY HUMAN REVIEW: **PASS**.
+8B2-D: **COMPLETE — HUMAN REVIEW APPROVED**.
+
+Artefatos sintéticos revisados: pdf-export-manifest.json, 1106 bytes, SHA-256
+`ff2be0b2aca84511dc9a72366ba041cd5e6f293a860bc4e128425fbb609f9ab1`;
+SHA256SUMS.txt, 281 bytes. O resumo de revisão foi conferido e é consistente
+com o manifesto.
+
+A revisão confirmou JSON canônico UTF-8 sem BOM, somente LF e exatamente um LF
+final; contrato fechado, duas entradas em ordem ASCII, mappings Markdown→PDF
+fixos, tamanhos/hashes de origem e PDF, page_count, hashes de integridade do pacote
+fonte e render_environment_id esperado. Nos sums: três entradas em ordem ASCII,
+delimitador de dois espaços, digests lowercase de 64 hex, sem self-entry ou linha
+extra; o digest do manifesto coincide independentemente com o SHA-256 acima.
+
+Promoção exclusivamente documental, sem requalificação ou alteração de código,
+testes, dependências, ADRs, inventário, hashes PDF/PDFium ou gates registrados.
+Preservado render_environment_id
+`ca80ae373d0edcb42d6616abd5043e45e7b96ec5f7d3dc0ad391d4b71f12fe97`.
+8B2-A/B/C continuam COMPLETE — HUMAN REVIEW APPROVED; 8B2-E NOT STARTED e
+8B3 FUTURE. Sem acesso real ou implementação de staging/publicação/CLI/serviço
+PDF nesta promoção; sem promessa de snapshot atômico ou certificação.
 
 ## Limitações e fronteira
 

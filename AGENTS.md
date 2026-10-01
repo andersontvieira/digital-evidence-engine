@@ -59,12 +59,18 @@ preserva as 14 seções e valida texto/layout/TOC/links internos independentemen
 apresenta os bytes de technical/canonical/consolidated-report.md como
 human/consolidated-report.pdf, sem regenerar narrativa. Compartilha layout com B,
 preservando seus bytes/pixels; perfil fechado de 20 H2, 20 entradas TOC e 21 destinos/outlines.
-Sem CLI, serviço, descoberta de pacote, manifesto ou publicação PDF.
+8B2-D COMPLETE — HUMAN REVIEW APPROVED: pdf_package captura/verifica directory-v1
+read-only, vincula os dois Markdown capturados a PDFs já produzidos e gera bytes
+determinísticos de dossier.pdf_export_manifest/1.0.0 e SHA256SUMS. Expectativas
+derivadas dos bytes capturados; page_count vem da validação PDF independente,
+sem rendering no binding. Recheck de árvore/identidade/tamanho/hash antes/depois;
+sem promessa de snapshot atômico. Não reinterpreta snapshots nem decodifica mídia.
+8B2-E NOT STARTED: sem staging/publicação, CLI, serviço, workers ou descoberta PDF.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
 Probes da fundação e PDFs de dossiê/relatório exclusivamente sintéticos gerados/validados. Sem alegação de
 PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
-responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A/B/C
+responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A/B/C/D
 ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
 e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.

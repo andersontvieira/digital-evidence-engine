@@ -33,6 +33,8 @@ aceito no ADR 0038 e acoplamento privado restrito aceito no ADR 0039; fundação
 concluída/qualificada, com revisão técnica humana aprovada. 8B2-B implementada e
 qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 8B2-C implementada e qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
+8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade read-only.
+8B2-E: NOT STARTED; serviço/CLI e staging/publicação PDF permanecem futuros.
 ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
@@ -159,8 +161,9 @@ permanecem fixos. O validador confere cada fragmento com o DTO original, posiç�
 repetições e destinos, além das restrições da fundação. Nenhuma nova superfície
 privada ReportLab, dependência, schema ou decisão de ADR.
 Determinismo, PDFium e inventário: [qualificação](pdf-toolchain-qualification.md).
-8B2-A permanece COMPLETE — HUMAN REVIEW APPROVED. CLI/serviço, descoberta,
-manifesto/publicação PDF não implementados; 8B3 futura. Nenhum caso real acessado.
+8B2-A permanece COMPLETE — HUMAN REVIEW APPROVED. CLI/serviço, descoberta e
+publicação PDF não implementados; manifesto/binding no slice D abaixo.
+8B3 futura. Nenhum caso real acessado.
 
 ## Milestone 8B2-C — renderer de relatório consolidado PDF
 
@@ -181,6 +184,38 @@ Nenhuma nova regra de layout, dependência ou superfície privada ReportLab.
 SHA e pixels aprovados de B permanecem inalterados. Inventário, fingerprints e
 gates completos em [qualificação](pdf-toolchain-qualification.md).
 8B2-C não conclui toda a 8B2 nem autoriza execução real; 8B3 permanece futura.
+
+## Milestone 8B2-D — captura, binding e integridade PDF
+
+COMPLETE — HUMAN REVIEW APPROVED. `dossier/pdf_package.py` recebe explicitamente um
+directory-v1 publicado e reutiliza primitivas read-only 8B1/Foundation. Valida
+metadata dossier.selection/1.0.0, manifesto, sums, papéis/classes/paths, cobertura
+exata da árvore, identidade, tamanhos e hashes de todos os arquivos. Retém apenas
+os dois Markdown e três arquivos administrativos; não interpreta snapshots,
+decodifica mídia ou chama produtores/assembly/DB. Não modifica directory-v1.
+
+Bindings fixos: `human/dossier.md` → `human/dossier.pdf` e
+`technical/canonical/consolidated-report.md` → `human/consolidated-report.pdf`.
+`bind_pdf_export` deriva a expectativa do parser/layout existente sobre os bytes
+capturados e valida independentemente os PDFs fornecidos; page_count vem dessa
+validação, e tamanho/SHA-256 dos próprios bytes. Sem rendering no binding,
+mapeamento/expectativa fornecidos pelo caller ou expansão privada ReportLab.
+
+`dossier.pdf_export_manifest/1.0.0` contém exatamente duas entradas ordenadas,
+hashes dos manifesto/sums originais e render_environment_id verificado.
+SHA256SUMS contém exatamente três entradas ordenadas: human/consolidated-report.pdf,
+human/dossier.pdf, integrity/pdf-export-manifest.json; exclui a si próprio.
+Serialização JSON canônica e sums ASCII/LF, sem metadata de host/datas.
+`verify_pdf_export` verifica os quatro bytes/paths lógicos e refaz o binding.
+
+Captura e recheck seguem identidade/estabilidade existentes e rehash de toda a
+árvore, antes/depois do binding; mudança observável falha INPUT_CHANGED. Não há
+promessa de snapshot atômico. Budgets e erros DOSSIER_PDF_ preservam ADR 0038;
+limites, inventário, testes e fingerprints em [qualificação](pdf-toolchain-qualification.md).
+DTOs/bytes em memória: nenhuma escrita ou publicação de output. 8B2-E NOT STARTED,
+responsável por futura orquestração, staging/publicação, workers e serviço/CLI.
+8B2-A/B/C permanecem COMPLETE — HUMAN REVIEW APPROVED; 8B3 FUTURE.
+Sem acesso real, CASE_ROOT, DB, originals/working ou rede na camada nova.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
