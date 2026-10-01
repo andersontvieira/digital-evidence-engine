@@ -37,11 +37,14 @@ materiais de licença e inventário qualificados/preservados tecnicamente.
 `render_dossier_pdf(data: bytes) -> bytes` apresenta somente o Markdown de dossiê fornecido.
 A arquitetura prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico em Linux/amd64 fixado, não render nativo multiplataforma.
-Probes e PDFs de dossiê gerados/validados exclusivamente com dados sintéticos.
-8B2-C NOT STARTED; PDF do relatório consolidado, CLI/serviço PDF e publicação PDF não implementados.
+Probes e PDFs de dossiê/relatório gerados/validados exclusivamente com dados sintéticos.
+8B2-C COMPLETE — HUMAN REVIEW APPROVED: `render_consolidated_report_pdf(data: bytes) -> bytes`
+apresenta os bytes de `technical/canonical/consolidated-report.md` como
+`human/consolidated-report.pdf`, com 20 seções e sem regenerar a narrativa.
+CLI/serviço PDF, descoberta de pacote e publicação PDF não implementados.
 Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
 futura e exclusivamente responsável pela execução real controlada; nenhum caso
-real foi acessado na qualificação 8B2-A/B.
+real foi acessado na qualificação 8B2-A/B/C.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -85,7 +88,8 @@ fora do dataset técnico atual; message attachments não resolvidos continuam
 SOURCE_LIMITATION. Markdown, JSON, paths e artefatos de integridade são
 determinísticos: manifesto cobre payloads; SHA256SUMS cobre payloads mais manifesto,
 sem incluir a si próprio. O renderer de dossiê PDF 8B2-B usa ADRs 0038/0039 e a
-fundação/toolchain qualificada em 8B2-A; relatório consolidado PDF permanece futuro. ZIP/archive e
+fundação/toolchain qualificada em 8B2-A; o renderer consolidado 8B2-C compartilha esse
+layout, preserva os goldens de B e tem revisão humana aprovada. ZIP/archive e
 sua reprodutibilidade exigem escopo separado. Aceitar 8B0 não autoriza implementar
 ou executar essas etapas, nem validar um caso real.
 
@@ -904,5 +908,5 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B2-A.1   | Controlled Adapter Feasibility — viabilidade sintética limitada demonstrada |
 | 8B2-A.1.1 | Controlled ReportLab Adapter Contract — concluída; ADR 0039 Accepted |
 | 8B2-B     | Human Dossier PDF — COMPLETE — HUMAN REVIEW APPROVED |
-| 8B2-C     | Consolidated Technical Report PDF — não iniciada |
+| 8B2-C     | Consolidated Technical Report PDF — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |

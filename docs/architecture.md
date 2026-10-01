@@ -32,6 +32,7 @@ SOURCE_LIMITATION; WhatsApp fora do dataset técnico representado. PDF tem contr
 aceito no ADR 0038 e acoplamento privado restrito aceito no ADR 0039; fundação 8B2-A
 concluída/qualificada, com revisão técnica humana aprovada. 8B2-B implementada e
 qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
+8B2-C implementada e qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
@@ -158,9 +159,28 @@ permanecem fixos. O validador confere cada fragmento com o DTO original, posiç�
 repetições e destinos, além das restrições da fundação. Nenhuma nova superfície
 privada ReportLab, dependência, schema ou decisão de ADR.
 Determinismo, PDFium e inventário: [qualificação](pdf-toolchain-qualification.md).
-8B2-A permanece COMPLETE — HUMAN REVIEW APPROVED. 8B2-C NOT STARTED;
-consolidated-report.pdf, CLI/serviço, descoberta,
+8B2-A permanece COMPLETE — HUMAN REVIEW APPROVED. CLI/serviço, descoberta,
 manifesto/publicação PDF não implementados; 8B3 futura. Nenhum caso real acessado.
+
+## Milestone 8B2-C — renderer de relatório consolidado PDF
+
+COMPLETE — HUMAN REVIEW APPROVED. API
+`dossier/pdf_renderer.py:render_consolidated_report_pdf(data: bytes) -> bytes`.
+Fonte: bytes já fornecidos de `technical/canonical/consolidated-report.md`;
+destino de apresentação: `human/consolidated-report.pdf`. A API retorna bytes,
+sem ler pacote, snapshots, DB, CASE_ROOT ou originals/working e sem chamar o
+produtor de relatório. Fixtures produzidas somente nos testes sintéticos.
+
+O mesmo layout atende exatamente dois perfis fechados: dossier e consolidated-report.
+O parser existente preserva o H1 e os 20 H2; header fixo `Relatório técnico consolidado`,
+20 entradas/links internos no TOC e 21 destinos/outlines ordinais, sem H3 nos bookmarks.
+O validador seleciona título, ordem, header e cardinalidades contratuais pelo kind,
+independentemente do plano. Tabelas até oito colunas reutilizam largura fixa,
+headers repetidos e linhas indivisíveis; layout impossível falha fechado.
+Nenhuma nova regra de layout, dependência ou superfície privada ReportLab.
+SHA e pixels aprovados de B permanecem inalterados. Inventário, fingerprints e
+gates completos em [qualificação](pdf-toolchain-qualification.md).
+8B2-C não conclui toda a 8B2 nem autoriza execução real; 8B3 permanece futura.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
@@ -544,7 +564,8 @@ Historicamente, a 8A0 não concluiu Milestone 8 nem o dossiê final. O contrato 
 está aceito e 8B1-A–G foi implementada. O contrato PDF 8B2.0 está aceito sob
 ADR 0038, complementado pelo acoplamento privado aceito no ADR 0039. 8B2-A
 está concluída/qualificada, com revisão técnica humana aprovada; 8B2-B implementada
-e qualificada sinteticamente, COMPLETE — HUMAN REVIEW APPROVED; execução real 8B3 futura.
+e qualificada sinteticamente, COMPLETE — HUMAN REVIEW APPROVED; 8B2-C COMPLETE
+— HUMAN REVIEW APPROVED, somente sintética; execução real 8B3 futura.
 
 ## Report data snapshot (8A1)
 
@@ -622,7 +643,8 @@ ReportLab 5.0.1 integra o runtime como fundação do renderer PDF; pypdf 6.19.0
 integra o runtime como validador estrutural somente leitura. pypdfium2 5.13.0 /
 PDFium 153.0.7999.0 é exclusivo de desenvolvimento para validação visual,
 sem rendering de produção por PDFium. O renderer de dossiê PDF da 8B2-B está
-concluído e aprovado; o renderer de consolidated-report.pdf permanece futuro.
+concluído e aprovado; o renderer de consolidated-report.pdf da 8B2-C está
+concluído/qualificado sinteticamente e aprovado em revisão humana.
 
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.

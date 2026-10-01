@@ -4,7 +4,9 @@ Estado: COMPLETE — HUMAN REVIEW APPROVED. Qualificação sintética sob
 [ADR 0038 Accepted](adr/0038-human-pdf-export-contract.md) e
 [ADR 0039 Accepted](adr/0039-controlled-reportlab-adapter-private-coupling.md),
 sem alterar suas decisões. A extensão 8B2-B foi implementada e qualificada
-sinteticamente: COMPLETE — HUMAN REVIEW APPROVED; ver seu fechamento abaixo. 8B3 permanece futura.
+sinteticamente: COMPLETE — HUMAN REVIEW APPROVED; ver seu fechamento abaixo.
+8B2-C: COMPLETE — HUMAN REVIEW APPROVED, qualificação sintética registrada abaixo.
+8B3 permanece futura.
 
 Revisão técnica humana final: PASS. Foram verificados o inventário do ambiente
 canônico, o render_environment_id, o escopo do adaptador controlado ReportLab,
@@ -264,7 +266,7 @@ O link do índice vira `Índice de anexos (annex-index.md)`, sem anotação de a
 
 Nenhuma dependência, fonte, licença, Dockerfile ou ADR mudou. O adaptador ADR 0039
 permanece intacto; layout usa APIs públicas ReportLab, pypdf somente leitura.
-Inventário atual: 35 distribuições, 6093 payloads, seis fontes, 204 licenças e
+Inventário qualificado em B: 35 distribuições, 6093 payloads, seis fontes, 204 licenças e
 **dez fontes de implementação** (sete `pdf_*.py` e os três suportes explícitos).
 O glob existente inclui `pdf_renderer.py`; o teste de inventário foi atualizado.
 Identificadores: `implementation=human-dossier/1.0.0`, `style=dossier-v1/1.0.0`.
@@ -360,6 +362,155 @@ A revisão humana a 200 DPI não substitui nem altera os goldens automatizados
 a 144 DPI registrados acima. CLI/serviço/pacote/publicação PDF não implementados;
 nenhum caso real acessado. A aprovação de B não conclui toda a 8B2 nem inicia C/8B3.
 
+## Fechamento sintético 8B2-C — revisão humana aprovada
+
+8B2-A e 8B2-B permanecem COMPLETE — HUMAN REVIEW APPROVED.
+8B2-C: **COMPLETE — HUMAN REVIEW APPROVED**. 8B3: FUTURE.
+Isso não conclui toda a 8B2 nem autoriza execução real.
+
+API `render_consolidated_report_pdf(data: bytes) -> bytes` no renderer existente.
+Consome somente os bytes fornecidos de `technical/canonical/consolidated-report.md`
+para apresentar `human/consolidated-report.pdf`; não lê pacote/snapshots, não chama
+build_consolidated_model/render_markdown e não acessa DB, CASE_ROOT ou originals/working.
+Layout compartilhado com `render_dossier_pdf`, sem duplicação ou mudança de estilo.
+Perfis fechados dossier/consolidated-report; expectativas independentes do validador
+por kind, título, H2 ordenados, header e cardinalidades. Relatório: 20 H2,
+20 entradas/links GoTo do TOC e 21 destinos/outlines ordinais; H3 somente no corpo.
+Header `Relatório técnico consolidado`, footer `Página N`. Tabelas de 2/3/4/5/6/8
+colunas com largura igual, wrapping, headers repetidos e linhas indivisíveis.
+Linha impossível falha DOSSIER_PDF_UNSUPPORTED_LAYOUT, sem truncamento ou redução de fonte.
+
+### Inventário e preservação de 8B2-B
+
+Imagem desta qualificação: `digital-evidence-engine:pdf-consolidated`, construída
+com o mesmo `Dockerfile.pdf`, base, dependências, fontes e artefatos fixados.
+Identificadores: `implementation=human-documents/1.0.0`;
+`style=dossier-v1/1.0.0` permanece inalterado. Mesmos dez arquivos cobertos pelo
+inventário fechado. Frente a B, somente `implementation` e `implementation_files`
+diferem; neste último, mudaram apenas pdf_renderer.py e pdf_validation.py.
+Distribuições/payloads, fontes, licenças e todos os demais campos são idênticos.
+Inventário regenerado após estabilização, com render_environment_id:
+
+```text
+1e15c83725d5e5baba7bedc5b3c52465b12612e3f5d173696567635fdc3da671
+```
+
+Substitui o ID de B para esta implementação, sem alterar os artefatos qualificados
+da toolchain. O SHA representativo aprovado de B permanece exatamente:
+
+```text
+c2365cdf93c11e9ce55347b3a8126036c393befb030e3aa2ce0b7e12cede67f2
+```
+
+Os dois pixel goldens de B permanecem inalterados:
+
+```text
+representativo: a3b521279af0383c0593ca11e7ea105aefe35757b5da084090b5b56b20627779
+extremo:       4415bc9ea298319c3508bceee51eda0e775a306065247d5b3fc91d87f3528a49
+```
+
+### Fixtures consolidadas sintéticas
+
+Definidas em `tests/test_pdf_consolidated_renderer.py`; nenhuma evidência real.
+O produtor Markdown é usado apenas para construir a fixture representativa nos
+testes. A fixture extrema exercita H3 W/F/G, listas, spans, escapes, tokens longos
+e tabela de oito colunas. Validação PDF independente passou para ambas.
+
+| Fixture | Páginas | Bytes | SHA-256 PDF |
+| --- | ---: | ---: | --- |
+| representative() | 17 | 229162 | 81a2e238ddde30ab435e2069decf55a973e08058c37f92958489ce1836344227 |
+| extreme() | 7 | 219747 | 9df405048a2d11ca992d568ff33d1a014c638a35238f9cf4e0b1a56818b10133 |
+
+PDFium a 144 DPI, RGB/branco, 1191 × 1684 pixels. SHA-256 da concatenação ASCII
+ordenada dos hashes dos pixels decodificados por página:
+
+```text
+representativo: 194bf73adb3e4111d2a063e6fb2001791957e8bbce5e6c0e2dc6ee340d24e852
+extremo:       31495af761544f820fdd2da81de3125665a22a1cb9ba170025854d3f64d60c4b
+```
+
+Duas rasterizações por fixture, bounds de glifos/corpo/células, ausência de páginas
+vazias e interseções de caixas de texto verificadas automaticamente. Sem substituir
+a revisão visual humana, posteriormente aprovada conforme registro abaixo. Dez processos independentes, diretórios
+temporários distintos e alternância consolidado/dossiê/consolidado/dossiê preservam
+bytes. As duas fixtures também conservaram bytes/pixels após reinício de um
+container temporário restrito; container de teste removido após exit 0.
+PDFs/PNGs não são adicionados ao Git.
+
+### Gates finais de C
+
+Mesmo runtime Linux/amd64 restrito: rede none, raiz e checkout read-only, usuário
+não root, cap-drop ALL/no-new-privileges e tmpfs; sem mounts de caso. Reproduzir com
+os comandos acima usando a imagem `digital-evidence-engine:pdf-consolidated`.
+
+| Gate | Resultado | Tempo | Exit |
+| --- | --- | ---: | ---: |
+| C: estrutura/layout/validação/determinismo | 42 passed, 2 deselected | 105.26 s | 0 |
+| C: PDF/PDFium goldens | 2 passed, 42 deselected | 15.30 s | 0 |
+| B: todos os testes, SHA/pixels originais | 38 passed | 151.83 s | 0 |
+| Fundação PDF / parser / inventário | 109 passed | 80.86 s | 0 |
+| Regressão 8B1 | 792 passed, 3 skipped | 66.81 s | 0 |
+| Pytest completo | 2079 coletados; 2076 passed, 3 skipped, 0 failed/errors | 514.34 s | 0 |
+| Ruff check --no-cache . | PASS | — | 0 |
+| Ruff format --check --no-cache . | PASS, 196 arquivos | — | 0 |
+| mypy --cache-dir=/tmp/dee-mypy src | PASS, 86 arquivos | — | 0 |
+| git diff --check | PASS | — | 0 |
+
+Os 44 testes novos incluem corrupção de fonte/plano/PDF, troca de perfil,
+navegação/chrome, gramática proibida, conteúdo ativo e limites de página/linha.
+Os três skips permanecem os mesmos testes exclusivos de Windows registrados em A.
+A saída completa do pytest iniciado antes da interrupção foi recuperada com exit 0;
+não se repetiu a suíte completa nem os gates dirigidos na retomada. Ruff/format/mypy
+foram executados uma vez após confirmar esse resultado. Nenhum gate PDF dispensado.
+
+Sem alteração de dependências, lockfile, Dockerfile, schema, ADRs, adapter ou
+superfície privada ReportLab. pypdf somente leitura, sem reescrita/pós-processamento.
+Sem CLI/serviço PDF, descoberta, binding manifesto/SHA256SUMS ou publicação de pacote.
+Nenhum caso real acessado. A qualificação continua limitada às fixtures sintéticas
+e ao ambiente canônico; tabelas densas podem quebrar identificadores em várias linhas.
+
+### Aprovação técnica e visual humana final de 8B2-C
+
+Revisão humana concluída e aprovada pelo operador:
+
+- 8B2-C CODE REVIEW: PASS.
+- 8B2-C STRUCTURAL REVIEW: PASS.
+- 8B2-C AUTOMATED QUALIFICATION: PASS.
+- 8B2-C VISUAL HUMAN REVIEW: PASS.
+- 8B2-C: COMPLETE — HUMAN REVIEW APPROVED.
+- 8B2-A e 8B2-B: COMPLETE — HUMAN REVIEW APPROVED.
+- 8B3: FUTURE.
+
+A revisão humana renderizou e inspecionou independentemente todas as **24 páginas**
+dos dois PDFs sintéticos a **200 DPI**. A validação PDF independente já havia
+passado para ambos. Artefatos revisados:
+
+| PDF sintético | Páginas | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| 8B2-C-representative.pdf | 17 | 229162 | 81a2e238ddde30ab435e2069decf55a973e08058c37f92958489ce1836344227 |
+| 8B2-C-extreme.pdf | 7 | 219747 | 9df405048a2d11ca992d568ff33d1a014c638a35238f9cf4e0b1a56818b10133 |
+
+Confirmados título, TOC de 20 entradas e seus números de página, header/footer
+consistentes e hierarquia H1/H2/H3 coerente. Parágrafos, negrito, literais e bullets
+legíveis; acentos portugueses e texto especial sintético corretamente apresentados.
+Tabelas permanecem nos limites do corpo/página, inclusive a tabela extrema de oito
+colunas, sem clipping ou sobreposição. Headers repetidos aparecem nas continuações;
+linhas lógicas permanecem visualmente intactas. A tabela final de provenance
+continua corretamente entre as páginas 16–17. Sem páginas vazias acidentais,
+glifos visivelmente quebrados, visuais embutidos ou colisões entre texto/header/footer.
+
+Tabelas técnicas densas de colunas iguais podem quebrar identificadores longos de
+forma acentuada, sem clipping, truncamento ou sobreposição; comportamento aceito
+como não bloqueante sob o ADR 0038.
+
+Esta promoção é somente documental, sem requalificação técnica, testes ou rendering.
+Permanecem os 2079 testes coletados, 2076 passed e três skips do gate registrado,
+os hashes PDF/pixels de B/C e o render_environment_id
+`1e15c83725d5e5baba7bedc5b3c52465b12612e3f5d173696567635fdc3da671`.
+A revisão humana a 200 DPI não altera os goldens automatizados a 144 DPI.
+Sem mudança de código, testes, dependências, ADRs ou inventário; nenhum caso real
+acessado. A aprovação de C não conclui toda a 8B2 nem inicia a futura 8B3.
+
 ## Limitações e fronteira
 
 This is technical toolchain qualification, not legal advice.
@@ -367,7 +518,7 @@ No legal compliance certification. No PDF/A claim. No PDF/UA claim.
 No digital-signature claim. No forensic certification. No real case used.
 
 8B2-B dossier renderer: COMPLETE — HUMAN REVIEW APPROVED.
-Final consolidated-report PDF has not been implemented.
+Consolidated-report PDF renderer: COMPLETE — HUMAN REVIEW APPROVED.
 Sem serviço/CLI PDF, publicação de pdf-presentation-v1, pacote real, ZIP ou
 execução 8B3. directory-v1 e schema v5 preservados. A qualificação é do perfil
 sintético fechado e da imagem canônica; futuros slices devem qualificar suas

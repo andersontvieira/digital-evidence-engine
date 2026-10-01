@@ -1,4 +1,4 @@
-"""Independent read-only validation of the closed foundation and dossier profiles."""
+"""Independent read-only validation of foundation and both closed human profiles."""
 
 import logging
 import re
@@ -21,6 +21,8 @@ from evidence_engine.dossier import pdf_limits as limits
 from evidence_engine.dossier.pdf_model import (
     DOSSIER_SECTIONS,
     DOSSIER_TITLE,
+    REPORT_SECTIONS,
+    REPORT_TITLE,
     BulletList,
     Heading,
     Paragraph,
@@ -125,7 +127,20 @@ def _check_presentation(expected: PdfExpectation) -> None:
     """Account for every source code point independently of the painting loop."""
     document = expected.presentation
     assert document is not None
-    _require(document.kind == "dossier" and document.title == DOSSIER_TITLE)
+    # Select contractual expectations from the kind, never from renderer counts.
+    sections: tuple[str, ...]
+    if document.kind == "dossier":
+        title, sections, header, count = DOSSIER_TITLE, DOSSIER_SECTIONS, "Dossiê técnico", 14
+    elif document.kind == "consolidated-report":
+        title, sections, header, count = (
+            REPORT_TITLE,
+            REPORT_SECTIONS,
+            "Relatório técnico consolidado",
+            20,
+        )
+    else:
+        limits.fail("PDF_VALIDATION_FAILURE")
+    _require(document.title == expected.title == title and len(sections) == count)
     sources: dict[tuple[int, int, int], str] = {}
     headings: list[tuple[int, str]] = []
     tables: dict[int, Table] = {}
@@ -145,11 +160,13 @@ def _check_presentation(expected: PdfExpectation) -> None:
                     sources[index, row_index, column] = "".join(s.text for s in cell.spans)
     _require(
         [text for _, text in headings]
-        == [DOSSIER_TITLE, *(f"{i}. {title}" for i, title in enumerate(DOSSIER_SECTIONS, 1))]
+        == [title, *(f"{i}. {section}" for i, section in enumerate(sections, 1))]
     )
     _require(len(expected.text_runs) == len(expected.page_text))
-    _require(len(expected.destinations) == 15 and len(expected.links) == 14)
-    _require(len(expected.link_boxes) == len(expected.link_destinations) == 14)
+    _require(len(expected.destinations) == len(expected.outlines) == count + 1)
+    _require(
+        len(expected.links) == len(expected.link_boxes) == len(expected.link_destinations) == count
+    )
     ranks = {key: i for i, key in enumerate(sources)}
     offsets = dict.fromkeys(sources, 0)
     seen_sources: set[tuple[int, int, int]] = set()
@@ -200,9 +217,7 @@ def _check_presentation(expected: PdfExpectation) -> None:
                     repeats[key] = run.end
             elif run.role in ("header", "footer"):
                 _require(run.source is None and run.size == 9 and run.font == "DejaVuSans")
-                _require(
-                    run.text == ("Dossiê técnico" if run.role == "header" else f"Página {page + 1}")
-                )
+                _require(run.text == (header if run.role == "header" else f"Página {page + 1}"))
                 _require(abs(run.y - (807.874 if run.role == "header" else 34.016)) <= 0.01)
                 chrome.append(run.role)
             elif run.role == "toc_title":
@@ -210,7 +225,7 @@ def _check_presentation(expected: PdfExpectation) -> None:
                 toc_titles += 1
                 toc_pages.add(page)
             elif run.role in ("toc_label", "toc_page"):
-                _require(run.source is None and 1 <= run.toc_entry <= 14 and page < 2)
+                _require(run.source is None and 1 <= run.toc_entry <= count and page < 2)
                 _require(run.size == 9 and run.font == "DejaVuSans")
                 toc_pages.add(page)
                 target = toc_labels if run.role == "toc_label" else toc_numbers
@@ -254,7 +269,7 @@ def _check_presentation(expected: PdfExpectation) -> None:
             _require(len(pages) == 1)
     expected_bullets = [key for key in sources if isinstance(document.blocks[key[0]], BulletList)]
     _require(bullets == expected_bullets)
-    _require(toc_titles == 1 and set(toc_labels) == set(toc_numbers) == set(range(1, 15)))
+    _require(toc_titles == 1 and set(toc_labels) == set(toc_numbers) == set(range(1, count + 1)))
     _require(expected.destinations[1][0] == max(toc_pages) + 1)
     for ordinal, (index, text) in enumerate(headings):
         page, _, _ = expected.destinations[ordinal]

@@ -1,4 +1,4 @@
-"""Bounded dossier-only presentation: supplied Markdown -> deterministic PDF bytes."""
+"""Two closed human presentation profiles: supplied Markdown -> deterministic PDF."""
 
 import math
 import unicodedata
@@ -11,6 +11,7 @@ from evidence_engine.dossier import pdf_limits as limits
 from evidence_engine.dossier.pdf_environment import FONT_NAMES, register_fonts, verify_environment
 from evidence_engine.dossier.pdf_model import (
     BulletList,
+    DocumentKind,
     Heading,
     Paragraph,
     PresentationDocument,
@@ -88,6 +89,8 @@ class _Plan:
 
 class _Layout:
     def __init__(self, document: PresentationDocument) -> None:
+        if document.kind not in ("dossier", "consolidated-report"):
+            limits.fail("UNSUPPORTED_MARKDOWN")
         self.document = document
         self.pages: list[_Page] = []
         self.y = TOP
@@ -415,7 +418,9 @@ class _Layout:
             layout_page.runs.extend(
                 (
                     PdfTextRun(
-                        "Dossiê técnico",
+                        "Dossiê técnico"
+                        if self.document.kind == "dossier"
+                        else "Relatório técnico consolidado",
                         LEFT,
                         round(A4[1] - 12 * MM, 3),
                         FONT_NAMES[0],
@@ -481,9 +486,18 @@ def _paint(plan: _Plan) -> bytes:
 
 def render_dossier_pdf(data: bytes) -> bytes:
     """Render supplied dossier Markdown only; no source paths, package or case I/O."""
+    return _render_pdf(data, "dossier")
+
+
+def render_consolidated_report_pdf(data: bytes) -> bytes:
+    """Render supplied canonical report Markdown without rebuilding its narrative."""
+    return _render_pdf(data, "consolidated-report")
+
+
+def _render_pdf(data: bytes, kind: DocumentKind) -> bytes:
     try:
         verify_environment()
-        document = parse_presentation_bytes(data, "dossier")
+        document = parse_presentation_bytes(data, kind)
         register_fonts()
         first = _Layout(document).build()
         second = _Layout(document).build()
