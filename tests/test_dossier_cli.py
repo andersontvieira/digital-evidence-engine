@@ -132,6 +132,9 @@ def test_cli_import_boundary():
         "pathlib",
         "typing",
         "typer",
+        "typer.core",
+        "evidence_engine.dossier.pdf_worker",
+        "evidence_engine.dossier.pdf_service",
         "evidence_engine.dossier.service",
         "evidence_engine.errors",
     }

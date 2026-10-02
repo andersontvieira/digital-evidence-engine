@@ -34,7 +34,8 @@ concluída/qualificada, com revisão técnica humana aprovada. 8B2-B implementad
 qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 8B2-C implementada e qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade read-only.
-8B2-E: NOT STARTED; serviço/CLI e staging/publicação PDF permanecem futuros.
+8B2-E: COMPLETE — HUMAN REVIEW APPROVED; serviço/worker híbridos e publicação PDF
+qualificados sinteticamente em bind Linux/WSL ext4. 8B2-F/G: NOT STARTED.
 ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
@@ -212,10 +213,54 @@ Captura e recheck seguem identidade/estabilidade existentes e rehash de toda a
 árvore, antes/depois do binding; mudança observável falha INPUT_CHANGED. Não há
 promessa de snapshot atômico. Budgets e erros DOSSIER_PDF_ preservam ADR 0038;
 limites, inventário, testes e fingerprints em [qualificação](pdf-toolchain-qualification.md).
-DTOs/bytes em memória: nenhuma escrita ou publicação de output. 8B2-E NOT STARTED,
-responsável por futura orquestração, staging/publicação, workers e serviço/CLI.
+As APIs D permanecem restritas a DTOs/bytes em memória, sem escrita/publicação.
+A orquestração, staging/publicação, worker e serviço/CLI pertencem à 8B2-E abaixo.
 8B2-A/B/C permanecem COMPLETE — HUMAN REVIEW APPROVED; 8B3 FUTURE.
 Sem acesso real, CASE_ROOT, DB, originals/working ou rede na camada nova.
+
+## Milestone 8B2-E — serviço e publicação PDF
+
+COMPLETE — HUMAN REVIEW APPROVED, sob ADRs 0038/0039 inalterados. Supervisor em
+`pdf_service.py`: preflight operacional, paths/overlap, staging irmão privado,
+scratch próprio, subprocesso, deadlines, verificação operacional final e publicação.
+Worker em `pdf_worker.py`: captura D em memória, rendering consolidado antes do
+dossiê, binding D, quatro escritas exclusivas/fsynced, releitura/verificação D do
+staging e recheck final da captura original. Não envia Markdown/PDF por IPC e não
+publica. Supervisor não reconstrói captura/narrativa nem valida semanticamente PDF.
+
+Dois pipes dedicados, JSON canônico fechado, sequência/ACK; 4096 bytes por mensagem,
+64 KiB acumulados por direção. stdout/stderr separados, limitados a 64 KiB cada.
+Hooks inertes fora da supervisão preservam APIs/bytes/pixels B/C. Deadline monotônico
+global de 600 s começa antes do preflight; cada render/validação, inclusive validações
+aninhadas em D, recebe 120 s. Supervisor encerra por SIGKILL e reap antes de cleanup.
+Worker impõe RLIMIT_AS de 1 GiB; container exige 2 GiB, swap adicional zero, pids 64,
+2 CPUs, raiz RO, usuário não root, capabilities removidas e isolamento de rede.
+
+Scratch fica dentro de staging e é contabilizado até 256 MiB. Worker sai do scratch
+antes do handshake de remoção; após READY e exit 0, supervisor confere ownership,
+árvore exata, tamanhos/hashes, destino ausente, relação de paths e prazo. Fsync de
+diretórios precede uma única renameat2(RENAME_NOREPLACE), sem replace/merge/copy,
+retry ambíguo ou I/O após sucesso confirmado. Cleanup remove somente staging próprio;
+não se promete cleanup após SIGKILL/host crash ou durabilidade elétrica.
+
+CLI: `dee dossier pdf --input-package PATH --output-dir PATH`, opções obrigatórias
+e únicas; sucesso `DOSSIER_PDF_OK\n` somente em stdout/exit 0; falha
+`ERROR: DOSSIER_PDF_<CODE>\n` somente em stderr/exit 2. Help não acessa dados/runtime.
+Serviço não reentrante no mesmo processo (INTERNAL_ERROR), preservando ownership do
+subreaper. Em processos separados, concorrência ao mesmo destino preserva o vencedor
+e retorna OUTPUT_EXISTS ao perdedor. `dossier assemble` permanece compatível.
+
+Qualificação positiva em Linux/amd64 canônico, entrada em bind RO e parent de saída
+em bind Linux/WSL ext4 RW. Windows pode hospedar esse container; não é exportação
+PDF nativa Windows. O bind Windows 9p/drvfs testado retornou EINVAL para destino
+ausente; não qualificou nesse ambiente. Não é política universal contra 9p: o
+allowlist permanece inalterado, e falha de publicação continua PUBLICATION_FAILURE
+(DOSSIER_PDF_PUBLICATION_FAILURE no domínio PDF), sem fallback.
+Gates, inventário e hashes em [qualificação](pdf-toolchain-qualification.md).
+Fonte não é snapshot atômico; corrida residual após recheck permanece explícita.
+Sem dados reais, PDF/A, PDF/UA, assinatura ou certificação. Revisões de código,
+estrutura, qualificação automatizada, implantação, integridade e visual: PASS.
+A/B/C/D/E estão COMPLETE — HUMAN REVIEW APPROVED; F/G NOT STARTED; 8B3 FUTURE.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 

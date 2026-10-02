@@ -46,10 +46,20 @@ binding dos dois Markdown a PDFs já produzidos, manifesto técnico de duas entr
 e SHA256SUMS de três entradas. Recheck de identidade/árvore/bytes, sem snapshot
 atômico, nova narrativa ou rendering durante o binding. Contratos, limites e gates
 em [qualificação](docs/pdf-toolchain-qualification.md).
-8B2-E NOT STARTED: staging/publicação, CLI/serviço PDF e descoberta não implementados.
+8B2-E COMPLETE — HUMAN REVIEW APPROVED: serviço/worker híbridos e CLI
+`dee dossier pdf --input-package ... --output-dir ...` publicam quatro arquivos
+em pdf-presentation-v1 por renameat2(RENAME_NOREPLACE), sem fallback.
+Sucesso: stdout `DOSSIER_PDF_OK\n`, stderr vazio, exit 0; falha: stdout vazio,
+stderr `ERROR: DOSSIER_PDF_<CODE>\n`, exit 2. As duas opções são obrigatórias e únicas.
+Qualificação positiva: Linux/amd64 canônico, com entrada RO e saída em bind
+Linux/WSL ext4; Windows pode hospedar o container. O bind Windows 9p/drvfs observado
+retornou EINVAL para destino ausente e não é alvo qualificado nessa configuração;
+isso não afirma que todo 9p falhe. Revisões de código, estrutura, qualificação
+automatizada, implantação, integridade e visual: PASS. Detalhes, hashes e gates em
+[qualificação](docs/pdf-toolchain-qualification.md). 8B2-F e 8B2-G NOT STARTED.
 Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
 futura e exclusivamente responsável pela execução real controlada; nenhum caso
-real foi acessado na qualificação 8B2-A/B/C/D.
+real foi acessado na qualificação 8B2-A/B/C/D/E.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -915,5 +925,7 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B2-B     | Human Dossier PDF — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B2-C     | Consolidated Technical Report PDF — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B2-D     | PDF Export Source Binding & Integrity — COMPLETE — HUMAN REVIEW APPROVED |
-| 8B2-E     | PDF Export Service & CLI — NOT STARTED |
+| 8B2-E     | PDF Export Service & CLI — COMPLETE — HUMAN REVIEW APPROVED |
+| 8B2-F     | PDF Presentation Qualification — NOT STARTED |
+| 8B2-G     | PDF Export Final Closure — NOT STARTED |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |

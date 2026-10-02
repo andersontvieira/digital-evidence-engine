@@ -606,6 +606,18 @@ def _validate(data: bytes, expected: PdfExpectation) -> PdfValidation:
 
 def validate_pdf_bytes(data: bytes, expected: PdfExpectation) -> PdfValidation:
     """No writer, repair, filesystem, subprocess or source-document reconstruction."""
+    phase: limits.Phase | None = None
+    if expected.presentation is not None:
+        phase = (
+            "VALIDATE_DOSSIER"
+            if expected.presentation.kind == "dossier"
+            else "VALIDATE_CONSOLIDATED"
+        )
+    with limits.phase_boundary(phase):
+        return _validate_pdf_bytes(data, expected)
+
+
+def _validate_pdf_bytes(data: bytes, expected: PdfExpectation) -> PdfValidation:
     if len(data) > limits.MAX_PDF_BYTES:
         limits.fail("RESOURCE_LIMIT")
     handler = _ParserWarnings()

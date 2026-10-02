@@ -496,14 +496,17 @@ def render_consolidated_report_pdf(data: bytes) -> bytes:
 
 def _render_pdf(data: bytes, kind: DocumentKind) -> bytes:
     try:
-        verify_environment()
-        document = parse_presentation_bytes(data, kind)
-        register_fonts()
-        first = _Layout(document).build()
-        second = _Layout(document).build()
-        if first != second:
-            limits.fail("RENDER_FAILURE")
-        pdf = _paint(second)
+        with limits.phase_boundary(
+            "RENDER_DOSSIER" if kind == "dossier" else "RENDER_CONSOLIDATED"
+        ):
+            verify_environment()
+            document = parse_presentation_bytes(data, kind)
+            register_fonts()
+            first = _Layout(document).build()
+            second = _Layout(document).build()
+            if first != second:
+                limits.fail("RENDER_FAILURE")
+            pdf = _paint(second)
         validate_pdf_bytes(pdf, second.expected)
         return pdf
     except EvidenceError:

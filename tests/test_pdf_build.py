@@ -23,7 +23,9 @@ PDF_MODULES = (
     "pdf_probe.py",
     "pdf_renderer.py",
     "pdf_reportlab_adapter.py",
+    "pdf_service.py",
     "pdf_validation.py",
+    "pdf_worker.py",
 )
 SUPPORT = (
     "src/evidence_engine/__init__.py",

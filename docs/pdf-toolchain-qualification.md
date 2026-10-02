@@ -7,7 +7,8 @@ sem alterar suas decisões. A extensão 8B2-B foi implementada e qualificada
 sinteticamente: COMPLETE — HUMAN REVIEW APPROVED; ver seu fechamento abaixo.
 8B2-C: COMPLETE — HUMAN REVIEW APPROVED, qualificação sintética registrada abaixo.
 8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade qualificados abaixo.
-8B2-E: NOT STARTED.
+8B2-E: COMPLETE — HUMAN REVIEW APPROVED; fechamento sintético e gates abaixo.
+8B2-F e 8B2-G: NOT STARTED.
 8B3 permanece futura.
 
 Revisão técnica humana final: PASS. Foram verificados o inventário do ambiente
@@ -516,7 +517,8 @@ acessado. A aprovação de C não conclui toda a 8B2 nem inicia a futura 8B3.
 ## Fechamento sintético 8B2-D — revisão humana aprovada
 
 8B2-A/B/C permanecem **COMPLETE — HUMAN REVIEW APPROVED**.
-8B2-D: **COMPLETE — HUMAN REVIEW APPROVED**. 8B2-E: **NOT STARTED**. 8B3: **FUTURE**.
+Estado naquele fechamento: 8B2-D: **COMPLETE — HUMAN REVIEW APPROVED**.
+8B2-E: **NOT STARTED**. 8B3: **FUTURE**. O fechamento posterior E consta abaixo.
 A revisão técnica/de integridade humana foi concluída e aprovada; sem execução real.
 
 ### Captura e binding
@@ -658,9 +660,162 @@ Promoção exclusivamente documental, sem requalificação ou alteração de có
 testes, dependências, ADRs, inventário, hashes PDF/PDFium ou gates registrados.
 Preservado render_environment_id
 `ca80ae373d0edcb42d6616abd5043e45e7b96ec5f7d3dc0ad391d4b71f12fe97`.
-8B2-A/B/C continuam COMPLETE — HUMAN REVIEW APPROVED; 8B2-E NOT STARTED e
-8B3 FUTURE. Sem acesso real ou implementação de staging/publicação/CLI/serviço
+Naquela promoção, 8B2-A/B/C continuavam COMPLETE — HUMAN REVIEW APPROVED;
+8B2-E NOT STARTED e 8B3 FUTURE. Sem acesso real ou implementação de staging/publicação/CLI/serviço
 PDF nesta promoção; sem promessa de snapshot atômico ou certificação.
+
+## Fechamento sintético 8B2-E — revisão humana aprovada
+
+8B2-A/B/C/D: **COMPLETE — HUMAN REVIEW APPROVED**.
+8B2-E: **COMPLETE — HUMAN REVIEW APPROVED**.
+8B2-F/G: **NOT STARTED**. 8B3: **FUTURE**.
+
+### Implementação e fronteiras
+
+Arquitetura híbrida: supervisor controla preflight, paths/overlap, staging/scratch,
+processos/deadlines e publicação; worker mantém CapturedSourcePackage em memória,
+renderiza consolidado antes do dossiê, chama binding D, escreve quatro arquivos
+exclusivos/fsynced, relê staging para verificação D e faz recheck final da origem.
+Worker nunca publica; supervisor não refaz captura, narrativa ou validação PDF.
+
+IPC usa dois pipes dedicados (eventos/ACK), JSON canônico fechado, 4096 bytes por
+mensagem e 64 KiB por direção; stdout/stderr têm limites separados de 64 KiB.
+Deadline global monotônico de 600 s desde antes do preflight e 120 s por fase de
+render/validação, incluindo chamadas D aninhadas. SIGKILL/reap precede cleanup.
+Peer é criado antes do RLIMIT_AS: falha em impor/verificar o limite transmite
+ENVIRONMENT_UNSUPPORTED, sem ser reduzida a crash genérico. Worker: AS 1 GiB;
+container/cgroup: memória 2 GiB, swap adicional zero, pids 64 e 2 CPUs.
+
+Staging é privado, exclusivo, irmão do destino no mesmo filesystem. Scratch próprio
+interno, limite 256 MiB; handshake após worker fechar handles/sair do cwd precede
+remoção e verificação dos quatro arquivos. READY exige exit 0 e encerramento dos
+processos; supervisor verifica árvore/hashes/ownership, paths, prazo e fsync antes
+de uma única renameat2(RENAME_NOREPLACE). Sem replace/merge/copy fallback, retry
+após publicação ambígua ou filesystem I/O após sucesso confirmado. Cleanup somente
+de staging com ownership provado. Fonte não é snapshot atômico; há corrida residual
+após o último recheck. Sem promessa de cleanup após host crash/SIGKILL ou durabilidade
+elétrica. Serviço não reentrante no mesmo processo retorna INTERNAL_ERROR; processos
+CLI separados disputando o mesmo destino preservam o vencedor e retornam OUTPUT_EXISTS
+ao perdedor. Testes cobrem ambos os comportamentos.
+
+`dee dossier pdf --input-package PATH --output-dir PATH`: opções obrigatórias únicas.
+Sucesso: exit 0, stdout exato `DOSSIER_PDF_OK\n`, stderr vazio. Falhas inclusive sintaxe:
+exit 2, stdout vazio, stderr exato `ERROR: DOSSIER_PDF_<CODE>\n`. Help não abre input
+nem verifica ambiente. `dossier assemble` permanece compatível.
+
+### Qualificação de implantação e publicação
+
+Imagem candidata: `sha256:d3f54de75a5e681a82521fddeaf96349fcf3c09efffb869aa3d6cf9f88b8bc75`.
+Docker Desktop/WSL2 hospeda Linux/amd64 canônico, Python 3.12.14. Windows pode ser
+host do container; isso não é exportação PDF nativa Windows.
+Gate positivo utilizou bind Linux/WSL **ext4**, não bind de diretório Windows.
+Probe novo: destino ausente PASS; destino existente EEXIST (17), sentinela
+preservado; parents/staging/destino compartilham st_dev=2128 naquele runtime.
+
+Pacote 8B1 inteiramente sintético: 11 arquivos, 39805 bytes, assembly exit 0 e
+verificação independente 8B1 PASS. Em novo container, pacote exposto em bind próprio
+RO e parent da saída em bind próprio ext4 RW. Preflight sem monkeypatch confirmou:
+Linux/x86_64; UID 1000; CapEff/CapPrm/CapInh/CapBnd/CapAmb zero; NoNewPrivs=1;
+raiz RO; somente interface lo; cgroup v2 `0::/`; memory.max=2147483648,
+memory.swap.max=0, pids.max=64 e cpu.max=`200000 100000`. Não inferir controle dos
+aliases do host somente de mountinfo; isolamento/controle dos mounts continua
+pré-requisito de implantação. O runtime não faz build/download automático.
+
+CLI real sem bypass: exit 0, stdout `DOSSIER_PDF_OK\n`, stderr vazio. Verificação
+externa D após retorno confirmou quatro arquivos, manifesto/sums/bindings válidos,
+fonte inalterada e nenhum staging remanescente. PDFs desse pacote sintético:
+consolidado 7 páginas, dossiê 8 páginas. Inspeção externa não altera a regra de zero
+I/O pelo serviço após publicação confirmada.
+
+Limitação negativa observada: bind Windows-backed **9p/drvfs**, no mesmo Docker
+Desktop/WSL2, retornou EINVAL (22, Invalid argument) em renameat2 NOREPLACE com
+destino ausente; com destino existente retornou EEXIST e preservou o sentinela.
+Revalidação e fsync passaram; falha ocorreu na syscall e cleanup passou. Controles
+tmpfs, volume Docker ext4 e bind Linux/WSL ext4 passaram. Essa configuração 9p/drvfs
+não é alvo qualificado de publicação; não se afirma que toda implementação 9p falhe.
+Allowlist e produto não foram alterados para contornar a falha. PUBLICATION_FAILURE
+permanece fail-closed (DOSSIER_PDF_PUBLICATION_FAILURE no serviço PDF), sem fallback.
+
+### Inventário e preservação
+
+render_environment_id final:
+
+```text
+ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca
+```
+
+Comparado a D, somente implementation_files mudou: pdf_limits.py, pdf_renderer.py,
+pdf_validation.py e inclusão de pdf_service.py/pdf_worker.py. Dependências, fontes,
+font source hashes, base, OS/toolchain, versões, implementation human-documents/1.0.0
+e style dossier-v1/1.0.0 permaneceram iguais. Testes não entram no inventário.
+O ID provisório do Checkpoint 1 foi substituído pelo candidato final acima.
+
+B/C preservaram bytes PDF e todos os goldens PDFium. SHA-256 representativos:
+
+- B: `c2365cdf93c11e9ce55347b3a8126036c393befb030e3aa2ce0b7e12cede67f2`.
+- C: `81a2e238ddde30ab435e2069decf55a973e08058c37f92958489ce1836344227`.
+
+### Gates finais
+
+| Gate | Resultado | Tempo | Exit |
+| --- | --- | --- | --- |
+| E completo | 112 passed | 94.41 s | 0 |
+| D | 156 passed | 81.09 s | 0 |
+| B/C + PDFium | 82 passed | 261.15 s | 0 |
+| Foundation/model/build/inventário | 112 passed | 57.35 s | 0 |
+| 8B1 serviço/publicação | 60 passed, 1 skipped | 9.36 s | 0 |
+| 8B1 completo | 792 passed, 3 skipped | 51.39 s | 0 |
+| Full pytest, execução única | 2350 collected, 2347 passed, 3 skipped, 0 failures/errors | 693.51 s | 0 |
+| test_pdf_service após wrapping | 27 passed, 0 skipped/failures | 57.18 s | 0 |
+| Ruff check --no-cache | PASS | — | 0 |
+| Ruff format --check --no-cache | 204 files already formatted | — | 0 |
+| mypy --cache-dir=/tmp/dee-mypy src | 89 source files, no issues | — | 0 |
+| git diff --check | PASS | — | 0 |
+
+Os três skips do full pytest exigem Windows nativo (junctions/no-replace).
+Após full pytest, a única alteração Python foi wrapping de dois literais de teste
+para corrigir E501 em tests/test_pdf_service.py. AST completa e valores UTF-8 antes/
+depois são idênticos; parametrização, erros, timeouts e fixtures não mudaram.
+O teste dirigido acima foi repetido; full pytest não foi repetido por estilo.
+Nenhum byte de produção/inventário mudou nessa retomada. A promoção posterior
+altera somente documentação. Material de revisão é cópia separada fora do Git,
+com SHA-256 dos quatro arquivos comparado à publicação ext4 preservada.
+
+### Aprovação humana final 8B2-E
+
+- CODE REVIEW: PASS.
+- STRUCTURAL REVIEW: PASS.
+- AUTOMATED QUALIFICATION: PASS.
+- DEPLOYMENT REVIEW: PASS.
+- INTEGRITY HUMAN REVIEW: PASS.
+- VISUAL HUMAN REVIEW: PASS.
+- 8B2-E: **COMPLETE — HUMAN REVIEW APPROVED**.
+- 8B2-F e 8B2-G: **NOT STARTED**.
+- 8B3: **FUTURE**.
+
+Artefatos inteiramente sintéticos revisados:
+
+| Artefato | Bytes | Páginas | SHA-256 |
+| --- | ---: | ---: | --- |
+| `human/consolidated-report.pdf` | 162656 | 7 | `615786f9bcf2e1e8c31e1dd0c45b209c4fdad9b74b13f76d8ad2637758c39f09` |
+| `human/dossier.pdf` | 139523 | 8 | `fd481f1dc589eb705d3f69423ee669c4b6b568ce1385016f407dc707788ad676` |
+| `integrity/pdf-export-manifest.json` | 1106 | — | `bd02c02b38f1a586fdff65a0a964afb9ddabe01b385f3ced6e13dcbb2cacaa63` |
+| `integrity/SHA256SUMS.txt` | 281 | — | `c19acb2b10c42206f94b50d34dd8f19174ec5c97cdbd706357a265f7c3be6433` |
+
+O `render_environment_id` revisado permanece
+`ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca`.
+A revisão visual humana inspecionou as 15 páginas a 200 DPI. TOCs e referências
+de página estavam corretos; headers, footers e numeração estavam consistentes;
+não houve clipping, sobreposição, glifo quebrado ou página em branco acidental.
+A página 8 do dossiê é continuação intencional do índice de anexos. O wrapping
+agressivo de identificadores técnicos densos permanece comportamento aceito e
+não bloqueante, sem clipping, truncamento ou sobreposição.
+
+A revisão de implantação aprovou o alvo canônico Linux/amd64 com bind Linux/WSL
+ext4. O bind Windows-backed 9p/drvfs testado retornou EINVAL para
+RENAME_NOREPLACE com destino ausente e não é qualificado nessa configuração
+observada; isso não é generalização para todas as implementações 9p. Não existe
+fallback de publicação nem alegação de exportação PDF nativa Windows.
 
 ## Limitações e fronteira
 
@@ -670,7 +825,7 @@ No digital-signature claim. No forensic certification. No real case used.
 
 8B2-B dossier renderer: COMPLETE — HUMAN REVIEW APPROVED.
 Consolidated-report PDF renderer: COMPLETE — HUMAN REVIEW APPROVED.
-Sem serviço/CLI PDF, publicação de pdf-presentation-v1, pacote real, ZIP ou
-execução 8B3. directory-v1 e schema v5 preservados. A qualificação é do perfil
+Serviço/CLI e publicação PDF: COMPLETE — HUMAN REVIEW APPROVED. Sem pacote real, ZIP
+ou execução 8B3. 8B2-F/G NOT STARTED. directory-v1 e schema v5 preservados. A qualificação é do perfil
 sintético fechado e da imagem canônica; futuros slices devem qualificar suas
 extensões de layout/validação. Sem promessa de rendering nativo multiplataforma.

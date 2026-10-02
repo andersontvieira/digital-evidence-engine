@@ -65,12 +65,24 @@ determinísticos de dossier.pdf_export_manifest/1.0.0 e SHA256SUMS. Expectativas
 derivadas dos bytes capturados; page_count vem da validação PDF independente,
 sem rendering no binding. Recheck de árvore/identidade/tamanho/hash antes/depois;
 sem promessa de snapshot atômico. Não reinterpreta snapshots nem decodifica mídia.
-8B2-E NOT STARTED: sem staging/publicação, CLI, serviço, workers ou descoberta PDF.
+8B2-E COMPLETE — HUMAN REVIEW APPROVED: supervisor/worker híbridos, captura D no worker,
+protocolo fechado com ACK, 120 s por render/validação e 600 s globais; worker com
+RLIMIT_AS de 1 GiB. CLI: `dee dossier pdf --input-package ... --output-dir ...`.
+Staging/scratch próprios; quatro arquivos publicados por um renameat2 NOREPLACE,
+sem replace/merge/copy fallback ou I/O após publicação confirmada. Serviço não
+reentrante no mesmo processo; concorrência CLI usa processos separados.
+Qualificação positiva em container Linux/amd64 sobre bind Linux/WSL ext4; host
+Windows pode hospedar o container, sem exportação PDF nativa Windows. O bind
+Windows 9p/drvfs testado retornou EINVAL e não é alvo qualificado nessa configuração;
+não generalizar para todo 9p. Revisões de código, estrutura, qualificação automatizada,
+implantação, integridade e visual: PASS. Gates, hashes dos artefatos sintéticos e
+inventário em docs/pdf-toolchain-qualification.md.
+8B2-F e 8B2-G NOT STARTED; 8B3 FUTURE. Sem descoberta de casos ou acesso real.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
 Probes da fundação e PDFs de dossiê/relatório exclusivamente sintéticos gerados/validados. Sem alegação de
 PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
-responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A/B/C/D
+responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A/B/C/D/E
 ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
 e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
