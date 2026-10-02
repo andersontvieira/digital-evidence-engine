@@ -8,7 +8,8 @@ sinteticamente: COMPLETE — HUMAN REVIEW APPROVED; ver seu fechamento abaixo.
 8B2-C: COMPLETE — HUMAN REVIEW APPROVED, qualificação sintética registrada abaixo.
 8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade qualificados abaixo.
 8B2-E: COMPLETE — HUMAN REVIEW APPROVED; fechamento sintético e gates abaixo.
-8B2-F e 8B2-G: NOT STARTED.
+8B2-F: COMPLETE — HUMAN REVIEW APPROVED; qualificação test-only e fechamento abaixo.
+8B2-G: NOT STARTED.
 8B3 permanece futura.
 
 Revisão técnica humana final: PASS. Foram verificados o inventário do ambiente
@@ -668,7 +669,7 @@ PDF nesta promoção; sem promessa de snapshot atômico ou certificação.
 
 8B2-A/B/C/D: **COMPLETE — HUMAN REVIEW APPROVED**.
 8B2-E: **COMPLETE — HUMAN REVIEW APPROVED**.
-8B2-F/G: **NOT STARTED**. 8B3: **FUTURE**.
+Naquele fechamento de E, 8B2-F/G estavam **NOT STARTED**. 8B3: **FUTURE**.
 
 ### Implementação e fronteiras
 
@@ -790,7 +791,7 @@ com SHA-256 dos quatro arquivos comparado à publicação ext4 preservada.
 - INTEGRITY HUMAN REVIEW: PASS.
 - VISUAL HUMAN REVIEW: PASS.
 - 8B2-E: **COMPLETE — HUMAN REVIEW APPROVED**.
-- 8B2-F e 8B2-G: **NOT STARTED**.
+- Naquela aprovação de E, 8B2-F e 8B2-G estavam **NOT STARTED**.
 - 8B3: **FUTURE**.
 
 Artefatos inteiramente sintéticos revisados:
@@ -817,6 +818,119 @@ RENAME_NOREPLACE com destino ausente e não é qualificado nessa configuração
 observada; isso não é generalização para todas as implementações 9p. Não existe
 fallback de publicação nem alegação de exportação PDF nativa Windows.
 
+## Qualificação sintética 8B2-F — revisão humana aprovada
+
+8B2-F: **COMPLETE — HUMAN REVIEW APPROVED**. A classificação permaneceu
+**A. TEST/QUALIFICATION ONLY**. Somente
+`tests/test_pdf_presentation_extremes.py` foi acrescentado à implementação;
+nenhum byte de model/renderer/validator/limits/service/worker, dependência, ADR ou
+inventário mudou. O limite do ADR 0038 permanece 16 colunas por documento: tabela
+de 16 colunas renderiza e valida; 17 falha `DOSSIER_PDF_RESOURCE_LIMIT`. A cobertura
+2/3/4/5/6/8 anterior de C não é máximo semântico de oito colunas.
+
+### Fixtures e limites congelados
+
+`dossier_pagination_extreme()` usa somente as 14 seções e a gramática existentes:
+H3 longo, parágrafo e bullet longos, token ASCII não quebrado de 1024 caracteres e
+o conjunto exato de escapes `\\`, backtick, `*`, `_`, `{}`, `[]`, `()`, `#`, `|`,
+`!`. Quarenta e sete linhas fixas deixam a última baseline da penúltima página em
+y=80.046 pt; a seção 14 é deslocada e preservada como página final intencional com
+somente seu H2 e uma linha de conteúdo, além do chrome.
+
+`consolidated_table_extreme()` usa as 20 seções existentes, H3 longo, tabela de oito
+colunas com headers longos quebrados e repetidos, 48 linhas densas/continuações,
+tokens e prosa longos, uma linha lógica limite e tabela válida de 16 colunas. Com
+headers de 66 pt, 52 palavras geram linha de 630 pt e total válido de 696 pt;
+53 palavras geram linha de 642 pt e total 708 pt, recusado com
+`DOSSIER_PDF_UNSUPPORTED_LAYOUT`. No PDF mínimo, budgets reduzidos congelados
+801/800 nós e profundidade 19/18 demonstram N/N-1; páginas também usam N/N-1.
+
+| Fixture F | Páginas | Bytes | SHA-256 PDF |
+| --- | ---: | ---: | --- |
+| `dossier_pagination_extreme()` | 10 | 150026 | `a58f54ad2eff5cf7f142b1979471dfb4ca0bce9f1103527841da98c91fafa3cf` |
+| `consolidated_table_extreme()` | 12 | 333859 | `45768275fc7e8a1d2dc223e7889ff01bed46b1feafcd10d56e9c22a8a7cf837d` |
+
+Validação independente passou para os dois PDFs. Repetições locais, A/B/A e dois
+processos/roots distintos por perfil produziram bytes e page counts idênticos.
+
+### PDFium F
+
+pypdfium2 5.13.0/PDFium 153.0.7999.0, 144 DPI (`scale=2`), RGB, fundo branco,
+1191 × 1684. Todas as páginas foram rasterizadas duas vezes com pixels idênticos;
+geometria independente confirmou bounds de glifos/corpo/células, ausência de
+overlap e páginas vazias, headers repetidos, TOC, destinos e outlines. Hashes RGB
+por página, em ordem:
+
+```text
+dossier p01 330788be4b5b295dac19881953fcc31cdff62b83a9c9b7e4b9d5ecda6a29ee73
+dossier p02 e4cfa2c661d911b1972d209d4398021914b4c1078a61eebed0073cea338d1d0b
+dossier p03 a5c26c53a9fb217a7bd7af0a45f53cb251f600db50276ec4efc9c5c07cf9abec
+dossier p04 7600964dd48a82d3f4f9203a194701bac644c1a50e4cc1d2021f8eb17210aca0
+dossier p05 c9730ea1526f3338325e35ce5bde649f9158613fb8b15b6d1af653d96ac11a0a
+dossier p06 549c1f1f17af24bd9996cbe6fd5b6e5e18b9d937db303208832d741322ecc0df
+dossier p07 bb2ad0cf47f0ec67a1b4cec90006665f5781c9187420557035f1a4cef7db5b1a
+dossier p08 2e8a62148bfe45105ba8e7eb9eb78d62af4a45024bde79318fea1621405d299a
+dossier p09 8d0d842c36ae5018bf4a3ce0b81c202148215530a08562ecf0933c482604fba5
+dossier p10 c5cf1b09bc164ba50acaec6e97696b37efae069e19798899b70efbe15af1cf6f
+consolidated p01 5aea322d41a57620f5f7d961864b17c59f972d5bd0f466063a5fe0a7c2105a20
+consolidated p02 c6cdb8abd5cca2936c27eab5b40303c8f488e38785db92913ac64e383b852391
+consolidated p03 2a04a38a46d4f4f74b207149322f9c38d6d0062998b29437a2b51f62246866c3
+consolidated p04 d6121e7e16578ca6f1b660b7114fd92766baf604f0737f2dbbbbfd247afcee9c
+consolidated p05 e13d00857484108f793204ca53b6a78cc27ee23aefb40a98776c3faed2e1eb77
+consolidated p06 5a1e95a5c311ad71ae16a6d3792efa8273612095eb4a962ade8e28b3efa1e64e
+consolidated p07 a91cb5373cfc00623a32f3a67619795681b8a02d96a1308411c0f11a657072e0
+consolidated p08 175efdd2ed225545918c136fc6d7916b6909530f6d97f391f407d7d7e82ae872
+consolidated p09 4d5ea88522187c4f461c0ae48430a8085a58971709b09fdc7124d43f22fc17a9
+consolidated p10 84b9722a380005c0bb780e634583c9597f0b4ba978888772e13a6acd6a043ee4
+consolidated p11 c89280e5f8d00ae0c893678085fa44b0ea4ac359bd2e5db08cdaf1f5ff571549
+consolidated p12 4ae775e5714bab03edc1511315d35a8ec795ac89ed340324b4e95cc36d6a8ff6
+```
+
+Fingerprints agregados da concatenação ASCII ordenada:
+
+- dossiê: `d4320a379148a0ee59d9718d9dd1711097b71e216b7f2dbc241f277de5ef2b71`;
+- consolidado: `709113ceace2c5ea62d18bc2fa24efb2c7139c8d70cc92beec132082fc64e5da`.
+
+### Gates F
+
+| Gate | Resultado | Tempo | Exit |
+| --- | --- | ---: | ---: |
+| F estrutural, sem determinismo/PDFium | 5 passed, 3 deselected | 13.71 s | 0 |
+| F completo | 8 passed | 48.62 s | 0 |
+| Regressão completa B/C | 82 passed | 181.01 s | 0 |
+| Pytest completo, execução única | 2358 collected; 2355 passed, 3 skipped | 695.97 s | 0 |
+| Ruff check `--no-cache .` | PASS | — | 0 |
+| Ruff format `--check --no-cache .` | 205 files already formatted | — | 0 |
+| mypy `--cache-dir=/tmp/dee-mypy src` | 89 source files, no issues | — | 0 |
+
+Os três skips exigem Windows nativo e são os mesmos gates de junction/no-replace já
+documentados. B/C conservaram seus hashes PDF e pixel fingerprints. O
+render_environment_id permanece
+`ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca`;
+`docs/pdf-render-environment.json` não foi regenerado. PDFs e rasters F para revisão
+humana são inteiramente sintéticos e ficam fora do Git. Nenhum caso real foi acessado.
+8B2-G permanece NOT STARTED e 8B3 FUTURE.
+
+### Fechamento humano final de 8B2-F
+
+A revisão humana externa e independente inspecionou todas as 22 páginas a 200 DPI.
+O artefato `8B2-F-dossier-pagination-extreme.pdf` tem 10 páginas, 150026 bytes e
+SHA-256 `a58f54ad2eff5cf7f142b1979471dfb4ca0bce9f1103527841da98c91fafa3cf`.
+O artefato `8B2-F-consolidated-table-extreme.pdf` tem 12 páginas, 333859 bytes e
+SHA-256 `45768275fc7e8a1d2dc223e7889ff01bed46b1feafcd10d56e9c22a8a7cf837d`.
+
+- CODE/TEST REVIEW: **PASS**.
+- AUTOMATED QUALIFICATION: **PASS**.
+- VISUAL HUMAN REVIEW: **PASS**.
+- HUMAN REVIEW: **PASS**.
+- 8B2-F: **COMPLETE — HUMAN REVIEW APPROVED**.
+
+Não houve nova execução de testes, rendering ou PDFium nesta promoção exclusivamente
+documental. Os goldens automatizados a 144 DPI permanecem os registrados acima. O
+render_environment_id permanece
+`ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca`.
+Nenhum caso real foi acessado. 8B2-G continua **NOT STARTED** e 8B3 **FUTURE**.
+
 ## Limitações e fronteira
 
 This is technical toolchain qualification, not legal advice.
@@ -826,6 +940,7 @@ No digital-signature claim. No forensic certification. No real case used.
 8B2-B dossier renderer: COMPLETE — HUMAN REVIEW APPROVED.
 Consolidated-report PDF renderer: COMPLETE — HUMAN REVIEW APPROVED.
 Serviço/CLI e publicação PDF: COMPLETE — HUMAN REVIEW APPROVED. Sem pacote real, ZIP
-ou execução 8B3. 8B2-F/G NOT STARTED. directory-v1 e schema v5 preservados. A qualificação é do perfil
+ou execução 8B3. 8B2-F COMPLETE — HUMAN REVIEW APPROVED; 8B2-G NOT STARTED.
+directory-v1 e schema v5 preservados. A qualificação é do perfil
 sintético fechado e da imagem canônica; futuros slices devem qualificar suas
 extensões de layout/validação. Sem promessa de rendering nativo multiplataforma.

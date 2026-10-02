@@ -77,7 +77,13 @@ Windows 9p/drvfs testado retornou EINVAL e não é alvo qualificado nessa config
 não generalizar para todo 9p. Revisões de código, estrutura, qualificação automatizada,
 implantação, integridade e visual: PASS. Gates, hashes dos artefatos sintéticos e
 inventário em docs/pdf-toolchain-qualification.md.
-8B2-F e 8B2-G NOT STARTED; 8B3 FUTURE. Sem descoberta de casos ou acesso real.
+8B2-F COMPLETE — HUMAN REVIEW APPROVED: qualificação exclusivamente por testes sintéticos
+de apresentação extrema, sem mudança de produção. Cobertos limite contratual de
+16 colunas/17 RESOURCE_LIMIT, escapes existentes, token ASCII de 1024 caracteres,
+paginação no limiar, H3 longo, linha lógica 696 pt válida/708 pt recusada, budgets
+N/N-1, determinismo e PDFium de todas as 22 páginas F. Oito colunas permanece
+cobertura histórica de C, não teto semântico. 8B2-G NOT STARTED; 8B3 FUTURE.
+Sem descoberta de casos ou acesso real.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
 Probes da fundação e PDFs de dossiê/relatório exclusivamente sintéticos gerados/validados. Sem alegação de

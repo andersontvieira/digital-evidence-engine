@@ -56,10 +56,13 @@ Linux/WSL ext4; Windows pode hospedar o container. O bind Windows 9p/drvfs obser
 retornou EINVAL para destino ausente e não é alvo qualificado nessa configuração;
 isso não afirma que todo 9p falhe. Revisões de código, estrutura, qualificação
 automatizada, implantação, integridade e visual: PASS. Detalhes, hashes e gates em
-[qualificação](docs/pdf-toolchain-qualification.md). 8B2-F e 8B2-G NOT STARTED.
+[qualificação](docs/pdf-toolchain-qualification.md). 8B2-F COMPLETE — HUMAN REVIEW
+APPROVED: qualificação test-only de limites de texto/layout, 16 colunas válidas e
+17 recusadas, paginação extrema, determinismo e PDFium; oito colunas é cobertura
+anterior de C, não máximo semântico. 8B2-G NOT STARTED.
 Sem alegação PDF/A, PDF/UA, assinatura ou certificação. A 8B3 permanece
 futura e exclusivamente responsável pela execução real controlada; nenhum caso
-real foi acessado na qualificação 8B2-A/B/C/D/E.
+real foi acessado na qualificação 8B2-A/B/C/D/E/F.
 
 O contrato organiza material técnico para advogado/revisor humano, sem advocacy
 ou inferência de identidade, autoria ou conclusão jurídica. Define duas camadas:
@@ -926,6 +929,6 @@ As decisões da revisão adversarial estão na [ADR 0010](docs/adr/0010-adversar
 | 8B2-C     | Consolidated Technical Report PDF — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B2-D     | PDF Export Source Binding & Integrity — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B2-E     | PDF Export Service & CLI — COMPLETE — HUMAN REVIEW APPROVED |
-| 8B2-F     | PDF Presentation Qualification — NOT STARTED |
+| 8B2-F     | PDF Presentation Qualification — COMPLETE — HUMAN REVIEW APPROVED |
 | 8B2-G     | PDF Export Final Closure — NOT STARTED |
 | 8B3       | Final Package Integrity & Real-Case Validation — futura              |

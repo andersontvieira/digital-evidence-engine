@@ -35,7 +35,8 @@ qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 8B2-C implementada e qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade read-only.
 8B2-E: COMPLETE — HUMAN REVIEW APPROVED; serviço/worker híbridos e publicação PDF
-qualificados sinteticamente em bind Linux/WSL ext4. 8B2-F/G: NOT STARTED.
+qualificados sinteticamente em bind Linux/WSL ext4. 8B2-F: COMPLETE — HUMAN REVIEW
+APPROVED, qualificação extrema test-only sem alteração de produção. 8B2-G: NOT STARTED.
 ZIP/archive exige escopo separado. 8B3 será validação
 real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
@@ -179,8 +180,9 @@ O mesmo layout atende exatamente dois perfis fechados: dossier e consolidated-re
 O parser existente preserva o H1 e os 20 H2; header fixo `Relatório técnico consolidado`,
 20 entradas/links internos no TOC e 21 destinos/outlines ordinais, sem H3 nos bookmarks.
 O validador seleciona título, ordem, header e cardinalidades contratuais pelo kind,
-independentemente do plano. Tabelas até oito colunas reutilizam largura fixa,
-headers repetidos e linhas indivisíveis; layout impossível falha fechado.
+independentemente do plano. As cardinalidades 2/3/4/5/6/8 qualificadas em 8B2-C
+reutilizam largura fixa, headers repetidos e linhas indivisíveis; essa cobertura não
+define teto semântico de oito colunas. Layout impossível falha fechado.
 Nenhuma nova regra de layout, dependência ou superfície privada ReportLab.
 SHA e pixels aprovados de B permanecem inalterados. Inventário, fingerprints e
 gates completos em [qualificação](pdf-toolchain-qualification.md).
@@ -260,7 +262,28 @@ Gates, inventário e hashes em [qualificação](pdf-toolchain-qualification.md).
 Fonte não é snapshot atômico; corrida residual após recheck permanece explícita.
 Sem dados reais, PDF/A, PDF/UA, assinatura ou certificação. Revisões de código,
 estrutura, qualificação automatizada, implantação, integridade e visual: PASS.
-A/B/C/D/E estão COMPLETE — HUMAN REVIEW APPROVED; F/G NOT STARTED; 8B3 FUTURE.
+A/B/C/D/E/F estão COMPLETE — HUMAN REVIEW APPROVED; G NOT STARTED; 8B3 FUTURE.
+
+## Milestone 8B2-F — qualificação extrema de apresentação
+
+COMPLETE — HUMAN REVIEW APPROVED. Um módulo inteiramente sintético qualifica os dois
+perfis existentes sem alterar renderer, validator, model, limits, service ou worker.
+O limite contratual permanece 16 colunas por documento: 16 renderiza e valida;
+17 falha RESOURCE_LIMIT. A cobertura anterior 2/3/4/5/6/8 de C não define teto
+semântico de oito.
+
+O dossiê extremo congela token ASCII de 1024 caracteres, todos os escapes aceitos,
+H3 longo, parágrafo/bullet wrapping e 47 linhas de preenchimento: a penúltima página
+termina em y=80.046 pt e a seção 14 forma página final mínima intencional. O relatório
+extremo combina tabela multipágina de oito colunas com headers quebrados/repetidos,
+linha lógica válida de 696 pt, primeira inválida de 708 pt e tabela válida de 16
+colunas. PDFs F: dossiê 10 páginas/150026 bytes e consolidado 12 páginas/333859 bytes.
+
+Validação independente, determinismo entre processos/roots e A/B/A, geometria e
+PDFium 144 DPI passaram em todas as 22 páginas. O inventário e o
+render_environment_id `ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca`
+permanecem inalterados. As 22 páginas dos artefatos 200 DPI foram aprovadas em
+revisão humana independente e permanecem fora do Git.
 
 ## Milestone 8A4.1 — integração source-media ao relatório
 
