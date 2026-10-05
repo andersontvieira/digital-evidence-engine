@@ -1,12 +1,14 @@
 """Synthetic operational probes; injected runtime checks are not deployment proof."""
 
 import hashlib
+import json
 import os
 import shutil
 import subprocess
 import sys
 import time
 from dataclasses import asdict
+from pathlib import Path
 
 import pytest
 
@@ -16,6 +18,9 @@ from evidence_engine.errors import EvidenceError
 from tests.test_dossier_service import package_bytes
 from tests.test_pdf_package import valid as valid
 from tests.test_pdf_renderer import pytestmark as pytestmark
+
+G1_SOURCE = "DEE_PDF_G1_SOURCE"
+G1_OUTPUT_PARENT = "DEE_PDF_G1_OUTPUT_PARENT"
 
 
 def records():
@@ -136,6 +141,58 @@ def test_real_worker_d_binding_and_determinism(valid, tmp_path, monkeypatch):
         checked = pdf_package.verify_pdf_export(pdf_package.capture_source_package(source), after)
         assert dict(checked.files) == after
         outputs.append(after)
+    assert outputs[0] == outputs[1]
+
+
+@pytest.mark.skipif(
+    G1_SOURCE not in os.environ or G1_OUTPUT_PARENT not in os.environ,
+    reason="requires canonical G1 read-only source and writable output mounts",
+)
+def test_final_closure_real_cli_two_run_determinism():
+    from evidence_engine.dossier import pdf_package
+
+    source = Path(os.environ[G1_SOURCE])
+    output_parent = Path(os.environ[G1_OUTPUT_PARENT])
+    before = package_bytes(source)
+    executable = shutil.which("dee")
+    assert executable is not None
+    outputs = []
+
+    for label in ("run-a", "run-b"):
+        destination = output_parent / label
+        assert not destination.exists()
+        result = subprocess.run(
+            [
+                executable,
+                "dossier",
+                "pdf",
+                "--input-package",
+                str(source),
+                "--output-dir",
+                str(destination),
+            ],
+            capture_output=True,
+            check=False,
+            timeout=service.GLOBAL_SECONDS + 30,
+        )
+        assert result.returncode == 0
+        assert result.stdout == b"DOSSIER_PDF_OK\n"
+        assert result.stderr == b""
+
+        published = package_bytes(destination)
+        assert set(published) == set(worker.OUTPUT_PATHS)
+        captured = pdf_package.capture_source_package(source)
+        checked = pdf_package.verify_pdf_export(captured, published)
+        assert dict(checked.files) == published
+        manifest = json.loads(published[pdf_package.MANIFEST_PATH])
+        assert manifest["render_environment_id"] == checked.render_environment_id
+        assert [entry["package_path"] for entry in manifest["entries"]] == [
+            "human/consolidated-report.pdf",
+            "human/dossier.pdf",
+        ]
+        assert package_bytes(source) == before
+        outputs.append(published)
+
     assert outputs[0] == outputs[1]
 
 
