@@ -108,6 +108,51 @@ def test_actual_hung_render_phase_deadline(tmp_path, monkeypatch):
     assert time.monotonic() - start < 5
 
 
+def test_production_deadline_contract_boundaries_and_precedence():
+    assert service.PHASE_SECONDS == 180
+    assert service.GLOBAL_SECONDS == 900
+
+    history = worker.History(service.GLOBAL_SECONDS, service.PHASE_SECONDS)
+    for seq, (event, phase) in enumerate(worker.SEQUENCE, 1):
+        now = float(seq)
+        history.accept({"v": 1, "seq": seq, "event": event, "phase": phase}, now)
+        expected = (
+            now + service.PHASE_SECONDS
+            if event == "ENTER" and phase in worker.TIMED_PHASES
+            else service.GLOBAL_SECONDS
+        )
+        assert history.phase_deadline == expected
+
+    history = worker.History(service.GLOBAL_SECONDS, service.PHASE_SECONDS)
+    for seq, (event, phase) in enumerate(worker.SEQUENCE[:4], 1):
+        history.accept({"v": 1, "seq": seq, "event": event, "phase": phase}, 0.0)
+    event, phase = worker.SEQUENCE[4]
+    history.accept({"v": 1, "seq": 5, "event": event, "phase": phase}, 100.0)
+    assert history.phase_deadline == 280.0
+    deadline = history.phase_deadline
+    with pytest.raises(EvidenceError, match="INTERNAL_ERROR"):
+        history.accept({"v": 1, "seq": 6, "event": "ENTER", "phase": phase}, 101.0)
+    assert history.phase_deadline == deadline
+    history.check_time(279.999999)
+    with pytest.raises(EvidenceError, match="RESOURCE_LIMIT"):
+        history.check_time(280.0)
+
+    history = worker.History(service.GLOBAL_SECONDS, service.PHASE_SECONDS)
+    history.check_time(899.999999)
+    with pytest.raises(EvidenceError, match="RESOURCE_LIMIT"):
+        history.check_time(900.0)
+
+    history = worker.History(service.GLOBAL_SECONDS, service.PHASE_SECONDS)
+    for seq, (event, phase) in enumerate(worker.SEQUENCE[:4], 1):
+        history.accept({"v": 1, "seq": seq, "event": event, "phase": phase}, 0.0)
+    event, phase = worker.SEQUENCE[4]
+    history.accept({"v": 1, "seq": 5, "event": event, "phase": phase}, 800.0)
+    assert history.phase_deadline == 980.0
+    history.check_time(899.999999)
+    with pytest.raises(EvidenceError, match="RESOURCE_LIMIT"):
+        history.check_time(900.0)
+
+
 def test_event_channel_cumulative_budget(tmp_path, monkeypatch):
     monkeypatch.setattr(service, "CHANNEL_BYTES", 110)
     with pytest.raises(EvidenceError, match="RESOURCE_LIMIT"):

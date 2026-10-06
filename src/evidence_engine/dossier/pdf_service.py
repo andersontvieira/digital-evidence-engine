@@ -30,8 +30,8 @@ from evidence_engine.dossier.pdf_worker import (
 )
 from evidence_engine.errors import EvidenceError
 
-GLOBAL_SECONDS = 600
-PHASE_SECONDS = 120
+GLOBAL_SECONDS = 900
+PHASE_SECONDS = 180
 SCRATCH_BYTES = 256 * 1024**2
 _OPERATION_LOCK = threading.Lock()
 
