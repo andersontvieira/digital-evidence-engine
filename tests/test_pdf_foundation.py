@@ -19,7 +19,7 @@ from evidence_engine.dossier import pdf_environment as environment
 from evidence_engine.dossier import pdf_limits as limits
 from evidence_engine.dossier import pdf_reportlab_adapter as adapter
 from evidence_engine.dossier.pdf_probe import probe_expectation, qualification_pdf
-from evidence_engine.dossier.pdf_validation import validate_pdf_bytes
+from evidence_engine.dossier.pdf_validation import PdfExpectation, validate_pdf_bytes
 from evidence_engine.errors import EvidenceError
 
 CANONICAL = Path("/opt/digital-evidence-engine/render-environment.json").is_file()
@@ -36,6 +36,23 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(scope="module")
 def pdf():
     return qualification_pdf()
+
+
+def page_count_pdf(page_count: int) -> tuple[bytes, PdfExpectation]:
+    environment.verify_environment()
+    environment.register_fonts()
+    title = "Limite de páginas sintético"
+    output = limits.BoundedPdfBuffer()
+    canvas = adapter.ControlledCanvas(output, title)
+    expected = []
+    for page_number in range(1, page_count + 1):
+        text = f"Página sintética {page_number}"
+        canvas.setFont("DejaVuSans", 9)
+        canvas.drawString(56.693, 760, text)
+        canvas.showPage()
+        expected.append(text + "\n")
+    canvas.save()
+    return output.getvalue(), PdfExpectation(title, tuple(expected), (), ())
 
 
 def test_metadata_fonts_navigation_and_text(pdf):
@@ -290,12 +307,15 @@ def test_font_structure_loss(pdf, old, new):
         validate_pdf_bytes(pdf.replace(old, new), probe_expectation())
 
 
-def test_page_budget_boundary(pdf, monkeypatch):
-    monkeypatch.setattr(limits, "MAX_PAGES", 2)
-    validate_pdf_bytes(pdf, probe_expectation())
-    monkeypatch.setattr(limits, "MAX_PAGES", 1)
-    with pytest.raises(EvidenceError, match="RESOURCE_LIMIT"):
-        validate_pdf_bytes(pdf, probe_expectation())
+def test_production_page_budget_boundary():
+    assert limits.MAX_PAGES == 2_048
+    accepted_pdf, accepted_expected = page_count_pdf(limits.MAX_PAGES)
+    accepted = validate_pdf_bytes(accepted_pdf, accepted_expected)
+    assert accepted.page_count == 2_048
+
+    rejected_pdf, rejected_expected = page_count_pdf(limits.MAX_PAGES + 1)
+    with pytest.raises(EvidenceError, match="^DOSSIER_PDF_RESOURCE_LIMIT$"):
+        validate_pdf_bytes(rejected_pdf, rejected_expected)
 
 
 def test_worker_oom_is_bounded():

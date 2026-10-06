@@ -280,6 +280,7 @@ def test_column_resource_boundary_16_and_17():
 def test_page_object_and_depth_budget_boundaries(monkeypatch):
     data = _document("dossier", {1: "Texto sintético."})
     pdf, plan, checked = _check(data, "dossier")
+    production_page_limit = limits.MAX_PAGES
 
     monkeypatch.setattr(limits, "MAX_PAGES", checked.page_count)
     validation.validate_pdf_bytes(pdf, plan.expected)
@@ -287,7 +288,7 @@ def test_page_object_and_depth_budget_boundaries(monkeypatch):
     with pytest.raises(EvidenceError, match="^DOSSIER_PDF_RESOURCE_LIMIT$"):
         validation.validate_pdf_bytes(pdf, plan.expected)
 
-    monkeypatch.setattr(limits, "MAX_PAGES", 1000)
+    monkeypatch.setattr(limits, "MAX_PAGES", production_page_limit)
     # Frozen traversal thresholds for this minimal PDF; 800/18 are N-1 failures.
     monkeypatch.setattr(limits, "MAX_OBJECTS", MIN_VALIDATION_NODES)
     validation.validate_pdf_bytes(pdf, plan.expected)

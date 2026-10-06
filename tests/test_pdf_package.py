@@ -472,6 +472,23 @@ def test_determinism_and_no_renderer(root, valid, monkeypatch):
     assert p.serialize_pdf_manifest(entries[::-1], **kwargs) == actual.manifest_content
 
 
+def test_manifest_page_budget_boundary(valid):
+    entries = [pdf.entry for pdf in valid[2].pdfs]
+    kwargs = dict(
+        manifest_sha256="0" * 64,
+        sha256sums_sha256="1" * 64,
+        render_environment_id="2" * 64,
+    )
+    entries[0] = replace(entries[0], page_count=p.pdf_limits.MAX_PAGES)
+    manifest = p.serialize_pdf_manifest(entries, **kwargs)
+    value = json.loads(manifest)
+    assert value["entries"][0]["page_count"] == 2_048
+
+    entries[0] = replace(entries[0], page_count=p.pdf_limits.MAX_PAGES + 1)
+    with failure("RESOURCE_LIMIT"):
+        p.serialize_pdf_manifest(entries, **kwargs)
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -658,7 +675,7 @@ def test_output_boundaries(valid, monkeypatch, limit):
         ("byte_size", -1),
         ("page_count", False),
         ("page_count", 0),
-        ("page_count", 1001),
+        ("page_count", p.pdf_limits.MAX_PAGES + 1),
         ("sha256", "A" * 64),
         ("source_sha256", "bad"),
     ],

@@ -166,6 +166,22 @@ def test_page_budget_before_creation(monkeypatch):
         plan(document())
 
 
+def test_production_page_budget_boundary_before_creation():
+    assert limits.MAX_PAGES == 2_048
+    parsed = parse_presentation_bytes(document(), "dossier")
+    layout = r._Layout(parsed)
+    for _ in range(limits.MAX_PAGES - 1):
+        layout.new_page()
+    assert len(layout.pages) == 2_048
+    pages_before_rejection = tuple(map(id, layout.pages))
+
+    with pytest.raises(EvidenceError, match="^DOSSIER_PDF_RESOURCE_LIMIT$"):
+        layout.new_page()
+
+    assert len(layout.pages) == 2_048
+    assert tuple(map(id, layout.pages)) == pages_before_rejection
+
+
 def test_paragraph_widows_and_list_bullet_boundary():
     register_fonts()
     parsed = parse_presentation_bytes(document("um\ndois\ntrês"), "dossier")
