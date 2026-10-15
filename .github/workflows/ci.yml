@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-core:
+    name: Quality and core tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv 0.8.22
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.8.22"
+          enable-cache: true
+      - name: Sync locked development environment
+        run: uv sync --locked --extra dev --python 3.12
+      - name: Validate lockfile
+        run: uv lock --check
+      - name: Ruff lint
+        run: uv run ruff check .
+      - name: Ruff format
+        run: uv run ruff format --check .
+      - name: Mypy
+        run: uv run mypy src
+      - name: Core tests without canonical PDF rendering
+        run: >-
+          uv run pytest -p no:cacheprovider
+          --ignore-glob=tests/test_pdf*.py
+          --ignore=tests/test_demo.py
+          --ignore=tests/integration/test_installed_cli.py
+      - name: Public repository safety
+        run: uv run python tools/release_safety.py repository
+
+  platform-smoke:
+    name: Installed CLI and demo (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv 0.8.22
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.8.22"
+          enable-cache: true
+      - name: Sync locked development environment
+        run: uv sync --locked --extra dev --python 3.12
+      - name: Installed CLI and synthetic demo tests
+        run: >-
+          uv run pytest -p no:cacheprovider
+          tests/test_cli.py
+          tests/test_demo.py
+          tests/integration/test_installed_cli.py
+
+  package-smoke:
+    name: Build and installed-package smoke (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv 0.8.22
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.8.22"
+          enable-cache: true
+      - name: Sync locked development environment
+        run: uv sync --locked --extra dev --python 3.12
+      - name: Build wheel and source distribution
+        run: uv build --wheel --sdist --out-dir dist
+      - name: Inspect distribution contents and metadata
+        shell: bash
+        run: |
+          version="$(uv run python -c 'import evidence_engine; print(evidence_engine.__version__)')"
+          uv run python tools/release_safety.py distributions dist --expected-version "$version"
+      - name: Install wheel into a fresh environment
+        shell: bash
+        run: |
+          uv venv "$RUNNER_TEMP/package-venv" --python 3.12
+          uv pip install --python "$RUNNER_TEMP/package-venv/bin/python" dist/*.whl
+      - name: Exercise installed package outside the checkout
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          package-venv/bin/dee version
+          package-venv/bin/dee --help
+          package-venv/bin/dee demo --help
+          package-venv/bin/dee demo --output-dir "$RUNNER_TEMP/demo-one"
+          package-venv/bin/dee demo --output-dir "$RUNNER_TEMP/demo-two"
+          "$GITHUB_WORKSPACE/.venv/bin/python" "$GITHUB_WORKSPACE/tools/release_safety.py" \
+            demo "$RUNNER_TEMP/demo-one" "$RUNNER_TEMP/demo-two"

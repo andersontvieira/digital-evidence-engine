@@ -1,0 +1,129 @@
+name: Release qualification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-qualification-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  canonical-linux:
+    name: Full canonical Linux/amd64 qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12 for host-side safety checks
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build qualified PDF environment
+        run: >-
+          docker build --platform linux/amd64 --file Dockerfile.pdf
+          --tag digital-evidence-engine:release-qualification .
+      - name: Full synthetic regression, Ruff and mypy
+        shell: bash
+        run: |
+          mount="type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly"
+          image="digital-evidence-engine:release-qualification"
+          docker run --rm --network none --read-only --security-opt no-new-privileges \
+            --cap-drop ALL --tmpfs /tmp:rw,noexec,nosuid,nodev,size=1g \
+            --platform linux/amd64 --mount "$mount" \
+            --workdir /workspace "$image" /opt/venv/bin/pytest -p no:cacheprovider
+          docker run --rm --network none --read-only --security-opt no-new-privileges \
+            --cap-drop ALL --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m \
+            --platform linux/amd64 --mount "$mount" \
+            --workdir /workspace "$image" /opt/venv/bin/ruff check --no-cache .
+          docker run --rm --network none --read-only --security-opt no-new-privileges \
+            --cap-drop ALL --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m \
+            --platform linux/amd64 --mount "$mount" \
+            --workdir /workspace "$image" /opt/venv/bin/ruff format --no-cache --check .
+          docker run --rm --network none --read-only --security-opt no-new-privileges \
+            --cap-drop ALL --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m \
+            --platform linux/amd64 --mount "$mount" \
+            --workdir /workspace "$image" /opt/venv/bin/mypy --cache-dir=/tmp/dee-mypy src
+      - name: Installed demo with container network disabled
+        shell: bash
+        run: |
+          review="$RUNNER_TEMP/offline-demo"
+          mkdir -p "$review"
+          chmod 0777 "$review"
+          image="digital-evidence-engine:release-qualification"
+          for run in one two; do
+            docker run --rm --network none --read-only --security-opt no-new-privileges \
+              --cap-drop ALL --platform linux/amd64 \
+              --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+              --mount "type=bind,source=$review,target=/review" \
+              "$image" /opt/venv/bin/dee demo --output-dir "/review/$run"
+          done
+          python tools/release_safety.py demo "$review/one" "$review/two"
+      - name: Public repository safety
+        run: python tools/release_safety.py repository
+
+  native-windows:
+    name: Full native Windows regression (PDF rendering excluded by contract)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv 0.8.22
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.8.22"
+          enable-cache: true
+      - name: Sync locked development environment
+        run: uv sync --locked --extra dev --python 3.12
+      - name: Full native regression
+        run: uv run pytest -p no:cacheprovider
+
+  clean-package:
+    name: Clean package and installed demo qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv 0.8.22
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.8.22"
+          enable-cache: true
+      - name: Sync, build and inspect
+        shell: bash
+        run: |
+          uv sync --locked --extra dev --python 3.12
+          uv lock --check
+          uv build --wheel --sdist --out-dir dist
+          version="$(uv run python -c 'import evidence_engine; print(evidence_engine.__version__)')"
+          uv run python tools/release_safety.py distributions dist --expected-version "$version"
+      - name: Install and exercise wheel outside checkout
+        shell: bash
+        run: |
+          uv venv "$RUNNER_TEMP/release-venv" --python 3.12
+          uv pip install --python "$RUNNER_TEMP/release-venv/bin/python" dist/*.whl
+          cd "$RUNNER_TEMP"
+          release-venv/bin/dee version
+          release-venv/bin/dee --help
+          release-venv/bin/dee demo --output-dir "$RUNNER_TEMP/release-demo"
+          "$GITHUB_WORKSPACE/.venv/bin/python" "$GITHUB_WORKSPACE/tools/release_safety.py" \
+            demo "$RUNNER_TEMP/release-demo"
