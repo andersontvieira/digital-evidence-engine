@@ -4,6 +4,7 @@ import typer
 
 from evidence_engine import __version__
 from evidence_engine.cli.correlate import app as correlate_app
+from evidence_engine.cli.demo import demo
 from evidence_engine.cli.dossier import app as dossier_app
 from evidence_engine.cli.evidence import app as evidence_app
 from evidence_engine.cli.media import app as media_app
@@ -28,6 +29,7 @@ app.add_typer(query_app, name="query")
 app.add_typer(media_app, name="media")
 app.add_typer(report_app, name="report")
 app.add_typer(dossier_app, name="dossier")
+app.command("demo")(demo)
 
 
 @app.callback()
