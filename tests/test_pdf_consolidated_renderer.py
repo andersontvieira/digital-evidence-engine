@@ -96,7 +96,15 @@ def check(data):
     return pdf, expected, v.validate_pdf_bytes(pdf, expected)
 
 
-@pytest.mark.parametrize("data", [minimal(), representative(), representative(True), extreme()])
+@pytest.mark.parametrize(
+    "data",
+    [
+        pytest.param(minimal(), id="minimal"),
+        pytest.param(representative(), id="representative"),
+        pytest.param(representative(True), id="many-windows"),
+        pytest.param(extreme(), id="extreme"),
+    ],
+)
 def test_complete_report_structure_and_text(data):
     pdf, expected, result = check(data)
     reader = PdfReader(BytesIO(pdf), strict=True)
@@ -395,7 +403,11 @@ def pixel_fingerprint(pdf, expected):
     return hashlib.sha256("".join(fingerprints).encode("ascii")).hexdigest()
 
 
-@pytest.mark.parametrize("index,data", enumerate([representative(), extreme()]))
+@pytest.mark.parametrize(
+    "index,data",
+    [(0, representative()), (1, extreme())],
+    ids=["representative", "extreme"],
+)
 def test_pdfium_and_pdf_fingerprints(index, data):
     pdf, expected, result = check(data)
     assert (result.page_count, len(pdf), hashlib.sha256(pdf).hexdigest()) == PDF_FINGERPRINTS[index]

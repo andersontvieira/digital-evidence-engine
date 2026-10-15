@@ -5,12 +5,8 @@ from dataclasses import asdict
 from typing import Annotated
 
 import typer
-from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
-from evidence_engine.correlation.overlap import temporal_exact_overlap
-from evidence_engine.correlation.service import correlate_exact
-from evidence_engine.correlation.temporal import temporal_candidates
 from evidence_engine.errors import EvidenceError
 
 app = typer.Typer(
@@ -22,6 +18,10 @@ app = typer.Typer(
 @app.command("exact")
 def exact(case_root: CaseRoot) -> None:
     """Create candidate groups supported by existing device/network observations."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.correlation.service import correlate_exact
+
     try:
         summary = correlate_exact(case_root)
     except (EvidenceError, OSError, SQLAlchemyError) as error:
@@ -48,6 +48,10 @@ def temporal(
     limit: Annotated[int, typer.Option(min=1, max=10000)] = 1000,
 ) -> None:
     """Return DERIVED current-event time proximity pairs; no conclusive correlation."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.correlation.temporal import temporal_candidates
+
     try:
         result = temporal_candidates(
             case_root,
@@ -85,6 +89,10 @@ def overlap(
     limit: Annotated[int, typer.Option(min=1, max=10000)] = 1000,
 ) -> None:
     """Enrich the temporal prefix with shared persisted exact candidate IDs."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.correlation.overlap import temporal_exact_overlap
+
     try:
         result = temporal_exact_overlap(
             case_root,

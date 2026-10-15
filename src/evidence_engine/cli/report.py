@@ -3,17 +3,21 @@
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
-from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
-from evidence_engine.reports.consolidated import consolidated_report
-from evidence_engine.reports.snapshot import report_snapshot
 
 app = typer.Typer(help="Read-only technical report support data.", no_args_is_help=True)
+
+
+def report_snapshot(*args: Any, **kwargs: Any) -> Any:
+    """Load the database-backed report implementation only when invoked."""
+    from evidence_engine.reports.snapshot import report_snapshot as implementation
+
+    return implementation(*args, **kwargs)
 
 
 @app.command("snapshot")
@@ -30,6 +34,8 @@ def snapshot(
     event_kind: Annotated[str | None, typer.Option(help="Window event kind filter.")] = None,
 ) -> None:
     """Emit deterministic JSON to stdout, with zero or one analysis window."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     try:
         result = report_snapshot(
             case_root,
@@ -56,6 +62,8 @@ def consolidated(
     ],
 ) -> None:
     """Render deterministic pt-BR Markdown from snapshots only, without CASE_ROOT."""
+    from evidence_engine.reports.consolidated import consolidated_report
+
     try:
         content = consolidated_report(snapshots)
     except EvidenceError as error:

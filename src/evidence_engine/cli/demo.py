@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import fail
 from evidence_engine.errors import EvidenceError
@@ -20,6 +19,8 @@ def demo(
     ],
 ) -> None:
     """Run an offline synthetic pipeline without CASE_ROOT or external data."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     from evidence_engine.demo import run_demo
 
     try:

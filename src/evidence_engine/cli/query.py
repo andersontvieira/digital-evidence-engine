@@ -2,23 +2,31 @@
 
 import json
 from dataclasses import asdict
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
-from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
-from evidence_engine.query.incident import query_incident_window
-from evidence_engine.query.incident_candidates import query_incident_candidates
-from evidence_engine.query.provenance import query_provenance
-from evidence_engine.query.search import query_device, query_network
-from evidence_engine.query.timeline import query_timeline
 
 app = typer.Typer(
     help="Read-only current events, exact technical search and persisted provenance.",
     no_args_is_help=True,
 )
+
+
+def query_device(*args: Any, **kwargs: Any) -> Any:
+    """Load the database-backed device query only when invoked."""
+    from evidence_engine.query.search import query_device as implementation
+
+    return implementation(*args, **kwargs)
+
+
+def query_network(*args: Any, **kwargs: Any) -> Any:
+    """Load the database-backed network query only when invoked."""
+    from evidence_engine.query.search import query_network as implementation
+
+    return implementation(*args, **kwargs)
 
 
 @app.command("incident-window")
@@ -31,6 +39,10 @@ def incident_window(
     limit: Annotated[int, typer.Option(min=1, max=5000)] = 500,
 ) -> None:
     """Current events and same-ParsedRecord context; no temporal or identity inference."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.query.incident import query_incident_window
+
     try:
         result = query_incident_window(
             case_root,
@@ -57,6 +69,10 @@ def incident_candidates(
     limit: Annotated[int, typer.Option(min=1, max=1000)] = 100,
 ) -> None:
     """Persisted candidates linked through same-record observations; counts are not scores."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.query.incident_candidates import query_incident_candidates
+
     try:
         result = query_incident_candidates(
             case_root,
@@ -83,6 +99,10 @@ def timeline(
     limit: Annotated[int, typer.Option(min=1, max=10000)] = 1000,
 ) -> None:
     """Return dated current events; undated counts obey platform/kind, not time bounds."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.query.timeline import query_timeline
+
     try:
         result = query_timeline(
             case_root, start=start, end=end, platform=platform, event_kind=event_kind, limit=limit
@@ -103,6 +123,8 @@ def device(
     limit: Annotated[int, typer.Option(min=1, max=10000)] = 100,
 ) -> None:
     """Search device.observer 1.0.0 without echoing the searched value."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     try:
         result = query_device(
             case_root,
@@ -127,6 +149,8 @@ def network(
     limit: Annotated[int, typer.Option(min=1, max=10000)] = 100,
 ) -> None:
     """Search network.observer 1.0.0 without echoing the IP."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     try:
         result = query_network(
             case_root, ip=ip, platform=platform, source_role=source_role, limit=limit
@@ -150,6 +174,10 @@ def provenance(
     limit: Annotated[int, typer.Option(min=1, max=1000)] = 100,
 ) -> None:
     """Follow persisted foreign keys to cataloged originals and hashes; never reread evidence."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.query.provenance import query_provenance
+
     try:
         result = query_provenance(case_root, kind=kind, object_id=object_id, limit=limit)
     except (EvidenceError, OSError, SQLAlchemyError) as error:

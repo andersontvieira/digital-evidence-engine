@@ -4,11 +4,9 @@ import json
 from dataclasses import asdict
 
 import typer
-from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_engine.cli.evidence import CaseRoot, fail
 from evidence_engine.errors import EvidenceError
-from evidence_engine.ingest.parsing.service import parse_apple, parse_google, parse_instagram
 
 app = typer.Typer(help="Extract observations from cataloged sources.", no_args_is_help=True)
 
@@ -16,6 +14,10 @@ app = typer.Typer(help="Extract observations from cataloged sources.", no_args_i
 @app.command("apple")
 def apple(case_root: CaseRoot) -> None:
     """Parse only Apple device inventory, sign-on and media device CSV records."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.ingest.parsing.service import parse_apple
+
     try:
         summary = parse_apple(case_root)
     except (EvidenceError, OSError, SQLAlchemyError) as error:
@@ -29,6 +31,10 @@ def apple(case_root: CaseRoot) -> None:
 @app.command("instagram")
 def instagram(case_root: CaseRoot) -> None:
     """Parse the three supported Meta artifacts; preserve values and provenance."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.ingest.parsing.service import parse_instagram
+
     try:
         summary = parse_instagram(case_root)
     except (EvidenceError, OSError, SQLAlchemyError) as error:
@@ -42,6 +48,10 @@ def instagram(case_root: CaseRoot) -> None:
 @app.command("google")
 def google(case_root: CaseRoot) -> None:
     """Parse only SubscriberInfo and ChangeHistory Takeout tables."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from evidence_engine.ingest.parsing.service import parse_google
+
     try:
         summary = parse_google(case_root)
     except (EvidenceError, OSError, SQLAlchemyError) as error:

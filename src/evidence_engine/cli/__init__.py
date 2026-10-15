@@ -1,4 +1,4 @@
-"""Public command-line interface for the local evidence foundation."""
+"""Public command-line interface for the local data-processing engine."""
 
 import typer
 
@@ -15,7 +15,10 @@ from evidence_engine.cli.query import app as query_app
 from evidence_engine.cli.report import app as report_app
 
 app = typer.Typer(
-    help="Local engine for organizing and tracing digital evidence.",
+    help=(
+        "Local, reproducible Python data-processing engine for provenance-preserving "
+        "digital evidence."
+    ),
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
@@ -34,7 +37,7 @@ app.command("demo")(demo)
 
 @app.callback()
 def main() -> None:
-    """Digital Evidence Engine — evidence foundation."""
+    """Process supported digital datasets locally with explicit provenance."""
 
 
 @app.command()
