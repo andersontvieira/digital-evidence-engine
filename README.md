@@ -136,6 +136,27 @@ uv run dee --help
 The project version remains pre-release while the public release candidate is prepared. Do not
 place evidence or case working directories inside the clone.
 
+## Synthetic demo
+
+Run the complete portfolio demonstration with one command and a new output directory outside
+the repository:
+
+```bash
+uv run dee demo --output-dir ../dee-demo-output
+```
+
+The command programmatically creates conspicuously synthetic Meta JSON, Google HTML, and Apple
+CSV sources in temporary case storage. It then reuses the production ingestion, parsing,
+normalization, observation, exact-correlation, temporal-correlation, provenance, and snapshot
+services. Temporary originals, working files, and the SQLite catalog are deleted after the run.
+
+The output contains exactly five deterministic files: a short README, a machine-readable
+pipeline summary, a technical snapshot projection, a technical report, and `SHA256SUMS.txt`.
+Together they illustrate heterogeneous ingestion, ETL-style transformation, data lineage,
+data-quality boundaries, canonical normalization, exact technical equality, temporal proximity,
+and explicit absence of an exact technical bridge. The command uses no `CASE_ROOT`, network,
+external service, PDF renderer, or real case data, and refuses an existing output directory.
+
 ## CLI quickstart
 
 The CLI is organized by pipeline stage. These commands exist in the current implementation:
@@ -178,9 +199,6 @@ uv run dee report consolidated --help
 uv run dee dossier assemble --help
 uv run dee dossier pdf --help
 ```
-
-There is no packaged `dee demo` command yet. The planned public demo will use synthetic data
-only.
 
 ## Docker support and platform boundary
 
