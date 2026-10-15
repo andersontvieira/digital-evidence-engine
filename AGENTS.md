@@ -82,14 +82,16 @@ de apresentação extrema, sem mudança de produção. Cobertos limite contratua
 16 colunas/17 RESOURCE_LIMIT, escapes existentes, token ASCII de 1024 caracteres,
 paginação no limiar, H3 longo, linha lógica 696 pt válida/708 pt recusada, budgets
 N/N-1, determinismo e PDFium de todas as 22 páginas F. Oito colunas permanece
-cobertura histórica de C, não teto semântico. 8B2-G NOT STARTED; 8B3 FUTURE.
-Sem descoberta de casos ou acesso real.
+cobertura histórica de C, não teto semântico. 8B2-G concluiu o fechamento sintético
+de integração. A validação controlada 8B3 permanece externa ao Git; o estado rastreado
+inclui somente contratos, correções de limites e inventários de requalificação, sem
+artefatos de caso.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
 Probes da fundação e PDFs de dossiê/relatório exclusivamente sintéticos gerados/validados. Sem alegação de
-PDF/A, PDF/UA, assinatura ou certificação. 8B3 permanece futura e exclusivamente
-responsável pela execução real controlada. Nenhum caso real acessado em 8B2-A/B/C/D/E
-ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
+PDF/A, PDF/UA, assinatura ou certificação. Execuções reais controladas pertencem
+exclusivamente à 8B3 e seus artefatos permanecem fora do Git. Nenhum caso real foi
+acessado em 8B2-A/B/C/D/E ou usado no fechamento 8B1. A montagem consome apenas artefatos aprovados já gerados
 e explicitamente selecionados; sem CASE_ROOT, DB, originals/working, parsing, correlação, novos
 findings ou rede/cloud/API/LLM. Só CANONICAL_TECHNICAL origina narrativa técnica humana.
 Relatório selecionado deve coincidir byte a byte com o modelo/renderer puro dos
@@ -103,10 +105,9 @@ Originais e legacy excluídos do pacote v1. Visuais são anexos contextuais JPEG
 sem criar relações com eventos/findings. WhatsApp fica fora do dataset representado,
 salvo futura aquisição/parser/análise separadamente aprovados. PDF pertence à 8B2;
 ZIP/archive exige escopo próprio. A fundação 8B2-A segue ADRs 0038/0039;
-sua conclusão não autoriza 8B3 ou acesso real.
+sua conclusão isolada não autoriza acesso real.
 Dados de caso continuam fora do Git.
-Validação real das etapas anteriores autorizada, com snapshots e relatório
-exclusivamente fora do Git; essa autorização não inicia a validação real 8B3.
+Qualquer validação real usa snapshots, relatórios e saídas exclusivamente fora do Git.
 Sem WhatsApp, persistência ou inferência automática de identidade/autoria.
 Preservar OBSERVED, DERIVED, REPORTED e HYPOTHESIS e a provenance existente.
 Proibir conclusões automáticas de identity, authorship, session, causality

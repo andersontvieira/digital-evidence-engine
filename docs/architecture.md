@@ -36,9 +36,10 @@ qualificada sinteticamente: COMPLETE — HUMAN REVIEW APPROVED.
 8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade read-only.
 8B2-E: COMPLETE — HUMAN REVIEW APPROVED; serviço/worker híbridos e publicação PDF
 qualificados sinteticamente em bind Linux/WSL ext4. 8B2-F: COMPLETE — HUMAN REVIEW
-APPROVED, qualificação extrema test-only sem alteração de produção. 8B2-G: NOT STARTED.
-ZIP/archive exige escopo separado. 8B3 será validação
-real futura, não realizada ou autorizada pela aceitação 8B0. Schema permanece v5;
+APPROVED, qualificação extrema test-only sem alteração de produção. 8B2-G concluiu
+o fechamento sintético de integração. ZIP/archive exige escopo separado. A validação
+real controlada 8B3 mantém artefatos e dados de caso fora do Git; o estado rastreado
+registra apenas decisões, correções de limites e requalificações. Schema permanece v5;
 8B1 não adiciona dependência ou persistência de análise.
 
 ## Milestone 8B1 — montagem determinística implementada
@@ -262,7 +263,8 @@ Gates, inventário e hashes em [qualificação](pdf-toolchain-qualification.md).
 Fonte não é snapshot atômico; corrida residual após recheck permanece explícita.
 Sem dados reais, PDF/A, PDF/UA, assinatura ou certificação. Revisões de código,
 estrutura, qualificação automatizada, implantação, integridade e visual: PASS.
-A/B/C/D/E/F estão COMPLETE — HUMAN REVIEW APPROVED; G NOT STARTED; 8B3 FUTURE.
+A/B/C/D/E/F estão COMPLETE — HUMAN REVIEW APPROVED; G concluiu o fechamento
+sintético de integração. A execução controlada 8B3 mantém todo material de caso fora do Git.
 
 ## Milestone 8B2-F — qualificação extrema de apresentação
 

@@ -9,8 +9,9 @@ sinteticamente: COMPLETE — HUMAN REVIEW APPROVED; ver seu fechamento abaixo.
 8B2-D: COMPLETE — HUMAN REVIEW APPROVED, captura/binding/integridade qualificados abaixo.
 8B2-E: COMPLETE — HUMAN REVIEW APPROVED; fechamento sintético e gates abaixo.
 8B2-F: COMPLETE — HUMAN REVIEW APPROVED; qualificação test-only e fechamento abaixo.
-8B2-G: NOT STARTED.
-8B3 permanece futura.
+8B2-G concluiu o fechamento sintético de integração. A série 8B3 posterior preserva
+dados e artefatos de caso fora do Git; este documento registra somente contratos,
+limites, inventários e evidência de qualificação apropriada ao repositório.
 
 Revisão técnica humana final: PASS. Foram verificados o inventário do ambiente
 canônico, o render_environment_id, o escopo do adaptador controlado ReportLab,
@@ -909,7 +910,7 @@ render_environment_id permanece
 `ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca`;
 `docs/pdf-render-environment.json` não foi regenerado. PDFs e rasters F para revisão
 humana são inteiramente sintéticos e ficam fora do Git. Nenhum caso real foi acessado.
-8B2-G permanece NOT STARTED e 8B3 FUTURE.
+Naquele gate de F, 8B2-G ainda não havia iniciado e 8B3 era futura.
 
 ### Fechamento humano final de 8B2-F
 
@@ -929,7 +930,8 @@ Não houve nova execução de testes, rendering ou PDFium nesta promoção exclu
 documental. Os goldens automatizados a 144 DPI permanecem os registrados acima. O
 render_environment_id permanece
 `ce881cc28baf5b8e2328bd1d92979906779241f2af54e6222baf29fbb84bf4ca`.
-Nenhum caso real foi acessado. 8B2-G continua **NOT STARTED** e 8B3 **FUTURE**.
+Nenhum caso real foi acessado. Naquela promoção, 8B2-G permanecia **NOT STARTED**
+e 8B3 **FUTURE**.
 
 ## Limitações e fronteira
 
@@ -939,8 +941,9 @@ No digital-signature claim. No forensic certification. No real case used.
 
 8B2-B dossier renderer: COMPLETE — HUMAN REVIEW APPROVED.
 Consolidated-report PDF renderer: COMPLETE — HUMAN REVIEW APPROVED.
-Serviço/CLI e publicação PDF: COMPLETE — HUMAN REVIEW APPROVED. Sem pacote real, ZIP
-ou execução 8B3. 8B2-F COMPLETE — HUMAN REVIEW APPROVED; 8B2-G NOT STARTED.
+Serviço/CLI e publicação PDF: COMPLETE — HUMAN REVIEW APPROVED. 8B2-F COMPLETE —
+HUMAN REVIEW APPROVED; 8B2-G concluiu posteriormente o fechamento sintético de
+integração. A validação controlada 8B3 não incorpora pacote real ou dados de caso ao Git.
 directory-v1 e schema v5 preservados. A qualificação é do perfil
 sintético fechado e da imagem canônica; futuros slices devem qualificar suas
 extensões de layout/validação. Sem promessa de rendering nativo multiplataforma.
