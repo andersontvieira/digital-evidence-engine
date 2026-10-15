@@ -5,22 +5,35 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "digital-evidence-engine"
 dynamic = ["version"]
-description = "Local engine for organizing and tracing digital evidence."
+description = "Reproducible local engine for provenance-preserving digital data processing."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Anderson Thalles Vieira"}]
+maintainers = [{name = "Anderson Thalles Vieira"}]
+keywords = [
+    "data-engineering", "digital-evidence", "etl", "provenance",
+    "reproducibility",
+]
 dependencies = [
     "typer>=0.12,<1", "sqlalchemy>=2.0,<3", "pydantic>=2.10,<3",
     "Pillow==12.3.0", "ImageHash==4.3.2",
     "reportlab==5.0.1", "pypdf==6.19.0",
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://github.com/andersontvieira/digital-evidence-engine"
+Repository = "https://github.com/andersontvieira/digital-evidence-engine"
+Issues = "https://github.com/andersontvieira/digital-evidence-engine/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<9", "ruff>=0.9,<1", "mypy>=1.14,<2", "pypdfium2==5.13.0"]

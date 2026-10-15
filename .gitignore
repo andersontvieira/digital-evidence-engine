@@ -6,6 +6,11 @@ originals/
 working/
 database/
 output/
+/derived/
+/exports/
+/reports/
+/staging/
+/scratch/
 *.db
 *.db-*
 *.sqlite
@@ -29,6 +34,10 @@ output/
 *.json
 *.jsonl
 *.ndjson
+*.parquet
+*.feather
+*.avro
+*.orc
 *.xml
 *.html
 *.htm
