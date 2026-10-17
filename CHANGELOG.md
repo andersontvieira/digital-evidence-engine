@@ -2,7 +2,7 @@
 
 All notable public changes are recorded in this file.
 
-## 1.0.0 — Unreleased
+## 1.0.0 — 2026-10-17
 
 First public portfolio release candidate.
 
