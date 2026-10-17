@@ -9,6 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 from PIL import Image, ImageFile, ImageOps
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from evidence_engine.cli import app
@@ -311,7 +312,7 @@ def test_normalization_failure_local(monkeypatch):
 
 def test_help():
     result = CliRunner().invoke(app, ["media", "perceptual-hash", "--help"], color=False)
-    assert result.exit_code == 0 and "--case-root" in result.output
+    assert result.exit_code == 0 and "--case-root" in strip_ansi(result.output)
 
 
 @pytest.mark.parametrize(

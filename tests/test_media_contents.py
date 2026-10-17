@@ -5,6 +5,7 @@ from itertools import permutations
 from unittest.mock import Mock
 
 import pytest
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from evidence_engine.cli import app
@@ -200,4 +201,4 @@ def test_integrity_error_from_inventory_reaches_cli(media_case):
 
 def test_contents_help():
     result = CliRunner().invoke(app, ["media", "contents", "--help"], color=False)
-    assert result.exit_code == 0 and "--case-root" in result.output
+    assert result.exit_code == 0 and "--case-root" in strip_ansi(result.output)

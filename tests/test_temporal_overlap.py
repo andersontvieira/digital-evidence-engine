@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import Engine, event
 from sqlalchemy.orm import Session
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from evidence_engine.cli import app
@@ -495,7 +496,7 @@ def test_cli_policy_privacy_determinism_help(catalog):
     help_result = CliRunner().invoke(
         app, ["correlate", "temporal-exact-overlap", "--help"], color=False
     )
-    assert help_result.exit_code == 0 and "--max-delta-seconds" in help_result.output
+    assert help_result.exit_code == 0 and "--max-delta-seconds" in strip_ansi(help_result.output)
     for forbidden in (
         "--require-shared-exact",
         "--candidate-kind",

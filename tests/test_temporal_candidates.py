@@ -8,6 +8,7 @@ from unittest.mock import Mock
 import pytest
 from sqlalchemy import Engine, delete, event, select
 from sqlalchemy.orm import Session
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from evidence_engine.cli import app
@@ -348,4 +349,4 @@ def test_catalog_guard(case_root, mode):
 
 def test_help():
     result = CliRunner().invoke(app, ["correlate", "temporal-candidates", "--help"], color=False)
-    assert result.exit_code == 0 and "--max-delta-seconds" in result.output
+    assert result.exit_code == 0 and "--max-delta-seconds" in strip_ansi(result.output)

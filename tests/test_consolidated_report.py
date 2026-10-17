@@ -8,6 +8,7 @@ from itertools import permutations
 from unittest.mock import Mock
 
 import pytest
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from evidence_engine.cli import app
@@ -392,4 +393,5 @@ def test_unsafe_display_filters_rejected(snapshots, malicious):
 def test_cli_help_has_snapshot_and_no_case_root():
     result = CliRunner().invoke(app, ["report", "consolidated", "--help"])
     assert result.exit_code == 0
-    assert "--snapshot" in result.stdout and "--case-root" not in result.stdout
+    output = strip_ansi(result.stdout)
+    assert "--snapshot" in output and "--case-root" not in output

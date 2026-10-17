@@ -11,6 +11,7 @@ from unittest.mock import Mock
 import pytest
 from sqlalchemy import Engine, event, select
 from sqlalchemy.orm import Session
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from evidence_engine.cli import app
@@ -497,8 +498,9 @@ def test_cli_requires_both_bounds(tmp_path, bounds):
 def test_help_and_missing_case(tmp_path):
     result = CliRunner().invoke(app, ["media", "source-links", "--help"])
     assert result.exit_code == 0
+    output = strip_ansi(result.stdout)
     for word in ("start", "end", "platform", "event-kind", "limit", "case-root"):
-        assert word in result.stdout
+        assert word in output
     assert (
         CliRunner()
         .invoke(
