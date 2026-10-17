@@ -5,3 +5,7 @@
 /docs/pdf-render-environment.json text eol=lf
 /Dockerfile.pdf text eol=lf
 /Dockerfile.pdf.dockerignore text eol=lf
+
+# Synthetic fixtures with byte- or embedded-newline-sensitive assertions.
+/tests/fixtures/report_legacy/report.md text eol=lf
+/tests/fixtures/synthetic/apple/*.csv text eol=lf
