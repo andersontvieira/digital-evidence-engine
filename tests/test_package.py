@@ -6,7 +6,7 @@ import evidence_engine
 
 
 def test_package_and_distribution_share_version() -> None:
-    assert evidence_engine.__version__ == "0.1.0"
+    assert evidence_engine.__version__ == "1.0.0"
     assert importlib.metadata.version("digital-evidence-engine") == evidence_engine.__version__
 
 

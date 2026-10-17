@@ -86,6 +86,11 @@ cobertura histórica de C, não teto semântico. 8B2-G concluiu o fechamento sin
 de integração. A validação controlada 8B3 permanece externa ao Git; o estado rastreado
 inclui somente contratos, correções de limites e inventários de requalificação, sem
 artefatos de caso.
+P3 prepara o release candidate público 1.0.0, ainda classificado Beta, sem ampliar
+o escopo funcional. CI rápida e qualificação manual permanecem sintéticas e sem
+publicação. A promoção de versão regenera o inventário PDF canônico; hashes e gates
+vigentes ficam documentados em docs/pdf-toolchain-qualification.md. Execução remota
+dos workflows, tag, release e publicação pertencem à P4.
 Arquitetura PDF prevê saída separada pdf-presentation-v1, sem mutar directory-v1.
 Render canônico Linux/amd64 fixado, não render nativo multiplataforma.
 Probes da fundação e PDFs de dossiê/relatório exclusivamente sintéticos gerados/validados. Sem alegação de

@@ -935,6 +935,36 @@ e 8B3 **FUTURE**.
 
 ## Limitações e fronteira
 
+### Requalificação derivada do release candidate público 1.0.0
+
+P3 promoveu somente `evidence_engine.__version__` de 0.1.0 para 1.0.0 no inventário
+de implementação qualificado. O inventário canônico foi regenerado pelo mesmo build
+de `Dockerfile.pdf`, em Linux/amd64 com Python 3.12.14 e uv 0.8.22. A comparação
+estrutural entre inventários encontrou exatamente duas diferenças de conteúdo:
+
+- `packages["digital-evidence-engine"]`: `0.1.0` → `1.0.0`;
+- `implementation_files["src/evidence_engine/__init__.py"]`:
+  `9908bfdcf3861e0ebd8287edf7a0c3d24dc00563d35433dcbac94324a07b7d1e` →
+  `1bb3294af1fa396e0ace117dac83ebfa8613f0fd2670da8cb786a570924a8214`.
+
+O SHA-256 canônico do inventário, usado como `render_environment_id`, mudou de
+`dd61d6fcebf3f2234228661bfe2b3dd970918f4685bf221b8dc5c93de2986f52` para
+`6cddd9995f9d1758639fc54afe062914153fe95a7fb584adfb689896361f37e8`.
+Artefatos, fontes, licenças, toolchain, arquivos de pacote e os demais arquivos de
+implementação permaneceram byte a byte iguais.
+
+Os gates direcionados na imagem regenerada aprovaram 145 testes de versão, CLI,
+demo, snapshots, relatório consolidado, build e inventário. Dois testes canônicos de
+determinismo em processos distintos também passaram e conservaram os hashes PDF já
+qualificados; a entrada sintética congelada desses testes preserva sua versão histórica.
+Não houve mudança no renderer, validador ou layout, nem atualização de golden PDF ou
+pixel. A regressão Linux/amd64 completa imediatamente anterior já havia aprovado
+2364 testes e registrado quatro skips contratuais; não foi repetida porque a diferença
+de produção posterior é somente a constante de versão e o inventário derivado.
+
+Esta requalificação usa somente dados sintéticos. Ela não publica artefato, não acessa
+caso real e não altera as qualificações históricas registradas nas seções anteriores.
+
 This is technical toolchain qualification, not legal advice.
 No legal compliance certification. No PDF/A claim. No PDF/UA claim.
 No digital-signature claim. No forensic certification. No real case used.

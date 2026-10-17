@@ -1,12 +1,15 @@
 # Digital Evidence Engine
 
+[![CI](https://github.com/andersontvieira/digital-evidence-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/andersontvieira/digital-evidence-engine/actions/workflows/ci.yml)
+[![Release qualification](https://github.com/andersontvieira/digital-evidence-engine/actions/workflows/release-qualification.yml/badge.svg)](https://github.com/andersontvieira/digital-evidence-engine/actions/workflows/release-qualification.yml)
+
 A reproducible Python data-processing engine for ingesting, normalizing, validating,
 and correlating heterogeneous digital datasets while preserving provenance and producing
 deterministic technical reports.
 
 ## Status and disclaimer
 
-The project is an actively maintained beta-stage engineering portfolio. Its implemented
+Version 1.0.0 is an actively maintained beta-stage engineering portfolio release candidate. Its implemented
 pipelines, safety boundaries, and deterministic outputs have extensive synthetic test and
 qualification coverage. It is **not certified forensic software**, does not establish legal
 admissibility, and does not infer human identity, authorship, intent, causality, or legal
@@ -133,8 +136,8 @@ uv run dee version
 uv run dee --help
 ```
 
-The project version remains pre-release while the public release candidate is prepared. Do not
-place evidence or case working directories inside the clone.
+Version 1.0.0 remains classified Beta to reflect the documented support boundaries. Do not place
+evidence or case working directories inside the clone.
 
 ## Synthetic demo
 
@@ -241,6 +244,14 @@ passes.
 Detailed PDF versions, environment identifiers, hashes, and qualification limits are recorded
 in [PDF toolchain qualification](docs/pdf-toolchain-qualification.md).
 
+The fast [CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests. It checks the
+locked environment, style, typing, core tests, native Windows and Linux CLI/demo behavior,
+distribution contents, and a fresh wheel install. The manual
+[release qualification workflow](.github/workflows/release-qualification.yml) runs the complete
+synthetic regression in the canonical Linux/amd64 PDF environment, the native Windows regression
+with canonical PDF rendering skipped by contract, offline demo checks, and clean package checks.
+Neither workflow reads case data or publishes a package, image, tag, or release.
+
 ## Safety and semantic boundaries
 
 - Original files are read-only and are never silently replaced, renamed, or normalized.
@@ -275,9 +286,9 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and repository data-s
 
 ## Roadmap and intentionally deferred capabilities
 
-The immediate release work covers public repository hygiene, a synthetic demonstration, CI,
-and release-candidate packaging. The following capabilities are intentionally outside the
-current product scope:
+The 1.0.0 release candidate covers public repository hygiene, a synthetic demonstration, CI, and
+release-candidate packaging. The following capabilities are intentionally outside the current
+product scope:
 
 - WhatsApp acquisition or parsing;
 - dashboard, FastAPI, Vue, or hosted service;

@@ -751,6 +751,14 @@ sem rendering de produção por PDFium. O renderer de dossiê PDF da 8B2-B está
 concluído e aprovado; o renderer de consolidated-report.pdf da 8B2-C está
 concluído/qualificado sinteticamente e aprovado em revisão humana.
 
+O release candidate público 1.0.0 mantém a classificação Beta e não altera schema,
+dependências nem os contratos PDF. A CI de push/pull request executa os gates rápidos,
+CLI/demo em Linux e Windows e qualificação de distribuição. O workflow manual separado
+executa a regressão sintética completa no ambiente PDF Linux/amd64 canônico, além da
+regressão Windows compatível com o contrato. Ambos operam sem dados de caso e sem
+publicar pacote, imagem, tag ou release; a primeira execução remota e a publicação
+permanecem gates de P4.
+
 Testes sintéticos cobrem integridade, proveniência, idempotência, rollback, CLI,
 manifesto, ZIPs adversariais, parsing, normalização, observações e candidatos exatos.
 ADRs 0007–0039 documentam as decisões; os seis
